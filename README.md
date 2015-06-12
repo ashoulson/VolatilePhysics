@@ -1,5 +1,7 @@
 **VolatilePhysics: A 2D Physics Library for Networked Games**
 
+Alexander Shoulson - http://ashoulson.com
+
 ---
 
 Based primarily on glaze-csharp: https://code.google.com/p/glaze-csharp/
