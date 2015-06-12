@@ -18,7 +18,7 @@ Supported Physics Tasks:
 
 To be Supported:
 - Raycasts
-- History Buffer with BroadPhase Support
+- History Buffer with BroadPhase Support (blitting quadtree buffer)
 
 Not Supported:
 - Joints and Constraints
@@ -31,3 +31,4 @@ Overarching Design Goals of Volatile:
 
 Caveats:
 - Volatile is designed primarily for *dynamic-static* object collisions. *Dynamic-dynamic* object collisions are difficult to synchronize over any network simulation, and while Volatile may support them, odd behavior may occur.
+- Because Volatile is mostly stateless, it can not benefit from physics techniques like warm starting. In complex systems, Volatile's convergence will be outperformed by more advanced physics solvers, but Volatile should still be sufficient for many game applications.
