@@ -99,6 +99,32 @@ namespace Volatile
       this.shapes = new List<Shape>();
     }
 
+    // TODO: Do something like a try-finally with this and adding shapes
+    public void CalcProperties()
+    {
+      float mass = 0;
+      float inertia = 0;
+
+      foreach (Shape s in this.shapes)
+      {
+        mass += s.mass;
+        inertia += s.mass * s.Inertia;
+      }
+
+      this.massInv = 1.0f / mass;
+      this.inertiaInv = 1.0f / inertia;
+
+      this.UpdateInternals();
+    }
+
+    // TODO: Do something like a try-finally with this and setting data
+    public void Set(Vector2 position, float angle)
+    {
+      this.Position = position;
+      this.Angle = angle;
+      this.UpdateInternals();
+    }
+
     internal bool CanCollide(Body other)
     {
       // TODO: Groups/Layers/etc.
@@ -120,27 +146,14 @@ namespace Volatile
     internal void Update(float dt)
     {
       this.Integrate(dt);
-
-      // Update rotation
-      this.Direction = Util.Polar(this.Angle);
-
-      foreach (Shape s in this.shapes)
-        s.UpdateCache();
+      this.UpdateInternals();
     }
 
-    public void CalcProperties()
+    private void UpdateInternals()
     {
-      float mass = 0;
-      float inertia = 0;
-
+      this.Direction = Util.Polar(this.Angle);
       foreach (Shape s in this.shapes)
-      {
-        mass += s.mass;
-        inertia += s.mass * s.Inertia;
-      }
-
-      this.massInv = 1.0f / mass;
-      this.inertiaInv = 1.0f / inertia;
+        s.UpdateCache();
     }
 
     private void Integrate(float dt)

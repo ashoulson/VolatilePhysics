@@ -97,6 +97,26 @@ namespace Volatile
     public override float Area { get { return this.area; } }
     public override float Inertia { get { return this.inertia; } }
 
+    public Vector2[] LocalVertices 
+    { 
+      get { return this.CloneVertices(this.vertices); } 
+    }
+
+    public Vector2[] WorldVertices
+    {
+      get { return this.CloneVertices(this.cachedWorldVertices); }
+    }
+
+    public Vector2[] LocalNormals
+    {
+      get { return this.CloneNormals(this.axes); }
+    }
+
+    public Vector2[] WorldNormals
+    {
+      get { return this.CloneNormals(this.cachedWorldAxes); }
+    }
+
     private float area;
     private float inertia;
 
@@ -165,5 +185,25 @@ namespace Volatile
           return false;
       return true;
     }
+
+    #region Data Access
+    private Vector2[] CloneVertices(Vector2[] source)
+    {
+      Vector2[] vertices =
+        new Vector2[source.Length];
+      for (int i = 0; i < source.Length; i++)
+        vertices[i] = source[i];
+      return vertices;
+    }
+
+    private Vector2[] CloneNormals(Axis[] source)
+    {
+      Vector2[] normals =
+        new Vector2[source.Length];
+      for (int i = 0; i < source.Length; i++)
+        normals[i] = source[i].Normal;
+      return normals;
+    }
+    #endregion
   }
 }
