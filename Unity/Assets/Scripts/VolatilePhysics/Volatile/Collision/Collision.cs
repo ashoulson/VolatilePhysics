@@ -96,7 +96,7 @@ namespace Volatile
 
       // Build the collision Manifold
       // TODO: POOLING
-      Manifold manifold = new Manifold(circ, poly, 3);
+      Manifold manifold = new Manifold(circ, poly);
       Vector2 pos =
         circ.cachedWorldCenter - (circ.Radius + penetration / 2) * a.Normal;
       manifold.AddContact(pos, -a.Normal, penetration);
@@ -122,7 +122,7 @@ namespace Volatile
 
       // Build the collision Manifold
       // TODO: POOLING
-      Manifold manifold = new Manifold(polyA, polyB, 3);
+      Manifold manifold = new Manifold(polyA, polyB);
       Collision.FindVerts(polyA, polyB, a1.Normal, a1.Width, manifold);
       return manifold;
     }
@@ -156,7 +156,7 @@ namespace Volatile
 
       // Build the collision Manifold
       // TODO: POOLING
-      Manifold manifold = new Manifold(shapeA, shapeB, 3);
+      Manifold manifold = new Manifold(shapeA, shapeB);
       manifold.AddContact(pos, distInv * r, dist - min);
       return manifold;
     }
@@ -188,6 +188,7 @@ namespace Volatile
           ix = i;
         }
       }
+
       return ix;
     }
 
@@ -217,7 +218,7 @@ namespace Volatile
     /// Add contacts for penetrating vertices. Note that this does not handle
     /// cases where an overlap was detected, but no vertices fall inside the
     /// opposing polygon (like a Star of David). See Chipmunk's cpCollision.c
-    /// for more details on how this is resolved.
+    /// for more details on how this could be resolved (we don't bother).
     /// </summary>
     private static void FindVerts(
       Polygon poly1,
