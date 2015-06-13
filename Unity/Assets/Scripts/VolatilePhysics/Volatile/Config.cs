@@ -25,13 +25,20 @@ using System.Text;
 
 namespace Volatile
 {
-  public static class Config
+  internal static class Config
   {
-    public const float
-      AREA_MASS_RATIO = 0.01f,
-      RESOLVE_SLOP = 0.01f,
-      RESOLVE_RATE = 0.1f,
-      DEFAULT_RESTITUTION = 0.5f,
-      DEFAULT_FRICTION = 0.8f;
+    internal const float AREA_MASS_RATIO = 0.01f;
+
+    internal const float RESOLVE_SLOP = 0.01f;
+    internal const float RESOLVE_RATE = 0.1f;
+
+    internal const float DEFAULT_RESTITUTION = 0.5f;
+    internal const float DEFAULT_FRICTION = 0.8f;
+
+    /// <summary>
+    /// Maximum contacts for collision resolution
+    /// </summary>
+    internal const int MAX_CONTACTS = 3;
+      
   }
 }

@@ -25,7 +25,6 @@ using UnityEngine;
 
 namespace Volatile
 {
-  // TODO: Manifold/Contact pooling
   internal sealed class Manifold
   {
     internal Shape ShapeA { get; private set; }
@@ -36,9 +35,9 @@ namespace Volatile
     private int used = 0;
     private Contact[] contacts;
 
-    internal Manifold(Shape shapeA, Shape shapeB, int capacity)
+    internal Manifold(Shape shapeA, Shape shapeB)
     {
-      this.contacts = new Contact[capacity];
+      this.contacts = new Contact[Config.MAX_CONTACTS];
 
       this.ShapeA = shapeA;
       this.ShapeB = shapeB;
