@@ -134,6 +134,40 @@ namespace Volatile
 
     #region Internals
     /// <summary>
+    /// Workhorse for circle-circle collisions, compares origin distance
+    /// to the sum of the two circles' radii, returns a Manifold.
+    /// </summary>
+    /// 
+    private static Manifold TestCircles(
+      Circle shapeA,
+      Shape shapeB,
+      Vector2 overrideBCenter, // For testing vertices in circles
+      float overrideBRadius)
+    {
+      Vector2 r = overrideBCenter - shapeA.cachedWorldCenter;
+      float min = shapeA.Radius + overrideBRadius;
+      float distSq = r.sqrMagnitude;
+
+      if (distSq >= min * min)
+        return null;
+
+      float dist = Mathf.Sqrt(distSq);
+      float distInv = 1.0f / dist;
+
+      Vector2 pos =
+        shapeA.cachedWorldCenter +
+        (0.5f + distInv * (shapeA.Radius - min / 2.0f)) * r;
+
+      // Build the collision Manifold
+      // TODO: POOLING
+      Manifold manifold = new Manifold(3);
+      manifold.shapeA = shapeA;
+      manifold.shapeB = shapeB;
+      manifold.UpdateContact(pos, distInv * r, dist - min, 0);
+      return manifold;
+    }
+
+    /// <summary>
     /// Returns the index of the nearest axis on the poly to the circle.
     /// </summary>
     private static int FindNearestAxis(
@@ -161,40 +195,6 @@ namespace Volatile
         }
       }
       return ix;
-    }
-
-    /// <summary>
-    /// Workhorse for circle-circle collisions, compares origin distance
-    /// to the sum of the two circles' radii, returns a Manifold.
-    /// </summary>
-    /// 
-    private static Manifold TestCircles(
-      Circle shapeA,
-      Shape shapeB,
-      Vector2 overrideBCenter, // For testing vertices in circles
-      float overrideBRadius)
-    {
-      Vector2 r = overrideBCenter - shapeA.cachedWorldCenter;
-      float min = shapeA.Radius + overrideBRadius;
-      float distSq = r.sqrMagnitude;
-
-      if (distSq >= min * min)
-        return null;
-
-      float dist = Mathf.Sqrt(distSq);
-      float distInv = 1.0f / dist;
-
-      Vector2 pos = 
-        shapeA.cachedWorldCenter + 
-        (0.5f + distInv * (shapeA.Radius - min / 2.0f)) * r;
-
-      // Build the collision Manifold
-      // TODO: POOLING
-      Manifold manifold = new Manifold(3);
-      manifold.shapeA = shapeA;
-      manifold.shapeB = shapeB;
-      manifold.UpdateContact(pos, distInv * r, dist - min, 0);
-      return manifold;
     }
 
     private static bool FindMinSepAxis(
