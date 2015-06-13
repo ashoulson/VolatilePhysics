@@ -25,6 +25,7 @@ using UnityEngine;
 
 namespace Volatile
 {
+  // TODO: Manifold/Contact pooling
   public sealed class Manifold
   {
     #region Static Methods
