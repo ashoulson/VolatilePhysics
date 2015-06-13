@@ -27,6 +27,11 @@ namespace Volatile
 {
   public sealed class Body
   {
+    /// <summary>
+    /// User token, for attaching data to this shape
+    /// </summary>
+    public object Token { get; set; }
+
     public IEnumerable<Shape> Shapes
     {
       get { return this.shapes.AsReadOnly(); }
@@ -37,22 +42,17 @@ namespace Volatile
     public Vector2 Position { get; private set; }
     public Vector2 LinearVelocity { get; private set; }
     public Vector2 Force { get; private set; }
-
     public float Angle { get; private set; }
     public float AngularVelocity { get; internal set; } // TEMP: Make this private again
     public float Torque { get; private set; }
-
     public Vector2 Facing { get; private set; }
 
-    // Immutable
-    internal float massInv;
-    internal float inertiaInv;
-
-    // Internal access for collision resolution
+    internal float InvMass { get; private set; }
+    internal float InvInertia { get; private set; }
     internal Vector2 BiasVelocity { get; private set; }
     internal float BiasRotation { get; private set; }
 
-    internal World world;
+    public World World { get; internal set; }
 
     private List<Shape> shapes;
 
@@ -150,14 +150,14 @@ namespace Volatile
 
     internal void ApplyImpulse(Vector2 j, Vector2 r)
     {
-      this.LinearVelocity += this.massInv * j;
-      this.AngularVelocity -= this.inertiaInv * Util.Cross(j, r);
+      this.LinearVelocity += this.InvMass * j;
+      this.AngularVelocity -= this.InvInertia * Util.Cross(j, r);
     }
 
     internal void ApplyBias(Vector2 j, Vector2 r)
     {
-      BiasVelocity += massInv * j;
-      BiasRotation -= inertiaInv * Util.Cross(j, r);
+      BiasVelocity += InvMass * j;
+      BiasRotation -= InvInertia * Util.Cross(j, r);
     }
     #endregion
 
@@ -172,14 +172,14 @@ namespace Volatile
     private void Integrate(float deltaTime)
     {
       // Apply damping
-      this.LinearVelocity *= this.world.damping;
-      this.AngularVelocity *= this.world.damping;
+      this.LinearVelocity *= this.World.damping;
+      this.AngularVelocity *= this.World.damping;
 
       // Calculate total force and torque
-      Vector2 totalForce = (this.Force * this.massInv);
+      Vector2 totalForce = (this.Force * this.InvMass);
       if (this.UseGravity == true)
-        totalForce += this.world.gravity;
-      float totalTorque = this.Torque * this.inertiaInv;
+        totalForce += this.World.gravity;
+      float totalTorque = this.Torque * this.InvInertia;
 
       // See http://www.niksula.hut.fi/~hkankaan/Homepages/gravity.html
       this.IntegrateForces(totalForce, totalTorque, deltaTime, 0.5f);
@@ -225,8 +225,16 @@ namespace Volatile
         inertia += s.Mass * s.Inertia;
       }
 
-      this.massInv = 1.0f / mass;
-      this.inertiaInv = 1.0f / inertia;
+      if (mass == 0.0f)
+      {
+        this.InvMass = 0.0f;
+        this.InvInertia = 0.0f;
+      }
+      else
+      {
+        this.InvMass = 1.0f / mass;
+        this.InvInertia = 1.0f / inertia;
+      }
     }
     #endregion
   }

@@ -47,7 +47,7 @@ namespace Volatile
       foreach (Shape s in body.Shapes)
         this.shapes.Add(s);
       this.bodies.Add(body);
-      body.world = this;
+      body.World = this;
     }
 
     protected virtual void BroadPhase(List<Manifold> manifolds)

@@ -135,10 +135,10 @@ namespace Volatile
       Body bodyB,
       Vector2 normal)
     {
-      float massSum = bodyA.massInv + bodyB.massInv;
+      float massSum = bodyA.InvMass + bodyB.InvMass;
       float r1cnSqr = Util.Square(Util.Cross(this.toA, normal));
       float r2cnSqr = Util.Square(Util.Cross(this.toB, normal));
-      return massSum + bodyA.inertiaInv * r1cnSqr + bodyB.inertiaInv * r2cnSqr;
+      return massSum + bodyA.InvInertia * r1cnSqr + bodyB.InvInertia * r2cnSqr;
     }
 
     private Vector2 RelativeVelocity(Body bodyA, Body bodyB)
