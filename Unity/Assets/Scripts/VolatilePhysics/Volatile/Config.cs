@@ -29,7 +29,7 @@ namespace Volatile
   {
     public const float
       AREA_MASS_RATIO = 0.01f,
-      RESOLVE_SLOP = 0.1f,
+      RESOLVE_SLOP = 0.01f,
       RESOLVE_RATE = 0.1f,
       DEFAULT_RESTITUTION = 0.5f,
       DEFAULT_FRICTION = 0.8f;
