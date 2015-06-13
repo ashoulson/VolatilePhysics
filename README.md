@@ -2,7 +2,7 @@
 
 Alexander Shoulson - http://ashoulson.com
 
-![Simple Block Animation](http://i.imgur.com/mfQ6NCl.gif) &nbsp&nbsp ![Simple Character Controller](http://i.imgur.com/GBsdvVX.gif)
+![Simple Block Animation](http://i.imgur.com/mfQ6NCl.gif) &nbsp; ![Simple Character Controller](http://i.imgur.com/GBsdvVX.gif)
 
 ---
 
