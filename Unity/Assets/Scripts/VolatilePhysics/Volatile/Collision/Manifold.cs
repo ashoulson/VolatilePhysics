@@ -25,8 +25,37 @@ using UnityEngine;
 
 namespace Volatile
 {
-  internal sealed class Manifold
+  internal sealed class Manifold : IPoolable<Manifold>
   {
+    #region Pool Class
+    internal sealed class Pool : ObjectPool<Manifold>
+    {
+      private Contact.Pool contactPool;
+
+      public Pool(Contact.Pool contactPool)
+      {
+        this.contactPool = contactPool;
+      }
+
+      protected override Manifold Create()
+      {
+        return new Manifold(this.contactPool);
+      }
+    }
+    #endregion
+
+    #region IPoolable Members
+    Manifold IPoolable<Manifold>.Next { get; set; }
+
+    bool IPoolable<Manifold>.IsValid 
+    { 
+      get { return this.isValid; } 
+      set { this.isValid = value; } 
+    }
+
+    private bool isValid = false;
+    #endregion
+
     internal Shape ShapeA { get; private set; }
     internal Shape ShapeB { get; private set; }
     internal float Restitution { get; private set; }
@@ -34,16 +63,34 @@ namespace Volatile
 
     private int used = 0;
     private Contact[] contacts;
+    private ObjectPool<Contact> contactPool;
 
-    internal Manifold(Shape shapeA, Shape shapeB)
+    public Manifold(ObjectPool<Contact> contactPool)
     {
-      this.contacts = new Contact[Config.MAX_CONTACTS];
+      this.contactPool = contactPool;
 
+      this.ShapeA = null;
+      this.ShapeB = null;
+      this.Restitution = 0.0f;
+      this.Friction = 0.0f;
+      this.contacts = new Contact[Config.MAX_CONTACTS];
+      this.used = 0;
+
+      this.isValid = false;     
+    }
+
+    internal Manifold Assign(
+      Shape shapeA, 
+      Shape shapeB)
+    {
       this.ShapeA = shapeA;
       this.ShapeB = shapeB;
-
       this.Restitution = Mathf.Sqrt(shapeA.restitution * shapeB.restitution);
       this.Friction = Mathf.Sqrt(shapeA.friction * shapeB.friction);
+      this.used = 0;
+
+      this.isValid = true;
+      return this;
     }
 
     internal bool AddContact(
@@ -53,28 +100,33 @@ namespace Volatile
     {
       if (this.used >= contacts.Length)
         return false;
-
-      // TODO: POOLING
-      this.contacts[this.used++] = new Contact(position, normal, penetration);
+      this.contacts[this.used++] = 
+        this.contactPool.Acquire().Assign(position, normal, penetration);
       return true;
     }
 
     internal void Prestep()
     {
       for (int i = 0; i < this.used; i++)
-        contacts[i].Prestep(this);
+        this.contacts[i].Prestep(this);
     }
 
     internal void Solve()
     {
       for (int i = 0; i < this.used; i++)
-        contacts[i].Solve(this);
+        this.contacts[i].Solve(this);
     }
 
     internal void SolveCached()
     {
       for (int i = 0; i < this.used; i++)
-        contacts[i].SolveCached(this);
+        this.contacts[i].SolveCached(this);
+    }
+
+    internal void ReleaseContacts()
+    {
+      for (int i = 0; i < this.used; i++)
+        this.contactPool.Release(this.contacts[i]);
     }
   }
 }

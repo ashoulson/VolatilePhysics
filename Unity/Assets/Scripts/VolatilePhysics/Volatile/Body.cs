@@ -76,7 +76,7 @@ namespace Volatile
     /// <summary>
     /// This function should be called after all shapes have been added.
     /// </summary>
-    public void Finalize()
+    public void Initialize()
     {
       this.ComputeBodyProperties();
       this.UpdateWorldCache();
@@ -173,8 +173,8 @@ namespace Volatile
     private void UpdateWorldCache()
     {
       this.Facing = Util.Polar(this.Angle);
-      foreach (Shape s in this.shapes)
-        s.UpdateWorldCache(this.Position, this.Facing);
+      for (int i = 0; i < this.shapes.Count; i++)
+        this.shapes[i].UpdateWorldCache(this.Position, this.Facing);
     }
 
     private void Integrate(float deltaTime)

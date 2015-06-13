@@ -23,7 +23,7 @@ public class VolatileBody : MonoBehaviour
       this.useGravity);
     foreach (VolatileShape shape in this.shapes)
       this.body.AddShape(shape.PrepareShape(this));
-    this.body.Finalize();
+    this.body.Initialize();
   }
 
   void Start()
