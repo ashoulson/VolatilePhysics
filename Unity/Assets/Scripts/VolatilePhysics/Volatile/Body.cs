@@ -36,21 +36,21 @@ namespace Volatile
 
     public Vector2 Position { get; private set; }
     public Vector2 LinearVelocity { get; private set; }
+    public Vector2 Force { get; private set; }
+
     public float Angle { get; private set; }
-    public float AngularVelocity { get; private set; }
+    public float AngularVelocity { get; internal set; } // TEMP: Make this private again
+    public float Torque { get; private set; }
+
     public Vector2 Facing { get; private set; }
 
     // Immutable
     internal float massInv;
     internal float inertiaInv;
 
-    // Dynamics
-    private Vector2 force;
-    private float torque;
-
-    // TODO: Make these properties
-    internal Vector2 velBias;
-    internal float rotBias;
+    // Internal access for collision resolution
+    internal Vector2 BiasVelocity { get; private set; }
+    internal float BiasRotation { get; private set; }
 
     internal World world;
 
@@ -82,12 +82,12 @@ namespace Volatile
     #region Force and Impulse Application
     public void AddForce(Vector2 force)
     {
-      this.force += force;
+      this.Force += force;
     }
 
     public void AddTorque(float torque)
     {
-      this.torque = torque;
+      this.Torque = torque;
     }
 
     public void AddImpulse(Vector2 impulse)
@@ -156,8 +156,8 @@ namespace Volatile
 
     internal void ApplyBias(Vector2 j, Vector2 r)
     {
-      velBias += massInv * j;
-      rotBias -= inertiaInv * Util.Cross(j, r);
+      BiasVelocity += massInv * j;
+      BiasRotation -= inertiaInv * Util.Cross(j, r);
     }
     #endregion
 
@@ -176,10 +176,10 @@ namespace Volatile
       this.AngularVelocity *= this.world.damping;
 
       // Calculate total force and torque
-      Vector2 totalForce = (this.force * this.massInv);
+      Vector2 totalForce = (this.Force * this.massInv);
       if (this.UseGravity == true)
         totalForce += this.world.gravity;
-      float totalTorque = this.torque * this.inertiaInv;
+      float totalTorque = this.Torque * this.inertiaInv;
 
       // See http://www.niksula.hut.fi/~hkankaan/Homepages/gravity.html
       this.IntegrateForces(totalForce, totalTorque, deltaTime, 0.5f);
@@ -201,18 +201,17 @@ namespace Volatile
 
     private void IntegrateVelocity(float dt)
     {
-      this.Position += dt * this.LinearVelocity + this.velBias;
-      this.Angle += dt * this.AngularVelocity + this.rotBias;
+      this.Position += dt * this.LinearVelocity + this.BiasVelocity;
+      this.Angle += dt * this.AngularVelocity + this.BiasRotation;
     }
 
     private void ClearForces()
     {
-      this.force = Vector2.zero;
-      this.torque = 0.0f;
+      this.Force = Vector2.zero;
+      this.Torque = 0.0f;
 
-      this.velBias.x = 0.0f;
-      this.velBias.y = 0.0f;
-      this.rotBias = 0.0f;
+      this.BiasVelocity = Vector2.zero;
+      this.BiasRotation = 0.0f;
     }
 
     private void ComputeBodyProperties()
