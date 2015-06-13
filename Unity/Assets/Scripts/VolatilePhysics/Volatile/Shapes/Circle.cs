@@ -46,6 +46,8 @@ namespace Volatile
 
     public override Shape.ShapeType Type { get { return ShapeType.Circle; } }
 
+    public Vector2 WorldCenter { get { return this.cachedWorldCenter; } }
+    public Vector2 LocalCenter { get { return this.offset; } }
     public float Radius { get { return this.radius; } }
 
     private float radius;

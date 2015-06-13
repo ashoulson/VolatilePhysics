@@ -103,8 +103,6 @@ namespace Volatile
           circ.cachedWorldCenter, u, circ.Radius, 0, ref manifold);
 
       // Create/Update the Manifold
-      if (manifold == null)
-        manifold = new Manifold(1);
       Vector2 pos =
         circ.cachedWorldCenter - (circ.Radius + penetration / 2) * a.Normal;
       manifold.UpdateContact(pos, -a.Normal, penetration, 0);
@@ -130,8 +128,6 @@ namespace Volatile
       }
 
       // Create/Update the Manifold (note we may have swapped shapes)
-      if (manifold == null)
-        manifold = new Manifold(3);
       manifold.shapeA = poly1;
       manifold.shapeB = poly2;
       Collision.FindVerts(poly1, poly2, a1.Normal, a1.Width, manifold);
@@ -191,9 +187,6 @@ namespace Volatile
       float dist = Mathf.Sqrt(distSq);
       float distInv = 1.0f / dist;
 
-      // Create/Update the Manifold
-      if (manifold == null)
-        manifold = new Manifold(1);
       Vector2 pos = circ1 + (0.5f + distInv * (radius1 - min / 2.0f)) * r;
       manifold.UpdateContact(pos, distInv * r, dist - min, 0);
       return true;
