@@ -49,17 +49,20 @@ namespace Volatile
     private float bias;
     private float jBias;
 
-    internal uint id;
-    internal bool updated;
-
-    public Contact()
+    public Contact(Vector2 position, Vector2 normal, float penetration)
     {
+      this.cachedNormalImpulse = 0.0f;
+      this.cachedTangentImpulse = 0.0f;
+
+      this.position = position;
+      this.normal = normal;
+      this.penetration = penetration;
     }
 
     internal void Prestep(Manifold manifold)
     {
-      Body bodyA = manifold.shapeA.Body;
-      Body bodyB = manifold.shapeB.Body;
+      Body bodyA = manifold.ShapeA.Body;
+      Body bodyB = manifold.ShapeB.Body;
 
       this.toA = this.position - bodyA.Position;
       this.toB = this.position - bodyB.Position;
@@ -70,7 +73,7 @@ namespace Volatile
       this.bias = Contact.BiasDist(penetration);
       this.jBias = 0;
       this.restitution =
-        manifold.restitution *
+        manifold.Restitution *
         Vector2.Dot(
           this.normal,
           this.RelativeVelocity(bodyA, bodyB));
@@ -79,16 +82,16 @@ namespace Volatile
     internal void SolveCached(Manifold manifold)
     {
       this.ApplyContactImpulse(
-        manifold.shapeA.Body,
-        manifold.shapeB.Body,
+        manifold.ShapeA.Body,
+        manifold.ShapeB.Body,
         this.cachedNormalImpulse,
         this.cachedTangentImpulse);
     }
 
     internal void Solve(Manifold manifold)
     {
-      Body bodyA = manifold.shapeA.Body;
-      Body bodyB = manifold.shapeB.Body;
+      Body bodyA = manifold.ShapeA.Body;
+      Body bodyB = manifold.ShapeB.Body;
 
       // Calculate relative bias velocity
       Vector2 vb1 =
@@ -118,7 +121,7 @@ namespace Volatile
       float vrt = Vector2.Dot(vr, this.normal.Left());
 
       // Calculate and clamp the friction impulse
-      float jtMax = manifold.friction * this.cachedNormalImpulse;
+      float jtMax = manifold.Friction * this.cachedNormalImpulse;
       float jt = vrt * tMass;
       float result =
         Mathf.Clamp(this.cachedTangentImpulse + jt, -jtMax, jtMax);

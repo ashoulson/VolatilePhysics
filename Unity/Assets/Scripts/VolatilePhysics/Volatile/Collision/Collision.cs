@@ -96,38 +96,34 @@ namespace Volatile
 
       // Build the collision Manifold
       // TODO: POOLING
-      Manifold manifold = new Manifold(3);
-      manifold.shapeA = circ;
-      manifold.shapeB = poly;
+      Manifold manifold = new Manifold(circ, poly, 3);
       Vector2 pos =
         circ.cachedWorldCenter - (circ.Radius + penetration / 2) * a.Normal;
-      manifold.UpdateContact(pos, -a.Normal, penetration, 0);
+      manifold.AddContact(pos, -a.Normal, penetration);
       return manifold;
     }
 
     private static Manifold Polygon_Polygon(
-      Polygon poly1,
-      Polygon poly2)
+      Polygon polyA,
+      Polygon polyB)
     {
       Axis a1, a2;
-      if (Collision.FindMinSepAxis(poly1, poly2, out a1) == false)
+      if (Collision.FindMinSepAxis(polyA, polyB, out a1) == false)
         return null;
-      if (Collision.FindMinSepAxis(poly2, poly1, out a2) == false)
+      if (Collision.FindMinSepAxis(polyB, polyA, out a2) == false)
         return null;
 
       // We will use poly1's axis, so we may need to swap
       if (a2.Width > a1.Width)
       {
-        Util.Swap(ref poly1, ref poly2);
+        Util.Swap(ref polyA, ref polyB);
         Util.Swap(ref a1, ref a2);
       }
 
       // Build the collision Manifold
       // TODO: POOLING
-      Manifold manifold = new Manifold(3);
-      manifold.shapeA = poly1;
-      manifold.shapeB = poly2;
-      Collision.FindVerts(poly1, poly2, a1.Normal, a1.Width, manifold);
+      Manifold manifold = new Manifold(polyA, polyB, 3);
+      Collision.FindVerts(polyA, polyB, a1.Normal, a1.Width, manifold);
       return manifold;
     }
     #endregion
@@ -160,10 +156,8 @@ namespace Volatile
 
       // Build the collision Manifold
       // TODO: POOLING
-      Manifold manifold = new Manifold(3);
-      manifold.shapeA = shapeA;
-      manifold.shapeB = shapeB;
-      manifold.UpdateContact(pos, distInv * r, dist - min, 0);
+      Manifold manifold = new Manifold(shapeA, shapeB, 3);
+      manifold.AddContact(pos, distInv * r, dist - min);
       return manifold;
     }
 
@@ -232,22 +226,18 @@ namespace Volatile
       float penetration,
       Manifold manifold)
     {
-      uint id = poly1.id << 8;
-      foreach (Vector2 v in poly1.cachedWorldVertices)
+      foreach (Vector2 vertex in poly1.cachedWorldVertices)
       {
-        if (poly2.ContainsPoint(v))
-          if (manifold.UpdateContact(v, normal, penetration, id) == false)
+        if (poly2.ContainsPoint(vertex) == true)
+          if (manifold.AddContact(vertex, normal, penetration) == false)
             return;
-        id++;
       }
 
-      id = poly2.id << 8;
-      foreach (Vector2 v in poly2.cachedWorldVertices)
+      foreach (Vector2 vertex in poly2.cachedWorldVertices)
       {
-        if (poly1.ContainsPoint(v))
-          if (manifold.UpdateContact(v, normal, penetration, id) == false)
+        if (poly1.ContainsPoint(vertex) == true)
+          if (manifold.AddContact(vertex, normal, penetration) == false)
             return;
-        id++;
       }
     }
     #endregion
