@@ -17,7 +17,7 @@ public class VolatilePolygon : VolatileShape
   {
     Vector2[] vertices = new Vector2[this.points.Length];
     for (int i = 0; i < this.points.Length; i++)
-      vertices[i] = this.GetBodyLocalPoint(this.points[i].localPosition, body);
+      vertices[i] = this.GetBodyLocalPoint(body, this.points[i].localPosition);
     this.shape = new Polygon(vertices, this.density);
     return this.shape;
   }
@@ -41,13 +41,6 @@ public class VolatilePolygon : VolatileShape
     }
 
     Gizmos.color = current;
-  }
-
-  private Vector2 GetBodyLocalPoint(Vector2 point, VolatileBody body)
-  {
-    return 
-      body.transform.InverseTransformPoint(
-        this.transform.TransformPoint(point));
   }
 
   public override Vector2 ComputeTrueCenterOfMass()

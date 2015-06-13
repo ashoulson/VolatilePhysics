@@ -18,4 +18,11 @@ public abstract class VolatileShape : MonoBehaviour
   public abstract void DrawShapeInEditor();
 
   public abstract Vector2 ComputeTrueCenterOfMass();
+
+  protected Vector2 GetBodyLocalPoint(VolatileBody body, Vector2 point)
+  {
+    return
+      body.transform.InverseTransformPoint(
+        this.transform.TransformPoint(point));
+  }
 }

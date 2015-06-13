@@ -34,4 +34,14 @@ public static class VolatileDebug
 
     Gizmos.color = current;
   }
+
+  public static void DrawShape(Circle circle)
+  {
+    Color current = Gizmos.color;
+
+    Gizmos.color = Color.yellow;
+    Gizmos.DrawWireSphere(circle.WorldCenter, circle.Radius);
+
+    Gizmos.color = current;
+  }
 }

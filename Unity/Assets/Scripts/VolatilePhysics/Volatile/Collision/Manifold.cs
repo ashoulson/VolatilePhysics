@@ -28,24 +28,6 @@ namespace Volatile
   // TODO: Manifold/Contact pooling
   public sealed class Manifold
   {
-    #region Static Methods
-    internal static Manifold FindMatch(
-      IEnumerable<Manifold> manifolds,
-      Shape shapeA,
-      Shape shapeB)
-    {
-      foreach (Manifold manifold in manifolds)
-      {
-        bool match =
-          (manifold.shapeA == shapeA && manifold.shapeB == shapeB) ||
-          (manifold.shapeA == shapeB && manifold.shapeB == shapeA);
-        if (match == true)
-          return manifold;
-      }
-      return null;
-    }
-    #endregion
-
     public Shape shapeA, shapeB;
     public float restitution, friction;
 
