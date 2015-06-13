@@ -15,7 +15,6 @@ public class SimpleController : MonoBehaviour
 	void Start () 
 	{
     this.body = this.GetComponent<VolatileBody>();
-    Debug.Log(this.body);
 	}
 	
 	void Update () 

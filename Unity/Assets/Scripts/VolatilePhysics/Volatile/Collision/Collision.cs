@@ -219,6 +219,8 @@ namespace Volatile
     /// cases where an overlap was detected, but no vertices fall inside the
     /// opposing polygon (like a Star of David). See Chipmunk's cpCollision.c
     /// for more details on how this could be resolved (we don't bother).
+    /// 
+    /// Ref: http://chipmunk-physics.googlecode.com/svn/trunk/src/cpCollision.c
     /// </summary>
     private static void FindVerts(
       Polygon poly1,
@@ -227,16 +229,53 @@ namespace Volatile
       float penetration,
       Manifold manifold)
     {
+      bool found = false;
+
       foreach (Vector2 vertex in poly1.cachedWorldVertices)
       {
         if (poly2.ContainsPoint(vertex) == true)
+        {
+          if (manifold.AddContact(vertex, normal, penetration) == false)
+            return;
+          found = true;
+        }
+      }
+
+      foreach (Vector2 vertex in poly2.cachedWorldVertices)
+      {
+        if (poly1.ContainsPoint(vertex) == true)
+        {
+          if (manifold.AddContact(vertex, normal, penetration) == false)
+            return;
+          found = true;
+        }
+      }
+
+      // Fallback to check the degenerate case
+      if (found == false)
+        FindVertsFallback(poly1, poly2, normal, penetration, manifold);
+    }
+
+    /// <summary>
+    /// A fallback for handling degenerate "Star of David" cases.
+    /// </summary>
+    private static void FindVertsFallback(
+      Polygon poly1,
+      Polygon poly2,
+      Vector2 normal,
+      float penetration,
+      Manifold manifold)
+    {
+      foreach (Vector2 vertex in poly1.cachedWorldVertices)
+      {
+        if (poly2.ContainsPointPartial(vertex, normal) == true)
           if (manifold.AddContact(vertex, normal, penetration) == false)
             return;
       }
 
       foreach (Vector2 vertex in poly2.cachedWorldVertices)
       {
-        if (poly1.ContainsPoint(vertex) == true)
+        if (poly1.ContainsPointPartial(vertex, -normal) == true)
           if (manifold.AddContact(vertex, normal, penetration) == false)
             return;
       }
