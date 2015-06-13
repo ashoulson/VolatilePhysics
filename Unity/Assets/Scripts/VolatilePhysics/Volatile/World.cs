@@ -69,18 +69,9 @@ namespace Volatile
         return;
 
       Shape.OrderShapes(ref sa, ref sb);
-      Manifold manifold = new Manifold(3);
-
-      if (Collision.Dispatch(sa, sb, ref manifold))
-      {
-        if (manifold.shapeA == null)
-        {
-          manifold.shapeA = sa;
-          manifold.shapeB = sb;
-        }
-
+      Manifold manifold = Collision.Dispatch(sa, sb);
+      if (manifold != null)
         manifolds.Add(manifold);
-      }
     }
 
     public virtual IEnumerable<Shape> Query(AABB area)
