@@ -58,8 +58,8 @@ namespace Volatile
 
     internal void Prestep(Manifold manifold)
     {
-      Body bodyA = manifold.shapeA.body;
-      Body bodyB = manifold.shapeB.body;
+      Body bodyA = manifold.shapeA.Body;
+      Body bodyB = manifold.shapeB.Body;
 
       this.toA = this.position - bodyA.Position;
       this.toB = this.position - bodyB.Position;
@@ -79,16 +79,16 @@ namespace Volatile
     internal void SolveCached(Manifold manifold)
     {
       this.ApplyContactImpulse(
-        manifold.shapeA.body,
-        manifold.shapeB.body,
+        manifold.shapeA.Body,
+        manifold.shapeB.Body,
         this.cachedNormalImpulse,
         this.cachedTangentImpulse);
     }
 
     internal void Solve(Manifold manifold)
     {
-      Body bodyA = manifold.shapeA.body;
-      Body bodyB = manifold.shapeB.body;
+      Body bodyA = manifold.shapeA.Body;
+      Body bodyB = manifold.shapeB.Body;
 
       // Calculate relative bias velocity
       Vector2 vb1 =

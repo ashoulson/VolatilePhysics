@@ -37,6 +37,11 @@ namespace Volatile
         sb = temp;
       }
     }
+
+    protected static float ComputeMass(float area, float density)
+    {
+      return area * density * Config.AREA_MASS_RATIO;
+    }
     #endregion
 
     public enum ShapeType
@@ -46,31 +51,33 @@ namespace Volatile
     }
 
     public abstract ShapeType Type { get; }
-    public abstract float Area { get; }
-    public abstract float Inertia { get; }
 
-    public Body body;
-    public AABB aabb;
-    public float mass;
+    /// <summary>
+    /// User token, for attaching data to this shape
+    /// </summary>
+    public object Token { get; set; }
 
-    public float friction = Config.DEFAULT_FRICTION;
-    public float restitution = Config.DEFAULT_RESTITUTION;
+    public Body Body { get; internal set; }
+    public AABB AABB { get; protected set; }
 
+    public float Area { get; protected set; }
+    public float Inertia { get; protected set; }
+    public float Mass { get; protected set; }
+
+    // TODO: Clean these values up and make them accessible
+    internal float friction = Config.DEFAULT_FRICTION;
+    internal float restitution = Config.DEFAULT_RESTITUTION;
+
+    protected static uint nextId = 0;
     internal uint id;
-    internal static uint next = 0;
 
     public Shape()
     {
-      this.id = next++;
-    }
-
-    public void ComputeMass(float density)
-    {
-      this.mass = density * this.Area * Config.AREA_MASS_RATIO;
+      this.id = nextId++;
     }
 
     public abstract bool ContainsPoint(Vector2 v);
-    internal abstract void UpdateCache();
-    protected abstract void CacheWorldData();
+
+    internal abstract void UpdateWorldCache(Body body);
   }
 }

@@ -65,7 +65,7 @@ namespace Volatile
 
     protected void NarrowPhase(Shape sa, Shape sb, List<Manifold> manifolds)
     {
-      if (sa.body.CanCollide(sb.body) == false)
+      if (sa.Body.CanCollide(sb.Body) == false)
         return;
 
       Shape.OrderShapes(ref sa, ref sb);
@@ -86,7 +86,7 @@ namespace Volatile
     public virtual IEnumerable<Shape> Query(AABB area)
     {
       foreach (Shape shape in this.shapes)
-        if (shape.aabb.Intersect(area))
+        if (shape.AABB.Intersect(area))
           yield return shape;
     }
 

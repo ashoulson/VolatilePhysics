@@ -91,41 +91,67 @@ namespace Volatile
 
       return new AABB(top, bottom, left, right);
     }
+
+    private static Vector2[] CloneVertices(Vector2[] source)
+    {
+      Vector2[] vertices =
+        new Vector2[source.Length];
+      for (int i = 0; i < source.Length; i++)
+        vertices[i] = source[i];
+      return vertices;
+    }
+
+    private static Vector2[] CloneNormals(Axis[] source)
+    {
+      Vector2[] normals =
+        new Vector2[source.Length];
+      for (int i = 0; i < source.Length; i++)
+        normals[i] = source[i].Normal;
+      return normals;
+    }
     #endregion
 
     public override Shape.ShapeType Type { get { return ShapeType.Polygon; } }
-    public override float Area { get { return this.area; } }
-    public override float Inertia { get { return this.inertia; } }
 
     public Vector2[] LocalVertices 
     { 
-      get { return this.CloneVertices(this.vertices); } 
+      get { return Polygon.CloneVertices(this.vertices); } 
     }
 
     public Vector2[] WorldVertices
     {
-      get { return this.CloneVertices(this.cachedWorldVertices); }
+      get { return Polygon.CloneVertices(this.cachedWorldVertices); }
     }
 
     public Vector2[] LocalNormals
     {
-      get { return this.CloneNormals(this.axes); }
+      get { return Polygon.CloneNormals(this.axes); }
     }
 
     public Vector2[] WorldNormals
     {
-      get { return this.CloneNormals(this.cachedWorldAxes); }
+      get { return Polygon.CloneNormals(this.cachedWorldAxes); }
     }
-
-    private float area;
-    private float inertia;
 
     private Vector2[] vertices;
     private Axis[] axes;
 
-    // These need to be updated if the shape/body is moved externally
     internal Vector2[] cachedWorldVertices;
     internal Axis[] cachedWorldAxes;
+
+    public Polygon(Vector2[] vertices, float density = 1.0f)
+      : base()
+    {
+      this.vertices = vertices;
+      this.axes = Polygon.ComputeAxes(vertices);
+      this.cachedWorldVertices = new Vector2[this.vertices.Length];
+      this.cachedWorldAxes = new Axis[this.vertices.Length];
+
+      // Defined in Shape class
+      this.Area = Polygon.ComputeArea(vertices);
+      this.Mass = Shape.ComputeMass(this.Area, density);
+      this.Inertia = Polygon.ComputeInertia(vertices);
+    }
 
     public override bool ContainsPoint(Vector2 point)
     {
@@ -135,75 +161,27 @@ namespace Volatile
       return true;
     }
 
-    public Polygon(Vector2[] vertices)
-      : base()
-    {
-      this.id = next++;
-
-      this.vertices = vertices;
-      this.axes = Polygon.ComputeAxes(vertices);
-      this.area = Polygon.ComputeArea(vertices);
-      this.inertia = Polygon.ComputeInertia(vertices);
-
-      this.cachedWorldVertices = new Vector2[this.vertices.Length];
-      this.cachedWorldAxes = new Axis[this.vertices.Length];
-    }
-
-    internal override void UpdateCache()
-    {
-      this.CacheWorldData();
-
-      // Note we're creating the bounding box in world space
-      this.aabb = Polygon.ComputeBounds(this.cachedWorldVertices);
-    }
-
     /// <summary>
-    /// Creates a cache of the vertices and axes in world space
+    /// Creates a cache of the vertices and axes in world space. This should
+    /// be called every time the world updates or the shape/body is moved
+    /// externally.
     /// </summary>
-    protected override void CacheWorldData()
+    internal override void UpdateWorldCache(Body body)
     {
       for (int i = 0; i < this.vertices.Length; i++)
       {
         this.cachedWorldVertices[i] =
-          this.body.Position + this.vertices[i].Rotate(this.body.Direction);
+          body.Position + this.vertices[i].Rotate(body.Direction);
 
-        Vector2 normal = this.axes[i].Normal.Rotate(this.body.Direction);
+        Vector2 normal = this.axes[i].Normal.Rotate(body.Direction);
         float dot =
-          Vector2.Dot(normal, this.body.Position) +
+          Vector2.Dot(normal, body.Position) +
           this.axes[i].Width;
         this.cachedWorldAxes[i] = new Axis(normal, dot);
       }
-    }
 
-    /// <summary>
-    /// Returns true iff the polygon contains the vertex.
-    /// </summary>
-    internal bool ContainsVert(Vector2 vertex)
-    {
-      foreach (Axis axis in this.cachedWorldAxes)
-        if (axis.VertexOutside(vertex) == true)
-          return false;
-      return true;
+      // Note we're creating the bounding box in world space
+      this.AABB = Polygon.ComputeBounds(this.cachedWorldVertices);
     }
-
-    #region Data Access
-    private Vector2[] CloneVertices(Vector2[] source)
-    {
-      Vector2[] vertices =
-        new Vector2[source.Length];
-      for (int i = 0; i < source.Length; i++)
-        vertices[i] = source[i];
-      return vertices;
-    }
-
-    private Vector2[] CloneNormals(Axis[] source)
-    {
-      Vector2[] normals =
-        new Vector2[source.Length];
-      for (int i = 0; i < source.Length; i++)
-        normals[i] = source[i].Normal;
-      return normals;
-    }
-    #endregion
   }
 }

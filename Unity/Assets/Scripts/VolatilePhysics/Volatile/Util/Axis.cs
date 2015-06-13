@@ -61,13 +61,5 @@ namespace Volatile
       this.normal = normal;
       this.width = value;
     }
-
-    /// <summary>
-    /// Returns false iff the vertex is contained within the slab.
-    /// </summary>
-    internal bool VertexOutside(Vector2 vertex)
-    {
-      return Vector2.Dot(this.Normal, vertex) > this.Width;
-    }
   }
 }
