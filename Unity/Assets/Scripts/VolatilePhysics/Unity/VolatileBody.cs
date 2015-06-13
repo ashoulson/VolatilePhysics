@@ -46,19 +46,47 @@ public class VolatileBody : MonoBehaviour
 
   void OnDrawGizmos()
   {
+    Color current = Gizmos.color;
+    Vector2 trueBodyCOM = Vector2.zero;
+
     if (this.shapes != null)
     {
       if (Application.isPlaying)
       {
         foreach (VolatileShape shape in this.shapes)
+        {
           shape.DrawShapeInGame();
+        }
       }
       else
       {
         foreach (VolatileShape shape in this.shapes)
+        {
           shape.DrawShapeInEditor();
+
+          // Draw True COM
+          Vector2 trueShapeCOM = shape.ComputeTrueCenterOfMass();
+          trueBodyCOM += trueShapeCOM;
+          Gizmos.color = Color.blue;
+          Gizmos.DrawWireSphere(trueShapeCOM, 0.1f);
+        }
       }
     }
+
+    if (!Application.isPlaying)
+    {
+      // Draw Body Root
+      Gizmos.color = new Color(1.0f, 0.5f, 0.0f);
+      Gizmos.DrawWireSphere(transform.position, 0.2f);
+
+      // Draw Body True COM
+      Gizmos.color = Color.cyan;
+      float length = this.shapes.Length;
+      Gizmos.DrawWireSphere(
+        new Vector2(trueBodyCOM.x / length, trueBodyCOM.y / length), 0.2f);
+    }
+
+    Gizmos.color = current;
   }
 
   public void AddForce(Vector2 force)

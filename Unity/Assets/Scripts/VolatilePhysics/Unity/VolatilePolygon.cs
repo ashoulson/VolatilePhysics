@@ -49,4 +49,13 @@ public class VolatilePolygon : VolatileShape
       body.transform.InverseTransformPoint(
         this.transform.TransformPoint(point));
   }
+
+  public override Vector2 ComputeTrueCenterOfMass()
+  {
+    float length = (float)this.points.Length;
+    Vector2 sum = Vector2.zero;
+    foreach (Transform point in this.points)
+      sum += (Vector2)point.position;
+    return new Vector2(sum.x / length, sum.y / length);
+  }
 }
