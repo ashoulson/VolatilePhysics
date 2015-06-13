@@ -28,64 +28,58 @@ namespace Volatile
   internal static class Collision
   {
     #region Dispatch
-    private delegate bool CollisionTest(Shape sa, Shape sb, ref Manifold m);
+    private delegate Manifold CollisionTest(Shape sa, Shape sb);
     private readonly static CollisionTest[,] tests = new CollisionTest[,]
       {
         { __Circle_Circle, __Circle_Polygon },
         { __Polygon_Circle, __Polygon_Polygon}
       };
 
-    internal static bool Dispatch(Shape sa, Shape sb, ref Manifold m)
+    internal static Manifold Dispatch(Shape sa, Shape sb)
     {
       CollisionTest test = Collision.tests[(int)sa.Type, (int)sb.Type];
-      return test(sa, sb, ref m);
+      return test(sa, sb);
     }
 
-    private static bool __Circle_Circle(Shape sa, Shape sb, ref Manifold m)
+    private static Manifold __Circle_Circle(Shape sa, Shape sb)
     {
-      return Circle_Circle((Circle)sa, (Circle)sb, ref m);
+      return Circle_Circle((Circle)sa, (Circle)sb);
     }
 
-    private static bool __Circle_Polygon(Shape sa, Shape sb, ref Manifold m)
+    private static Manifold __Circle_Polygon(Shape sa, Shape sb)
     {
-      return Circle_Polygon((Circle)sa, (Polygon)sb, ref m);
+      return Circle_Polygon((Circle)sa, (Polygon)sb);
     }
 
-    private static bool __Polygon_Circle(Shape sa, Shape sb, ref Manifold m)
+    private static Manifold __Polygon_Circle(Shape sa, Shape sb)
     {
-      return Circle_Polygon((Circle)sb, (Polygon)sa, ref m);
+      return Circle_Polygon((Circle)sb, (Polygon)sa);
     }
 
-    private static bool __Polygon_Polygon(Shape sa, Shape sb, ref Manifold m)
+    private static Manifold __Polygon_Polygon(Shape sa, Shape sb)
     {
-      return Polygon_Polygon((Polygon)sa, (Polygon)sb, ref m);
+      return Polygon_Polygon((Polygon)sa, (Polygon)sb);
     }
     #endregion
 
     #region Collision Tests
-    private static bool Circle_Circle(
+    private static Manifold Circle_Circle(
       Circle circA,
-      Circle circB,
-      ref Manifold manifold)
+      Circle circB)
     {
-      return TestCircles(
-        circA.cachedWorldCenter,
-        circB.cachedWorldCenter,
-        circA.Radius,
-        circB.Radius,
-        ref manifold);
+      return TestCircles(circA, circB, circB.cachedWorldCenter, circB.Radius);
     }
 
-    private static bool Circle_Polygon(
+    private static Manifold Circle_Polygon(
       Circle circ,
-      Polygon poly,
-      ref Manifold manifold)
+      Polygon poly)
     {
       // Get the axis on the polygon closest to the circle's origin
       float penetration;
       int ix = FindNearestAxis(circ, poly, out penetration);
       if (ix < 0)
-        return false;
+        return null;
+
       Vector2 v =
         poly.cachedWorldVertices[ix];
       Vector2 u =
@@ -96,29 +90,30 @@ namespace Volatile
       // a circle-circle intersection where the vertex has radius 0
       float d = Util.Cross(a.Normal, circ.cachedWorldCenter);
       if (d > Util.Cross(a.Normal, v))
-        return Collision.TestCircles(
-          circ.cachedWorldCenter, v, circ.Radius, 0, ref manifold);
+        return Collision.TestCircles(circ, poly, v, 0.0f);
       if (d < Util.Cross(a.Normal, u))
-        return Collision.TestCircles(
-          circ.cachedWorldCenter, u, circ.Radius, 0, ref manifold);
+        return Collision.TestCircles(circ, poly, u, 0.0f);
 
-      // Create/Update the Manifold
+      // Build the collision Manifold
+      // TODO: POOLING
+      Manifold manifold = new Manifold(3);
+      manifold.shapeA = circ;
+      manifold.shapeB = poly;
       Vector2 pos =
         circ.cachedWorldCenter - (circ.Radius + penetration / 2) * a.Normal;
       manifold.UpdateContact(pos, -a.Normal, penetration, 0);
-      return true;
+      return manifold;
     }
 
-    private static bool Polygon_Polygon(
+    private static Manifold Polygon_Polygon(
       Polygon poly1,
-      Polygon poly2,
-      ref Manifold manifold)
+      Polygon poly2)
     {
       Axis a1, a2;
       if (Collision.FindMinSepAxis(poly1, poly2, out a1) == false)
-        return false;
+        return null;
       if (Collision.FindMinSepAxis(poly2, poly1, out a2) == false)
-        return false;
+        return null;
 
       // We will use poly1's axis, so we may need to swap
       if (a2.Width > a1.Width)
@@ -127,11 +122,13 @@ namespace Volatile
         Util.Swap(ref a1, ref a2);
       }
 
-      // Create/Update the Manifold (note we may have swapped shapes)
+      // Build the collision Manifold
+      // TODO: POOLING
+      Manifold manifold = new Manifold(3);
       manifold.shapeA = poly1;
       manifold.shapeB = poly2;
       Collision.FindVerts(poly1, poly2, a1.Normal, a1.Width, manifold);
-      return true;
+      return manifold;
     }
     #endregion
 
@@ -168,28 +165,36 @@ namespace Volatile
 
     /// <summary>
     /// Workhorse for circle-circle collisions, compares origin distance
-    /// to the sum of the two circles' radii (and writes to the Manifold).
+    /// to the sum of the two circles' radii, returns a Manifold.
     /// </summary>
-    private static bool TestCircles(
-      Vector2 circ1,
-      Vector2 circ2,
-      float radius1,
-      float radius2,
-      ref Manifold manifold)
+    /// 
+    private static Manifold TestCircles(
+      Circle shapeA,
+      Shape shapeB,
+      Vector2 overrideBCenter, // For testing vertices in circles
+      float overrideBRadius)
     {
-      Vector2 r = circ2 - circ1;
-      float min = radius1 + radius2;
+      Vector2 r = overrideBCenter - shapeA.cachedWorldCenter;
+      float min = shapeA.Radius + overrideBRadius;
       float distSq = r.sqrMagnitude;
 
       if (distSq >= min * min)
-        return false;
+        return null;
 
       float dist = Mathf.Sqrt(distSq);
       float distInv = 1.0f / dist;
 
-      Vector2 pos = circ1 + (0.5f + distInv * (radius1 - min / 2.0f)) * r;
+      Vector2 pos = 
+        shapeA.cachedWorldCenter + 
+        (0.5f + distInv * (shapeA.Radius - min / 2.0f)) * r;
+
+      // Build the collision Manifold
+      // TODO: POOLING
+      Manifold manifold = new Manifold(3);
+      manifold.shapeA = shapeA;
+      manifold.shapeB = shapeB;
       manifold.UpdateContact(pos, distInv * r, dist - min, 0);
-      return true;
+      return manifold;
     }
 
     private static bool FindMinSepAxis(
