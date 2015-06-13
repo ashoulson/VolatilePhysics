@@ -2,6 +2,8 @@
 
 Alexander Shoulson - http://ashoulson.com
 
+![Simple Block Animation](http://i.imgur.com/mfQ6NCl.gif)
+
 ---
 
 Based primarily on glaze-csharp: https://code.google.com/p/glaze-csharp/
