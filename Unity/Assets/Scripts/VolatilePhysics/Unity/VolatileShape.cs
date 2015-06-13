@@ -16,4 +16,6 @@ public abstract class VolatileShape : MonoBehaviour
 
   public abstract void DrawShapeInGame();
   public abstract void DrawShapeInEditor();
+
+  public abstract Vector2 ComputeTrueCenterOfMass();
 }

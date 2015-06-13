@@ -39,12 +39,16 @@ namespace Volatile
 
     public bool UseGravity { get; set; }
 
+    public bool IsStatic { get; private set; }
+
     public Vector2 Position { get; private set; }
     public Vector2 LinearVelocity { get; private set; }
     public Vector2 Force { get; private set; }
+
     public float Angle { get; private set; }
     public float AngularVelocity { get; internal set; } // TEMP: Make this private again
     public float Torque { get; private set; }
+
     public Vector2 Facing { get; private set; }
 
     internal float InvMass { get; private set; }
@@ -144,8 +148,12 @@ namespace Volatile
     #region Collision
     internal bool CanCollide(Body other)
     {
-      // TODO: Groups/Layers/etc.
-      return this != other;
+      // TODO: Layers, flags, etc.
+      if (this == other)
+        return false;
+      if (this.IsStatic && other.IsStatic)
+        return false;
+      return true;
     }
 
     internal void ApplyImpulse(Vector2 j, Vector2 r)
@@ -227,11 +235,13 @@ namespace Volatile
 
       if (mass == 0.0f)
       {
+        this.IsStatic = true;
         this.InvMass = 0.0f;
         this.InvInertia = 0.0f;
       }
       else
       {
+        this.IsStatic = false;
         this.InvMass = 1.0f / mass;
         this.InvInertia = 1.0f / inertia;
       }
