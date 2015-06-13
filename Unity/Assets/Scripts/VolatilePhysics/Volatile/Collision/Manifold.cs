@@ -26,88 +26,56 @@ using UnityEngine;
 namespace Volatile
 {
   // TODO: Manifold/Contact pooling
-  public sealed class Manifold
+  internal sealed class Manifold
   {
-    public Shape shapeA, shapeB;
-    public float restitution, friction;
+    internal Shape ShapeA { get; private set; }
+    internal Shape ShapeB { get; private set; }
+    internal float Restitution { get; private set; }
+    internal float Friction { get; private set; }
 
-    internal int used = 0;
-    internal Contact[] contacts;
+    private int used = 0;
+    private Contact[] contacts;
 
-    internal Manifold(uint capacity)
+    internal Manifold(Shape shapeA, Shape shapeB, int capacity)
     {
       this.contacts = new Contact[capacity];
+
+      this.ShapeA = shapeA;
+      this.ShapeB = shapeB;
+
+      this.Restitution = Mathf.Sqrt(shapeA.restitution * shapeB.restitution);
+      this.Friction = Mathf.Sqrt(shapeA.friction * shapeB.friction);
     }
 
-    internal bool UpdateContact(
+    internal bool AddContact(
       Vector2 position,
       Vector2 normal,
-      float penetration,
-      uint id)
+      float penetration)
     {
-      Contact c;
-      for (int i = 0; i < this.used; i++)
-      {
-        c = this.contacts[i];
-        if (c.id == id)
-          goto found;
-      }
-
-      if (this.used == contacts.Length)
+      if (this.used >= contacts.Length)
         return false;
-      if (this.contacts[this.used] == null)
-        this.contacts[this.used] = new Contact();
-      c = this.contacts[this.used];
 
-      this.used++;
-
-      c.id = id;
-      c.cachedNormalImpulse = 0;
-      c.cachedTangentImpulse = 0;
-
-    found:
-      c.position = position;
-      c.normal = normal;
-      c.penetration = penetration;
-      c.updated = true;
-
+      // TODO: POOLING
+      this.contacts[this.used++] = new Contact(position, normal, penetration);
       return true;
     }
 
     internal void Prestep()
     {
-      this.restitution = Mathf.Sqrt(shapeA.restitution * shapeB.restitution);
-      this.friction = Mathf.Sqrt(shapeA.friction * shapeB.friction);
-
-      for (int i = used - 1; i >= 0; i--)
-      {
-        Contact c = contacts[i];
-        if (!c.updated)
-        {
-          if (i < --used)
-          {
-            contacts[i] = contacts[used];
-            contacts[used] = c;
-          }
-        }
-        else
-        {
-          c.updated = false;
-          c.Prestep(this);
-        }
-      }
+      for (int i = 0; i < this.used; i++)
+        contacts[i].Prestep(this);
     }
 
-    internal void PerformCached()
+    internal void Solve()
     {
-      for (int i = 0; i < used; i++)
-        contacts[i].SolveCached(this);
-    }
-
-    internal void Perform()
-    {
-      for (int i = 0; i < used; i++)
+      for (int i = 0; i < this.used; i++)
         contacts[i].Solve(this);
+    }
+
+    internal void SolveCached()
+    {
+      for (int i = 0; i < this.used; i++)
+        contacts[i].SolveCached(this);
     }
   }
 }

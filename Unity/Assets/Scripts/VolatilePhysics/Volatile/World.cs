@@ -30,7 +30,9 @@ namespace Volatile
     public List<Body> bodies;
     public List<Shape> shapes;
 
+    // TODO: Make me not static
     internal static float elasticity;
+
     internal Vector2 gravity;
     internal float damping = 0.999f;
 
@@ -50,20 +52,14 @@ namespace Volatile
       body.World = this;
     }
 
-    protected virtual void BroadPhase(List<Manifold> manifolds)
+    private void BroadPhase(List<Manifold> manifolds)
     {
       for (int i = 0; i < this.shapes.Count; i++)
-      {
         for (int j = i + 1; j < this.shapes.Count; j++)
-        {
-          Shape a = this.shapes[i];
-          Shape b = this.shapes[j];
-          this.NarrowPhase(a, b, manifolds);
-        }
-      }
+          this.NarrowPhase(this.shapes[i], this.shapes[j], manifolds);
     }
 
-    protected void NarrowPhase(Shape sa, Shape sb, List<Manifold> manifolds)
+    private void NarrowPhase(Shape sa, Shape sb, List<Manifold> manifolds)
     {
       if (sa.Body.CanCollide(sb.Body) == false)
         return;
@@ -95,15 +91,15 @@ namespace Volatile
       elasticity = 1.0f;
       for (int i = 0; i < iterations * 1 / 3; i++)
         foreach (Manifold arb in manifolds)
-          arb.Perform();
+          arb.Solve();
 
       foreach (Manifold arb in manifolds)
-        arb.PerformCached();
+        arb.SolveCached();
 
       elasticity = 0.0f;
-      for (int i = 0; i < iterations * 1 / 3; i++)
+      for (int i = 0; i < iterations * 2 / 3; i++)
         foreach (Manifold arb in manifolds)
-          arb.Perform();
+          arb.Solve();
     }
   }
 }
