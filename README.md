@@ -2,7 +2,7 @@
 
 Alexander Shoulson - http://ashoulson.com
 
-![Simple Block Animation](http://i.imgur.com/mfQ6NCl.gif) &nbsp; ![Simple Character Controller](http://i.imgur.com/GBsdvVX.gif)
+![Example 1](https://raw.githubusercontent.com/ashoulson/VolatilePhysics/master/Images/example1.gif) &nbsp; ![Example 2](https://raw.githubusercontent.com/ashoulson/VolatilePhysics/master/Images/example2.gif)
 
 ---
 
