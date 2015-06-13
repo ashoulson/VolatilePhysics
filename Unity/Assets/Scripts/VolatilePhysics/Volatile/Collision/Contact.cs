@@ -92,9 +92,9 @@ namespace Volatile
 
       // Calculate relative bias velocity
       Vector2 vb1 =
-        bodyA.velBias + (bodyA.rotBias * this.toA.Left());
+        bodyA.BiasVelocity + (bodyA.BiasRotation * this.toA.Left());
       Vector2 vb2 =
-        bodyB.velBias + (bodyB.rotBias * this.toB.Left());
+        bodyB.BiasVelocity + (bodyB.BiasRotation * this.toB.Left());
       float vbn = Vector2.Dot((vb1 - vb2), this.normal);
 
       // Calculate and clamp the bias impulse
