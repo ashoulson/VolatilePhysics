@@ -27,21 +27,32 @@ namespace Volatile
 {
   public class World
   {
+    internal float Elasticity { get; private set; }
+
+    // TODO: Make me properties
     public List<Body> bodies;
     public List<Shape> shapes;
-
-    // TODO: Make me not static
-    internal static float elasticity;
 
     internal Vector2 gravity;
     internal float damping = 0.999f;
 
+    // Each World instance should own its own object pools, in case
+    // you want to run multiple World instances on different threads.
+    private Manifold.Pool manifoldPool;
+    private Contact.Pool contactPool;
+    private List<Manifold> manifolds;
+
     public World(Vector2 gravity, float damping = 0.999f)
     {
-      this.gravity = gravity;
-      this.damping = damping;
       this.bodies = new List<Body>();
       this.shapes = new List<Shape>();
+
+      this.gravity = gravity;
+      this.damping = damping;
+
+      this.contactPool = new Contact.Pool();
+      this.manifoldPool = new Manifold.Pool(this.contactPool);
+      this.manifolds = new List<Manifold>();
     }
 
     public void AddBody(Body body)
@@ -65,7 +76,7 @@ namespace Volatile
         return;
 
       Shape.OrderShapes(ref sa, ref sb);
-      Manifold manifold = Collision.Dispatch(sa, sb);
+      Manifold manifold = Collision.Dispatch(sa, sb, this.manifoldPool);
       if (manifold != null)
         manifolds.Add(manifold);
     }
@@ -81,25 +92,30 @@ namespace Volatile
     {
       foreach (Body body in this.bodies)
         body.Update(dt);
+      this.BroadPhase(this.manifolds);
 
-      List<Manifold> manifolds = new List<Manifold>();
-      this.BroadPhase(manifolds);
+      for (int i = 0; i < this.manifolds.Count; i++)
+        this.manifolds[i].Prestep();
 
-      foreach (Manifold arb in manifolds)
-        arb.Prestep();
+      this.Elasticity = 1.0f;
+      for (int j = 0; j < iterations * 1 / 3; j++)
+        for (int i = 0; i < this.manifolds.Count; i++)
+          this.manifolds[i].Solve();
 
-      elasticity = 1.0f;
-      for (int i = 0; i < iterations * 1 / 3; i++)
-        foreach (Manifold arb in manifolds)
-          arb.Solve();
+      for (int i = 0; i < this.manifolds.Count; i++)
+        this.manifolds[i].SolveCached();
 
-      foreach (Manifold arb in manifolds)
-        arb.SolveCached();
+      this.Elasticity = 0.0f;
+      for (int j = 0; j < iterations * 2 / 3; j++)
+        for (int i = 0; i < this.manifolds.Count; i++)
+          this.manifolds[i].Solve();
 
-      elasticity = 0.0f;
-      for (int i = 0; i < iterations * 2 / 3; i++)
-        foreach (Manifold arb in manifolds)
-          arb.Solve();
+      for (int i = 0; i < this.manifolds.Count; i++)
+      {
+        this.manifolds[i].ReleaseContacts();
+        this.manifoldPool.Release(this.manifolds[i]);
+      }
+      this.manifolds.Clear();
     }
   }
 }

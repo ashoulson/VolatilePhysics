@@ -28,51 +28,78 @@ namespace Volatile
   internal static class Collision
   {
     #region Dispatch
-    private delegate Manifold CollisionTest(Shape sa, Shape sb);
-    private readonly static CollisionTest[,] tests = new CollisionTest[,]
+    private delegate Manifold Test(
+      Shape sa, 
+      Shape sb, 
+      ObjectPool<Manifold> pool);
+
+    private readonly static Test[,] tests = new Test[,]
       {
         { __Circle_Circle, __Circle_Polygon },
         { __Polygon_Circle, __Polygon_Polygon}
       };
 
-    internal static Manifold Dispatch(Shape sa, Shape sb)
+    internal static Manifold Dispatch(
+      Shape sa, 
+      Shape sb, 
+      ObjectPool<Manifold> pool)
     {
-      CollisionTest test = Collision.tests[(int)sa.Type, (int)sb.Type];
-      return test(sa, sb);
+      Test test = Collision.tests[(int)sa.Type, (int)sb.Type];
+      return test(sa, sb, pool);
     }
 
-    private static Manifold __Circle_Circle(Shape sa, Shape sb)
+    private static Manifold __Circle_Circle(
+      Shape sa, 
+      Shape sb, 
+      ObjectPool<Manifold> pool)
     {
-      return Circle_Circle((Circle)sa, (Circle)sb);
+      return Circle_Circle((Circle)sa, (Circle)sb, pool);
     }
 
-    private static Manifold __Circle_Polygon(Shape sa, Shape sb)
+    private static Manifold __Circle_Polygon(
+      Shape sa, 
+      Shape sb, 
+      ObjectPool<Manifold> pool)
     {
-      return Circle_Polygon((Circle)sa, (Polygon)sb);
+      return Circle_Polygon((Circle)sa, (Polygon)sb, pool);
     }
 
-    private static Manifold __Polygon_Circle(Shape sa, Shape sb)
+    private static Manifold __Polygon_Circle(
+      Shape sa, 
+      Shape sb, 
+      ObjectPool<Manifold> pool)
     {
-      return Circle_Polygon((Circle)sb, (Polygon)sa);
+      return Circle_Polygon((Circle)sb, (Polygon)sa, pool);
     }
 
-    private static Manifold __Polygon_Polygon(Shape sa, Shape sb)
+    private static Manifold __Polygon_Polygon(
+      Shape sa, 
+      Shape sb, 
+      ObjectPool<Manifold> pool)
     {
-      return Polygon_Polygon((Polygon)sa, (Polygon)sb);
+      return Polygon_Polygon((Polygon)sa, (Polygon)sb, pool);
     }
     #endregion
 
     #region Collision Tests
     private static Manifold Circle_Circle(
       Circle circA,
-      Circle circB)
+      Circle circB,
+      ObjectPool<Manifold> pool)
     {
-      return TestCircles(circA, circB, circB.cachedWorldCenter, circB.Radius);
+      return 
+        TestCircles(
+          circA, 
+          circB, 
+          circB.cachedWorldCenter, 
+          circB.Radius, 
+          pool);
     }
 
     private static Manifold Circle_Polygon(
       Circle circ,
-      Polygon poly)
+      Polygon poly,
+      ObjectPool<Manifold> pool)
     {
       // Get the axis on the polygon closest to the circle's origin
       float penetration;
@@ -90,13 +117,12 @@ namespace Volatile
       // a circle-circle intersection where the vertex has radius 0
       float d = Util.Cross(a.Normal, circ.cachedWorldCenter);
       if (d > Util.Cross(a.Normal, v))
-        return Collision.TestCircles(circ, poly, v, 0.0f);
+        return Collision.TestCircles(circ, poly, v, 0.0f, pool);
       if (d < Util.Cross(a.Normal, u))
-        return Collision.TestCircles(circ, poly, u, 0.0f);
+        return Collision.TestCircles(circ, poly, u, 0.0f, pool);
 
       // Build the collision Manifold
-      // TODO: POOLING
-      Manifold manifold = new Manifold(circ, poly);
+      Manifold manifold = pool.Acquire().Assign(circ, poly);
       Vector2 pos =
         circ.cachedWorldCenter - (circ.Radius + penetration / 2) * a.Normal;
       manifold.AddContact(pos, -a.Normal, penetration);
@@ -105,7 +131,8 @@ namespace Volatile
 
     private static Manifold Polygon_Polygon(
       Polygon polyA,
-      Polygon polyB)
+      Polygon polyB,
+      ObjectPool<Manifold> pool)
     {
       Axis a1, a2;
       if (Collision.FindMinSepAxis(polyA, polyB, out a1) == false)
@@ -122,7 +149,7 @@ namespace Volatile
 
       // Build the collision Manifold
       // TODO: POOLING
-      Manifold manifold = new Manifold(polyA, polyB);
+      Manifold manifold = pool.Acquire().Assign(polyA, polyB);
       Collision.FindVerts(polyA, polyB, a1.Normal, a1.Width, manifold);
       return manifold;
     }
@@ -138,7 +165,8 @@ namespace Volatile
       Circle shapeA,
       Shape shapeB,
       Vector2 overrideBCenter, // For testing vertices in circles
-      float overrideBRadius)
+      float overrideBRadius,
+      ObjectPool<Manifold> pool)
     {
       Vector2 r = overrideBCenter - shapeA.cachedWorldCenter;
       float min = shapeA.Radius + overrideBRadius;
@@ -156,7 +184,7 @@ namespace Volatile
 
       // Build the collision Manifold
       // TODO: POOLING
-      Manifold manifold = new Manifold(shapeA, shapeB);
+      Manifold manifold = pool.Acquire().Assign(shapeA, shapeB);
       manifold.AddContact(pos, distInv * r, dist - min);
       return manifold;
     }
@@ -220,7 +248,7 @@ namespace Volatile
     /// opposing polygon (like a Star of David). See Chipmunk's cpCollision.c
     /// for more details on how this could be resolved (we don't bother).
     /// 
-    /// Ref: http://chipmunk-physics.googlecode.com/svn/trunk/src/cpCollision.c
+    /// See http://chipmunk-physics.googlecode.com/svn/trunk/src/cpCollision.c
     /// </summary>
     private static void FindVerts(
       Polygon poly1,

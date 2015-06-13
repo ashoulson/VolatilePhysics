@@ -25,8 +25,32 @@ using UnityEngine;
 
 namespace Volatile
 {
-  public sealed class Contact
+  // This a mutable struct, for the sake of GC management. Be careful when
+  // passing any contacts around as a parameter (which you shouldn't do.)
+  internal sealed class Contact : IPoolable<Contact>
   {
+    #region Pool Class
+    internal sealed class Pool : ObjectPool<Contact>
+    {
+      protected override Contact Create()
+      {
+        return new Contact();
+      }
+    }
+    #endregion
+
+    #region IPoolable Members
+    Contact IPoolable<Contact>.Next { get; set; }
+
+    bool IPoolable<Contact>.IsValid 
+    { 
+      get { return this.isValid; } 
+      set { this.isValid = value; } 
+    }
+
+    private bool isValid = false;
+    #endregion
+
     #region Static Methods
     private static float BiasDist(float dist)
     {
@@ -34,12 +58,10 @@ namespace Volatile
     }
     #endregion
 
-    public Vector2 position;
-    public float penetration;
-    public float cachedNormalImpulse;
-    public float cachedTangentImpulse;
+    private Vector2 position;
+    private Vector2 normal;
+    private float penetration;
 
-    public Vector2 normal;
     private Vector2 toA;
     private Vector2 toB;
 
@@ -49,14 +71,50 @@ namespace Volatile
     private float bias;
     private float jBias;
 
-    public Contact(Vector2 position, Vector2 normal, float penetration)
+    private float cachedNormalImpulse;
+    private float cachedTangentImpulse;
+
+    public Contact()
     {
+      this.position = Vector2.zero;
+      this.normal = Vector2.zero;
+      this.penetration = 0.0f;
+
+      this.toA = Vector2.zero;
+      this.toB = Vector2.zero;
+
+      this.nMass = 0.0f;
+      this.tMass = 0.0f;
+      this.restitution = 0.0f;
+      this.bias = 0.0f;
+      this.jBias = 0.0f;
+
       this.cachedNormalImpulse = 0.0f;
       this.cachedTangentImpulse = 0.0f;
 
+      this.isValid = false;
+    }
+
+    internal Contact Assign(Vector2 position, Vector2 normal, float penetration)
+    {
       this.position = position;
       this.normal = normal;
       this.penetration = penetration;
+
+      this.toA = Vector2.zero;
+      this.toB = Vector2.zero;
+
+      this.nMass = 0.0f;
+      this.tMass = 0.0f;
+      this.restitution = 0.0f;
+      this.bias = 0.0f;
+      this.jBias = 0.0f;
+
+      this.cachedNormalImpulse = 0.0f;
+      this.cachedTangentImpulse = 0.0f;
+
+      this.isValid = true;
+      return this;
     }
 
     internal void Prestep(Manifold manifold)
@@ -92,6 +150,7 @@ namespace Volatile
     {
       Body bodyA = manifold.ShapeA.Body;
       Body bodyB = manifold.ShapeB.Body;
+      float elasticity = bodyA.World.Elasticity;
 
       // Calculate relative bias velocity
       Vector2 vb1 =
@@ -113,7 +172,7 @@ namespace Volatile
       float vrn = Vector2.Dot(vr, this.normal);
 
       // Calculate and clamp the normal impulse
-      float jn = nMass * (vrn + (this.restitution * World.elasticity));
+      float jn = nMass * (vrn + (this.restitution * elasticity));
       jn = Mathf.Max(-this.cachedNormalImpulse, jn);
       this.cachedNormalImpulse += jn;
 
@@ -141,7 +200,10 @@ namespace Volatile
       float massSum = bodyA.InvMass + bodyB.InvMass;
       float r1cnSqr = Util.Square(Util.Cross(this.toA, normal));
       float r2cnSqr = Util.Square(Util.Cross(this.toB, normal));
-      return massSum + bodyA.InvInertia * r1cnSqr + bodyB.InvInertia * r2cnSqr;
+      return 
+        massSum + 
+        bodyA.InvInertia * r1cnSqr + 
+        bodyB.InvInertia * r2cnSqr;
     }
 
     private Vector2 RelativeVelocity(Body bodyA, Body bodyB)

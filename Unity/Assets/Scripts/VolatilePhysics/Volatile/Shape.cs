@@ -68,6 +68,7 @@ namespace Volatile
     internal float friction = Config.DEFAULT_FRICTION;
     internal float restitution = Config.DEFAULT_RESTITUTION;
 
+    // TODO: Remove static here
     protected static uint nextId = 0;
     internal uint id;
 
