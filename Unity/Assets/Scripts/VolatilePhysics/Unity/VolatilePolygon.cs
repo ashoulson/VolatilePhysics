@@ -18,7 +18,7 @@ public class VolatilePolygon : VolatileShape
     Vector2[] vertices = new Vector2[this.points.Length];
     for (int i = 0; i < this.points.Length; i++)
       vertices[i] = this.GetBodyLocalPoint(this.points[i].localPosition, body);
-    this.shape = new Polygon(vertices);
+    this.shape = new Polygon(vertices, this.density);
     return this.shape;
   }
 

@@ -27,12 +27,6 @@ namespace Volatile
 {
   public sealed class Body
   {
-    #region Debug
-    // TODO: Make me internal
-    public void SetLinearVelocity(Vector2 set) { this.LinearVelocity = set; }
-    public Vector2 GetDirection() { return this.Direction; }
-    #endregion
-
     public IEnumerable<Shape> Shapes
     {
       get { return this.shapes.AsReadOnly(); }
@@ -42,22 +36,23 @@ namespace Volatile
 
     public Vector2 Position { get; private set; }
     public Vector2 LinearVelocity { get; private set; }
-
     public float Angle { get; private set; }
     public float AngularVelocity { get; private set; }
+    public Vector2 Facing { get; private set; }
 
-    internal Vector2 Force { get; private set; }
-    internal float Torque { get; private set; }
-    internal Vector2 Direction { get; private set; }
-
-    // Immutable properties
+    // Immutable
     internal float massInv;
     internal float inertiaInv;
 
-    internal World world;
+    // Dynamics
+    private Vector2 force;
+    private float torque;
 
+    // TODO: Make these properties
     internal Vector2 velBias;
     internal float rotBias;
+
+    internal World world;
 
     private List<Shape> shapes;
 
@@ -79,18 +74,7 @@ namespace Volatile
     /// </summary>
     public void Finalize()
     {
-      float mass = 0;
-      float inertia = 0;
-
-      foreach (Shape s in this.shapes)
-      {
-        mass += s.Mass;
-        inertia += s.Mass * s.Inertia;
-      }
-
-      this.massInv = 1.0f / mass;
-      this.inertiaInv = 1.0f / inertia;
-
+      this.ComputeBodyProperties();
       this.UpdateWorldCache();
     }
     #endregion
@@ -98,12 +82,12 @@ namespace Volatile
     #region Force and Impulse Application
     public void AddForce(Vector2 force)
     {
-      this.Force += force;
+      this.force += force;
     }
 
     public void AddTorque(float torque)
     {
-      this.Torque = Torque;
+      this.torque = torque;
     }
 
     public void AddImpulse(Vector2 impulse)
@@ -117,6 +101,27 @@ namespace Volatile
     }
     #endregion
 
+    #region Position and Orientation
+    public void Set(Vector2 position)
+    {
+      this.Position = position;
+      this.UpdateWorldCache();
+    }
+
+    public void Set(float radians)
+    {
+      this.Angle = radians;
+      this.UpdateWorldCache();
+    }
+
+    public void Set(Vector2 position, float radians)
+    {
+      this.Position = position;
+      this.Angle = radians;
+      this.UpdateWorldCache();
+    }
+    #endregion
+
     public Body(Vector2 position, bool useGravity = true)
     {
       this.Position = position;
@@ -124,14 +129,13 @@ namespace Volatile
       this.shapes = new List<Shape>();
     }
 
-    // TODO: Do something like a try-finally with this and setting data
-    public void Set(Vector2 position, float angle)
+    internal void Update(float deltaTime)
     {
-      this.Position = position;
-      this.Angle = angle;
+      this.Integrate(deltaTime);
       this.UpdateWorldCache();
     }
 
+    #region Collision
     internal bool CanCollide(Body other)
     {
       // TODO: Groups/Layers/etc.
@@ -149,36 +153,32 @@ namespace Volatile
       velBias += massInv * j;
       rotBias -= inertiaInv * Util.Cross(j, r);
     }
+    #endregion
 
-    internal void Update(float dt)
-    {
-      this.Integrate(dt);
-      this.UpdateWorldCache();
-    }
-
+    #region Helper Functions
     private void UpdateWorldCache()
     {
-      this.Direction = Util.Polar(this.Angle);
+      this.Facing = Util.Polar(this.Angle);
       foreach (Shape s in this.shapes)
-        s.UpdateWorldCache(this);
+        s.UpdateWorldCache(this.Position, this.Facing);
     }
 
-    private void Integrate(float dt)
+    private void Integrate(float deltaTime)
     {
       // Apply damping
       this.LinearVelocity *= this.world.damping;
       this.AngularVelocity *= this.world.damping;
 
       // Calculate total force and torque
-      Vector2 totalForce = (this.Force * this.massInv);
+      Vector2 totalForce = (this.force * this.massInv);
       if (this.UseGravity == true)
         totalForce += this.world.gravity;
-      float totalTorque = this.Torque * this.inertiaInv;
+      float totalTorque = this.torque * this.inertiaInv;
 
       // See http://www.niksula.hut.fi/~hkankaan/Homepages/gravity.html
-      this.IntegrateForces(totalForce, totalTorque, dt, 0.5f);
-      this.IntegrateVelocity(dt);
-      this.IntegrateForces(totalForce, totalTorque, dt, 0.5f);
+      this.IntegrateForces(totalForce, totalTorque, deltaTime, 0.5f);
+      this.IntegrateVelocity(deltaTime);
+      this.IntegrateForces(totalForce, totalTorque, deltaTime, 0.5f);
 
       this.ClearForces();
     }
@@ -186,11 +186,11 @@ namespace Volatile
     private void IntegrateForces(
       Vector2 force,
       float torque,
-      float dt,
+      float deltaTime,
       float mult)
     {
-      this.LinearVelocity += force * dt * mult;
-      this.AngularVelocity -= torque * dt * mult;
+      this.LinearVelocity += force * deltaTime * mult;
+      this.AngularVelocity -= torque * deltaTime * mult;
     }
 
     private void IntegrateVelocity(float dt)
@@ -201,12 +201,28 @@ namespace Volatile
 
     private void ClearForces()
     {
-      this.Force = Vector2.zero;
-      this.Torque = 0.0f;
+      this.force = Vector2.zero;
+      this.torque = 0.0f;
 
       this.velBias.x = 0.0f;
       this.velBias.y = 0.0f;
       this.rotBias = 0.0f;
     }
+
+    private void ComputeBodyProperties()
+    {
+      float mass = 0.0f;
+      float inertia = 0.0f;
+
+      foreach (Shape s in this.shapes)
+      {
+        mass += s.Mass;
+        inertia += s.Mass * s.Inertia;
+      }
+
+      this.massInv = 1.0f / mass;
+      this.inertiaInv = 1.0f / inertia;
+    }
+    #endregion
   }
 }

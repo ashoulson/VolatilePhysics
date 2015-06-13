@@ -139,6 +139,14 @@ namespace Volatile
     internal Vector2[] cachedWorldVertices;
     internal Axis[] cachedWorldAxes;
 
+    public override bool ContainsPoint(Vector2 point)
+    {
+      foreach (Axis axis in this.cachedWorldAxes)
+        if (Vector2.Dot(axis.Normal, point) > axis.Width)
+          return false;
+      return true;
+    }
+
     public Polygon(Vector2[] vertices, float density = 1.0f)
       : base()
     {
@@ -153,29 +161,23 @@ namespace Volatile
       this.Inertia = Polygon.ComputeInertia(vertices);
     }
 
-    public override bool ContainsPoint(Vector2 point)
-    {
-      foreach (Axis axis in this.cachedWorldAxes)
-        if (Vector2.Dot(axis.Normal, point) > axis.Width)
-          return false;
-      return true;
-    }
-
     /// <summary>
     /// Creates a cache of the vertices and axes in world space. This should
     /// be called every time the world updates or the shape/body is moved
     /// externally.
     /// </summary>
-    internal override void UpdateWorldCache(Body body)
+    internal override void UpdateWorldCache(
+      Vector2 bodyPosition,
+      Vector2 bodyFacing)
     {
       for (int i = 0; i < this.vertices.Length; i++)
       {
         this.cachedWorldVertices[i] =
-          body.Position + this.vertices[i].Rotate(body.Direction);
+          bodyPosition + this.vertices[i].Rotate(bodyFacing);
 
-        Vector2 normal = this.axes[i].Normal.Rotate(body.Direction);
+        Vector2 normal = this.axes[i].Normal.Rotate(bodyFacing);
         float dot =
-          Vector2.Dot(normal, body.Position) +
+          Vector2.Dot(normal, bodyPosition) +
           this.axes[i].Width;
         this.cachedWorldAxes[i] = new Axis(normal, dot);
       }

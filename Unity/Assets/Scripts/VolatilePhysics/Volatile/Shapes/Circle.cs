@@ -54,6 +54,11 @@ namespace Volatile
 
     internal Vector2 cachedWorldCenter;
 
+    public override bool ContainsPoint(Vector2 point)
+    {
+      return (point - this.cachedWorldCenter).sqrMagnitude < this.sqrRadius;
+    }
+
     public Circle(float radius, Vector2 offset, float density = 1.0f)
       : base()
     {
@@ -67,19 +72,16 @@ namespace Volatile
       this.Inertia = Circle.ComputeInertia(this.sqrRadius, offset);
     }
 
-    public override bool ContainsPoint(Vector2 point)
-    {
-      return (point - this.cachedWorldCenter).sqrMagnitude < this.sqrRadius;
-    }
-
     /// <summary>
     /// Creates a cache of the origin in world space. This should be called
     /// every time the world updates or the shape/body is moved externally.
     /// </summary>
-    internal override void UpdateWorldCache(Body body)
+    internal override void UpdateWorldCache(
+      Vector2 bodyPosition, 
+      Vector2 bodyFacing)
     {
       this.cachedWorldCenter =
-        body.Position + this.offset.Rotate(body.Direction);
+        bodyPosition + this.offset.Rotate(bodyFacing);
 
       // Note we're creating the bounding box in world space
       this.AABB = Circle.ComputeBounds(this.cachedWorldCenter, this.radius);

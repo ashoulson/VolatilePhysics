@@ -71,13 +71,15 @@ namespace Volatile
     protected static uint nextId = 0;
     internal uint id;
 
-    public Shape()
+    public abstract bool ContainsPoint(Vector2 v);
+
+    protected Shape()
     {
       this.id = nextId++;
     }
 
-    public abstract bool ContainsPoint(Vector2 v);
-
-    internal abstract void UpdateWorldCache(Body body);
+    internal abstract void UpdateWorldCache(
+      Vector2 bodyPosition, 
+      Vector2 bodyFacing);
   }
 }
