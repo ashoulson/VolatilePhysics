@@ -41,29 +41,29 @@ namespace Volatile
       return test(sa, sb, ref m);
     }
 
-    internal static bool __Circle_Circle(Shape sa, Shape sb, ref Manifold m)
+    private static bool __Circle_Circle(Shape sa, Shape sb, ref Manifold m)
     {
       return Circle_Circle((Circle)sa, (Circle)sb, ref m);
     }
 
-    internal static bool __Circle_Polygon(Shape sa, Shape sb, ref Manifold m)
+    private static bool __Circle_Polygon(Shape sa, Shape sb, ref Manifold m)
     {
       return Circle_Polygon((Circle)sa, (Polygon)sb, ref m);
     }
 
-    internal static bool __Polygon_Circle(Shape sa, Shape sb, ref Manifold m)
+    private static bool __Polygon_Circle(Shape sa, Shape sb, ref Manifold m)
     {
       return Circle_Polygon((Circle)sb, (Polygon)sa, ref m);
     }
 
-    internal static bool __Polygon_Polygon(Shape sa, Shape sb, ref Manifold m)
+    private static bool __Polygon_Polygon(Shape sa, Shape sb, ref Manifold m)
     {
       return Polygon_Polygon((Polygon)sa, (Polygon)sb, ref m);
     }
     #endregion
 
     #region Collision Tests
-    internal static bool Circle_Circle(
+    private static bool Circle_Circle(
       Circle circA,
       Circle circB,
       ref Manifold manifold)
@@ -76,7 +76,7 @@ namespace Volatile
         ref manifold);
     }
 
-    internal static bool Circle_Polygon(
+    private static bool Circle_Polygon(
       Circle circ,
       Polygon poly,
       ref Manifold manifold)
@@ -111,7 +111,7 @@ namespace Volatile
       return true;
     }
 
-    internal static bool Polygon_Polygon(
+    private static bool Polygon_Polygon(
       Polygon poly1,
       Polygon poly2,
       ref Manifold manifold)
