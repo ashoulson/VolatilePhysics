@@ -122,11 +122,17 @@ namespace Volatile
     }
     #endregion
 
-    public Body(Vector2 position, bool useGravity = true)
+    public Body(Vector2 position, float radians, bool useGravity = true)
     {
       this.Position = position;
+      this.Angle = radians;
       this.UseGravity = useGravity;
       this.shapes = new List<Shape>();
+    }
+
+    public Body(Vector2 position, bool useGravity = true)
+      : this(position, 0.0f, useGravity)
+    {
     }
 
     internal void Update(float deltaTime)

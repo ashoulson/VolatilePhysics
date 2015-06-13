@@ -17,7 +17,10 @@ public class VolatileBody : MonoBehaviour
 
   void Awake()
   {
-    this.body = new Body(transform.position, this.useGravity);
+    this.body = new Body(
+      transform.position, 
+      Mathf.Deg2Rad * transform.eulerAngles.z, 
+      this.useGravity);
     foreach (VolatileShape shape in this.shapes)
       this.body.AddShape(shape.PrepareShape(this));
     this.body.Finalize();
