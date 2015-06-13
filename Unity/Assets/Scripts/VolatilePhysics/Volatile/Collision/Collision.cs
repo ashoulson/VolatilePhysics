@@ -237,7 +237,7 @@ namespace Volatile
       uint id = poly1.id << 8;
       foreach (Vector2 v in poly1.cachedWorldVertices)
       {
-        if (poly2.ContainsVert(v))
+        if (poly2.ContainsPoint(v))
           if (manifold.UpdateContact(v, normal, penetration, id) == false)
             return;
         id++;
@@ -246,7 +246,7 @@ namespace Volatile
       id = poly2.id << 8;
       foreach (Vector2 v in poly2.cachedWorldVertices)
       {
-        if (poly1.ContainsVert(v))
+        if (poly1.ContainsPoint(v))
           if (manifold.UpdateContact(v, normal, penetration, id) == false)
             return;
         id++;

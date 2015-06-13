@@ -45,12 +45,8 @@ namespace Volatile
     #endregion
 
     public override Shape.ShapeType Type { get { return ShapeType.Circle; } }
-    public override float Area { get { return this.area; } }
-    public override float Inertia { get { return this.inertia; } }
-    public float Radius { get { return this.radius; } }
 
-    private float area;
-    private float inertia;
+    public float Radius { get { return this.radius; } }
 
     private float radius;
     private float sqrRadius;
@@ -58,15 +54,17 @@ namespace Volatile
 
     internal Vector2 cachedWorldCenter;
 
-    public Circle(float radius, Vector2 offset)
+    public Circle(float radius, Vector2 offset, float density = 1.0f)
       : base()
     {
       this.radius = radius;
       this.sqrRadius = radius * radius;
       this.offset = offset;
 
-      this.area = Circle.ComputeArea(this.sqrRadius);
-      this.inertia = Circle.ComputeInertia(this.sqrRadius, offset);
+      // Defined in Shape class
+      this.Area = Circle.ComputeArea(this.sqrRadius);
+      this.Mass = Shape.ComputeMass(this.Area, density);
+      this.Inertia = Circle.ComputeInertia(this.sqrRadius, offset);
     }
 
     public override bool ContainsPoint(Vector2 point)
@@ -74,21 +72,17 @@ namespace Volatile
       return (point - this.cachedWorldCenter).sqrMagnitude < this.sqrRadius;
     }
 
-    internal override void UpdateCache()
-    {
-      this.CacheWorldData();
-
-      // Note we're creating the bounding box in world space
-      this.aabb = Circle.ComputeBounds(this.cachedWorldCenter, this.radius);
-    }
-
     /// <summary>
-    /// Creates a cache of the vertices and axes in world space
+    /// Creates a cache of the origin in world space. This should be called
+    /// every time the world updates or the shape/body is moved externally.
     /// </summary>
-    protected override void CacheWorldData()
+    internal override void UpdateWorldCache(Body body)
     {
       this.cachedWorldCenter =
-        this.body.Position + this.offset.Rotate(this.body.Direction);
+        body.Position + this.offset.Rotate(body.Direction);
+
+      // Note we're creating the bounding box in world space
+      this.AABB = Circle.ComputeBounds(this.cachedWorldCenter, this.radius);
     }
   }
 }

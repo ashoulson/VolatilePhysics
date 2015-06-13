@@ -61,17 +61,41 @@ namespace Volatile
 
     private List<Shape> shapes;
 
+    #region Shape Management
     public void AddShape(Shape shape)
     {
       this.shapes.Add(shape);
-      shape.body = this;
+      shape.Body = this;
     }
 
     public void RemoveShape(Shape shape)
     {
       this.shapes.Remove(shape);
+      shape.Body = null;
     }
 
+    /// <summary>
+    /// This function should be called after all shapes have been added.
+    /// </summary>
+    public void Finalize()
+    {
+      float mass = 0;
+      float inertia = 0;
+
+      foreach (Shape s in this.shapes)
+      {
+        mass += s.Mass;
+        inertia += s.Mass * s.Inertia;
+      }
+
+      this.massInv = 1.0f / mass;
+      this.inertiaInv = 1.0f / inertia;
+
+      this.UpdateWorldCache();
+    }
+    #endregion
+
+    #region Force and Impulse Application
     public void AddForce(Vector2 force)
     {
       this.Force += force;
@@ -91,6 +115,7 @@ namespace Volatile
     {
       this.ApplyImpulse(impulse, point - this.Position);
     }
+    #endregion
 
     public Body(Vector2 position, bool useGravity = true)
     {
@@ -99,30 +124,12 @@ namespace Volatile
       this.shapes = new List<Shape>();
     }
 
-    // TODO: Do something like a try-finally with this and adding shapes
-    public void CalcProperties()
-    {
-      float mass = 0;
-      float inertia = 0;
-
-      foreach (Shape s in this.shapes)
-      {
-        mass += s.mass;
-        inertia += s.mass * s.Inertia;
-      }
-
-      this.massInv = 1.0f / mass;
-      this.inertiaInv = 1.0f / inertia;
-
-      this.UpdateInternals();
-    }
-
     // TODO: Do something like a try-finally with this and setting data
     public void Set(Vector2 position, float angle)
     {
       this.Position = position;
       this.Angle = angle;
-      this.UpdateInternals();
+      this.UpdateWorldCache();
     }
 
     internal bool CanCollide(Body other)
@@ -146,14 +153,14 @@ namespace Volatile
     internal void Update(float dt)
     {
       this.Integrate(dt);
-      this.UpdateInternals();
+      this.UpdateWorldCache();
     }
 
-    private void UpdateInternals()
+    private void UpdateWorldCache()
     {
       this.Direction = Util.Polar(this.Angle);
       foreach (Shape s in this.shapes)
-        s.UpdateCache();
+        s.UpdateWorldCache(this);
     }
 
     private void Integrate(float dt)
