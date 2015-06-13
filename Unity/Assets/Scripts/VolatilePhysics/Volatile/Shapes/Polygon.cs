@@ -147,6 +147,18 @@ namespace Volatile
       return true;
     }
 
+    /// <summary>
+    /// Special case that ignores axes pointing away from the normal.
+    /// </summary>
+    internal bool ContainsPointPartial(Vector2 point, Vector2 normal)
+    {
+      foreach (Axis axis in this.cachedWorldAxes)
+        if (Vector2.Dot(axis.Normal, normal) >= 0.0f && 
+            Vector2.Dot(axis.Normal, point) > axis.Width)
+          return false;
+      return true;
+    }
+
     public Polygon(Vector2[] vertices, float density = 1.0f)
       : base()
     {
