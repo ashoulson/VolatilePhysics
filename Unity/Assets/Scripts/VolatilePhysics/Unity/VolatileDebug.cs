@@ -7,7 +7,11 @@ using Volatile;
 
 public static class VolatileDebug 
 {
-  public static void DrawShape(Polygon polygon)
+  public static void DrawShape(
+    Polygon polygon, 
+    Color edgeColor, 
+    Color normalColor,
+    float normalLength = 0.25f)
   {
     Color current = Gizmos.color;
 
@@ -24,24 +28,39 @@ public static class VolatileDebug
       Vector2 midPoint = u + (delta * 0.5f);
 
       // Draw edge
-      Gizmos.color = Color.yellow;
+      Gizmos.color = edgeColor;
       Gizmos.DrawLine(u, v);
 
       // Draw normal
-      Gizmos.color = new Color(1.0f, 0.0f, 1.0f);
-      Gizmos.DrawLine(midPoint, midPoint + (n * 0.25f));
+      Gizmos.color = normalColor;
+      Gizmos.DrawLine(midPoint, midPoint + (n * normalLength));
     }
 
     Gizmos.color = current;
   }
 
-  public static void DrawShape(Circle circle)
+  public static void DrawShape(Circle circle, Color color)
+  {
+    Color current = Gizmos.color;
+    Gizmos.color = color;
+    Gizmos.DrawWireSphere(circle.WorldCenter, circle.Radius);
+    Gizmos.color = current;
+  }
+
+  public static void DrawAABB(AABB aabb, Color color)
   {
     Color current = Gizmos.color;
 
-    Gizmos.color = Color.yellow;
-    Gizmos.DrawWireSphere(circle.WorldCenter, circle.Radius);
+    Vector2 A = new Vector2(aabb.Left, aabb.Top);
+    Vector2 B = new Vector2(aabb.Right, aabb.Top);
+    Vector2 C = new Vector2(aabb.Right, aabb.Bottom);
+    Vector2 D = new Vector2(aabb.Left, aabb.Bottom);
 
+    Gizmos.color = color;
+    Gizmos.DrawLine(A, B);
+    Gizmos.DrawLine(B, C);
+    Gizmos.DrawLine(C, D);
+    Gizmos.DrawLine(D, A);
     Gizmos.color = current;
   }
 }
