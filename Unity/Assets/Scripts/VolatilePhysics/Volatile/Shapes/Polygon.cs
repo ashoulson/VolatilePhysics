@@ -83,8 +83,8 @@ namespace Volatile
 
       for (int i = 1; i < vertices.Length; i++)
       {
-        top = Mathf.Min(top, vertices[i].y);
-        bottom = Mathf.Max(bottom, vertices[i].y);
+        top = Mathf.Max(top, vertices[i].y);
+        bottom = Mathf.Min(bottom, vertices[i].y);
         left = Mathf.Min(left, vertices[i].x);
         right = Mathf.Max(right, vertices[i].x);
       }

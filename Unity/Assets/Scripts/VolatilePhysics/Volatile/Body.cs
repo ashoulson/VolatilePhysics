@@ -50,6 +50,7 @@ namespace Volatile
     public float Torque { get; private set; }
 
     public Vector2 Facing { get; private set; }
+    public AABB AABB { get; private set; }
 
     internal float InvMass { get; private set; }
     internal float InvInertia { get; private set; }
@@ -175,6 +176,36 @@ namespace Volatile
       this.Facing = Util.Polar(this.Angle);
       for (int i = 0; i < this.shapes.Count; i++)
         this.shapes[i].UpdateWorldCache(this.Position, this.Facing);
+      this.UpdateAABB();
+    }
+
+    private void UpdateAABB()
+    {
+      if (this.shapes.Count == 1)
+      {
+        this.AABB = this.shapes[0].AABB;
+      }
+      else
+      {
+        float top = Mathf.NegativeInfinity;
+        float right = Mathf.NegativeInfinity;
+
+        float bottom = Mathf.Infinity;
+        float left = Mathf.Infinity;
+
+        for (int i = 0; i < this.shapes.Count; i++)
+        {
+          AABB aabb = this.shapes[i].AABB;
+
+          top = Mathf.Max(top, aabb.Top);
+          right = Mathf.Max(right, aabb.Right);
+
+          bottom = Mathf.Min(bottom, aabb.Bottom);
+          left = Mathf.Min(left, aabb.Left);
+        }
+
+        this.AABB = new AABB(top, bottom, left, right);
+      }
     }
 
     private void Integrate(float deltaTime)
