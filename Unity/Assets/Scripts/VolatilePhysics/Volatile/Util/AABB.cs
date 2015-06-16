@@ -27,13 +27,39 @@ namespace Volatile
 {
   public struct AABB
   {
+    public Vector2 TopLeft 
+    { 
+      get { return new Vector2(this.left, this.top); } 
+    }
+
+    public Vector2 TopRight 
+    { 
+      get { return new Vector2(this.right, this.top); } 
+    }
+
+    public Vector2 BottomLeft 
+    { 
+      get { return new Vector2(this.left, this.bottom); } 
+    }
+
+    public Vector2 BottomRight 
+    { 
+      get { return new Vector2(this.right, this.bottom); } 
+    }
+
     public float Top { get { return this.top; } }
     public float Bottom { get { return this.bottom; } }
     public float Left { get { return this.left; } }
     public float Right { get { return this.right; } }
 
     public float Width { get { return this.Right - this.Left; } }
-    public float Height { get { return this.Bottom - this.Top; } }
+    public float Height { get { return this.Top - this.Bottom; } }
+
+    public Vector2 Center { get { return this.ComputeCenter(); } }
+    public Vector2 Extent 
+    { 
+      get { return new Vector2(this.Width * 0.5f, this.Height * 0.5f); } 
+    }
 
     private readonly float top;
     private readonly float bottom;
@@ -50,22 +76,74 @@ namespace Volatile
 
     public AABB(Vector2 center, Vector2 extents)
     {
-      Vector2 topLeft = center - extents;
-      Vector2 bottomRight = center + extents;
+      Vector2 topRight = center + extents;
+      Vector2 bottomLeft = center - extents;
 
-      this.top = topLeft.y;
-      this.bottom = bottomRight.y;
-      this.left = topLeft.x;
-      this.right = bottomRight.x;
+      this.top = topRight.y;
+      this.right = topRight.x;
+      this.bottom = bottomLeft.y;
+      this.left = bottomLeft.x;
     }
 
-    public bool Intersect(AABB aabb)
+    public bool Intersect(AABB other)
+    {
+      bool outside =
+        this.right <= other.left ||
+        this.left >= other.right ||
+        this.bottom >= other.top ||
+        this.top <= other.bottom;
+      return (outside == false);
+    }
+
+    public bool Contains(AABB other)
     {
       return
-        aabb.Left < this.Right &&
-        this.Left < aabb.Right &&
-        aabb.Top < this.Bottom &&
-        this.Top < aabb.Bottom;
+        this.top >= other.Top &&
+        this.bottom <= other.Bottom &&
+        this.right >= other.right &&
+        this.left <= other.left;
+    }
+
+    /// <summary>
+    /// Returns true iff the given AABB could fit into this AABB, optionally
+    /// scaling width and height by a given value. Takes only width and height
+    /// into account, not position.
+    /// </summary>
+    public bool CouldFit(AABB other, float scaleW = 1.0f, float scaleH = 1.0f)
+    {
+      float thisWidth = (this.right - this.left) * scaleW;
+      float thisHeight = (this.top - this.bottom) * scaleH;
+      float otherWidth = other.right - other.left;
+      float otherHeight = other.top - other.bottom;
+
+      return (thisWidth >= otherWidth && thisHeight >= otherHeight);
+    }
+
+    public AABB ComputeTopLeft(Vector2 center)
+    {
+      return new AABB(this.top, center.y, this.left, center.x);
+    }
+
+    public AABB ComputeTopRight(Vector2 center)
+    {
+      return new AABB(this.top, center.y, center.x, this.right);
+    }
+
+    public AABB ComputeBottomLeft(Vector2 center)
+    {
+      return new AABB(center.y, this.bottom, this.left, center.x);
+    }
+
+    public AABB ComputeBottomRight(Vector2 center)
+    {
+      return new AABB(center.y, this.bottom, center.x, this.right);
+    }
+
+    private Vector2 ComputeCenter()
+    {
+      return new Vector2(
+        (this.Width * 0.5f) + this.left, 
+        (this.Height * 0.5f) + this.bottom);
     }
   }
 }

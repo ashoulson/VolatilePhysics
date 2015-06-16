@@ -39,6 +39,16 @@ namespace Volatile
     /// Maximum contacts for collision resolution
     /// </summary>
     internal const int MAX_CONTACTS = 3;
+
+    /// <summary>
+    /// Maximum history records stored by the rolling buffer
+    /// </summary>
+    internal const int MAX_HISTORY = 64;
+
+    /// <summary>
+    /// Invalid time for initialization purposes
+    /// </summary>
+    internal const uint INVALID_TIME = uint.MaxValue;
       
   }
 }
