@@ -107,7 +107,7 @@ namespace Volatile.History
     /// <summary>
     /// Returns true iff we triggered an array resize
     /// </summary>
-    private bool TreeInsert(ref Node node, BodyHandle bodyRecord)
+    private bool TreeInsert(ref Node node, BodyHandle handle)
     {
       // The node will never "reject" the link, so increment the number
       // of links contained no matter what
@@ -121,38 +121,38 @@ namespace Volatile.History
           int key = this.HashFind(node.GetChildKey(i));
           bool resized;
           bool success =
-            this.TreeTryInsert(ref this.nodes[key], bodyRecord, out resized);
+            this.TreeTryInsert(ref this.nodes[key], handle, out resized);
           if (success == true)
             return resized;
         }
 
-        node.ListAdd(bodyRecord);
-        //history.Cell = node.Key; // TODO: REMOVE
+        node.ListAdd(handle);
+        handle.CellKey = node.Key;
         return false;
       }
       else // Otherwise, we need to see if we should split
       {
         if (node.ListCount < this.maxBodiesPerCell)
         {
-          node.ListAdd(bodyRecord);
-          //history.Cell = node.Key; // TODO: REMOVE
+          node.ListAdd(handle);
+          handle.CellKey = node.Key;
           return false;
         }
         else
         {
           // See if the given AABB could fit in one of our quadrants
-          bool couldFit = node.AABB.CouldFit(bodyRecord.AABB, 0.5f, 0.5f);
+          bool couldFit = node.AABB.CouldFit(handle.AABB, 0.5f, 0.5f);
 
           if (node.Depth >= this.maxDepth || couldFit == false)
           {
-            node.ListAdd(bodyRecord);
-            //history.Cell = node.Key; // TODO: REMOVE
+            node.ListAdd(handle);
+            handle.CellKey = node.Key;
             return false;
           }
           else // It's time to play a very dangerous game...
           {
             // Add the new link to the new list to hook it into the chain
-            node.ListAdd(bodyRecord);
+            node.ListAdd(handle);
 
             // Now save the chain and cut the node's link to it. We're going
             // to clear everything out and re-insert each node plus the new one
@@ -209,12 +209,12 @@ namespace Volatile.History
     /// </summary>
     private bool TreeTryInsert(
       ref Node node,
-      BodyHandle history,
+      BodyHandle handle,
       out bool resized)
     {
-      if (node.AABB.Contains(history.AABB) == true)
+      if (node.AABB.Contains(handle.AABB) == true)
       {
-        resized = this.TreeInsert(ref node, history);
+        resized = this.TreeInsert(ref node, handle);
         return true;
       }
 
@@ -222,9 +222,9 @@ namespace Volatile.History
       return false;
     }
 
-    private void TreeRemove(ref Node node, BodyHandle history)
+    private void TreeRemove(ref Node node, BodyHandle handle)
     {
-      node.ListRemove(history);
+      node.ListRemove(handle);
       TreePropagateChildRemoval(ref node);
     }
 
@@ -236,12 +236,12 @@ namespace Volatile.History
           ref this.nodes[this.HashFind(node.ParentKey)]);
     }
 
-    private void TreeUpdate(ref Node node, BodyHandle history)
+    private void TreeUpdate(ref Node node, BodyHandle handle)
     {
       // DEBUG
       bool found = false;
       for (var iter = node.ListFirst; iter != null; iter = iter.Next)
-        if (iter == history)
+        if (iter == handle)
           found = true;
       Debug.Assert(found == true);
       // END DEBUG
@@ -249,7 +249,7 @@ namespace Volatile.History
       int? newKey = null;
 
       // We know we contain this collider
-      if (node.AABB.Contains(history.AABB) == true)
+      if (node.AABB.Contains(handle.AABB) == true)
       {
         // No children + leaf = do nothing
         bool doNothing =
@@ -261,23 +261,23 @@ namespace Volatile.History
         {
           // Remove link. Since we're re-inserting in the same node,
           // we don't need to propagate the updated containment count.
-          node.ListRemove(history);
+          node.ListRemove(handle);
           node.TotalContained--;
 
           // But start insertion from this node
-          if (this.TreeInsert(ref node, history) == true)
+          if (this.TreeInsert(ref node, handle) == true)
             newKey = this.HashFind(node.Key);
         }
       }
       else
       {
         // Remove link
-        node.ListRemove(history);
+        node.ListRemove(handle);
         TreePropagateChildRemoval(ref node);
 
         // Insert into tree root
         int rootKey = this.HashFind(ROOT_KEY);
-        if (this.TreeInsert(ref this.nodes[rootKey], history) == true)
+        if (this.TreeInsert(ref this.nodes[rootKey], handle) == true)
           newKey = this.HashFind(node.Key);
       }
 
