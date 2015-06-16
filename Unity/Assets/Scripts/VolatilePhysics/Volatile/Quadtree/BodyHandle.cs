@@ -50,5 +50,6 @@ namespace Volatile.History
     public BodyHandle Next = null;
     public BodyHandle Prev = null;
     public AABB AABB;
+    public int CellKey;
   }
 }

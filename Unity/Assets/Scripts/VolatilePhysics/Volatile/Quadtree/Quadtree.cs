@@ -5,7 +5,10 @@ using System.Collections.Generic;
 namespace Volatile.History
 {
   /// <summary>
-  /// Snapshot Quad Tree
+  /// A quadtree stored entirely in-place in a single contiguous array. Can
+  /// dynamically resize to accommodate more cells if needed. This array-based
+  /// quadtree is designed to be stored and blitted across a rolling buffer
+  /// for performing in-the-past raycasts on objects.
   /// </summary>
   internal partial class Quadtree
   {
@@ -28,10 +31,16 @@ namespace Volatile.History
         ROOT_KEY, 0, new AABB(Vector2.zero, new Vector2(extent, extent)));
     }
 
-    internal void Insert(BodyHandle bodyRecord)
+    internal void Insert(BodyHandle handle)
     {
       int key = this.HashFind(ROOT_KEY);
-      this.TreeInsert(ref this.nodes[key], bodyRecord);
+      this.TreeInsert(ref this.nodes[key], handle);
+    }
+
+    internal void Update(BodyHandle handle)
+    {
+      int key = this.HashFind(handle.CellKey);
+      this.TreeUpdate(ref this.nodes[key], handle);
     }
 
     ///// <summary>
@@ -107,12 +116,6 @@ namespace Volatile.History
     //{
     //  int key = this.HashFind(history.Cell);
     //  this.TreeRemove(ref this.nodes[key], history);
-    //}
-
-    //internal void Update(History history)
-    //{
-    //  int key = this.HashFind(history.Cell);
-    //  this.TreeUpdate(ref this.nodes[key], history);
     //}
 
     //internal void StoreOnto(SnapshotQuadTree other)
