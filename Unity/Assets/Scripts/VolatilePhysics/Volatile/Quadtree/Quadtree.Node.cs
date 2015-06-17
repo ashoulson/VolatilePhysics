@@ -19,7 +19,6 @@ namespace Volatile.History
     {
       internal BodyHandle ListFirst { get { return this.listFirst; } }
       internal int ListCount { get { return this.listCount; } }
-      internal AABB AABB { get { return this.aabb; } }
 
       // Cell bounds for checking (world space)
       private AABB aabb;
@@ -52,6 +51,18 @@ namespace Volatile.History
         this.ListClear();
       }
 
+      #region Geometry
+      public bool IsInBounds(BodyHandle handle)
+      {
+        return this.aabb.Contains(handle.AABB);
+      }
+
+      public bool CouldFit(BodyHandle handle, float scaleW, float scaleH)
+      {
+        return this.aabb.CouldFit(handle.AABB, scaleW, scaleH);
+      }
+      #endregion
+
       #region Hashtable-related properties
       public int HashNext
       {
@@ -62,7 +73,7 @@ namespace Volatile.History
       public bool HashIsValid { get { return this.Key != INVALID_KEY; } }
       #endregion
 
-      #region Tree-related properties
+      #region Tree-related Functions
       public int Key
       {
         get { return this.key; }
@@ -134,6 +145,31 @@ namespace Volatile.History
       {
         return (this.Key << 2) + which;
       }
+
+      public bool ShouldSplit(float maxBodiesPerCell, float maxDepth)
+      {
+        return this.ListCount > maxBodiesPerCell && this.Depth < maxDepth;
+      }
+
+      public void Split(Quadtree tree)
+      {
+        // Set the hasChildren first because the array might copy during the
+        // process of adding children, and the node reference could be invalidated
+        this.HasChildren = true;
+
+        byte newDepth = (byte)(this.Depth + 1);
+        Vector2 center = this.aabb.Center;
+
+        AABB topLeft = this.aabb.ComputeTopLeft(center);
+        AABB topRight = this.aabb.ComputeTopRight(center);
+        AABB bottomLeft = this.aabb.ComputeBottomLeft(center);
+        AABB bottomRight = this.aabb.ComputeBottomRight(center);
+
+        tree.HashAdd(this.GetChildKey(0), newDepth, topLeft);
+        tree.HashAdd(this.GetChildKey(1), newDepth, topRight);
+        tree.HashAdd(this.GetChildKey(2), newDepth, bottomLeft);
+        tree.HashAdd(this.GetChildKey(3), newDepth, bottomRight);
+      }
       #endregion
 
       #region Linked List Functions
@@ -172,6 +208,37 @@ namespace Volatile.History
         this.listFirst = null;
         this.listLast = null;
         this.listCount = 0;
+      }
+      #endregion
+
+      #region Debug
+      public void GizmoDraw(
+        int time,
+        Color boxColor)
+      {
+        Gizmos.color = new Color(1f, 1f, 1f, 1f);
+
+        Vector2 topLeft = this.aabb.TopLeft;
+        Vector2 topRight = this.aabb.TopRight;
+        Vector2 bottomLeft = this.aabb.BottomLeft;
+        Vector2 bottomRight = this.aabb.BottomRight;
+
+        Gizmos.DrawLine(topLeft, topRight);
+        Gizmos.DrawLine(topRight, bottomRight);
+        Gizmos.DrawLine(bottomRight, bottomLeft);
+        Gizmos.DrawLine(bottomLeft, topLeft);
+
+        //UnityEditor.Handles.Label(
+        //  new Vector3(center.x, 0.0f, center.y), 
+        //  node.TotalContained + 
+        //  "\n" + 
+        //  System.Convert.ToString(node.Key, 16));
+
+        if (this.HasBodies == true)
+        {
+          Gizmos.color = boxColor;
+          Gizmos.DrawCube(this.aabb.Center, this.aabb.Extent * 2.0f);
+        }
       }
       #endregion
     }
