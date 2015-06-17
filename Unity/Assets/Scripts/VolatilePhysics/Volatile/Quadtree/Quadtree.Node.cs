@@ -54,16 +54,16 @@ namespace Volatile.History
       #region Geometry
       public bool IsInBounds(BodyHandle handle)
       {
-        return this.aabb.Contains(handle.AABB);
+        return this.aabb.Contains(handle.GetCurrentAABB());
       }
 
       public bool CouldFit(BodyHandle handle, float scaleW, float scaleH)
       {
-        return this.aabb.CouldFit(handle.AABB, scaleW, scaleH);
+        return this.aabb.CouldFit(handle.GetCurrentAABB(), scaleW, scaleH);
       }
       #endregion
 
-      #region Hashtable-related properties
+      #region Hashtable-related Functions
       public int HashNext
       {
         get { return this.hashNext; }
