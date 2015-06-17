@@ -43,87 +43,18 @@ namespace Volatile.History
       this.TreeUpdate(ref this.nodes[key], handle);
     }
 
-    ///// <summary>
-    ///// Returns all found bodies contained in the hit cells. Note that this
-    ///// does not check the actual bounding polygons of the contained bodies.
-    ///// </summary>
-    //internal void Raycast(
-    //  int time,
-    //  Vector2 origin, 
-    //  Vector2 direction,
-    //  out RayHits hits,
-    //  float distance,
-    //  int layerMask)
-    //{
-    //  BatchRay batchRay = new BatchRay(origin, direction);
-    //  PooledList<SnapshotLink> internalHits = 
-    //    PooledList<SnapshotLink>.Acquire();
+    internal void Remove(BodyHandle handle)
+    {
+      int key = this.HashFind(handle.CellKey);
+      this.TreeRemove(ref this.nodes[key], handle);
+    }
 
-    //  this.Raycast(
-    //    time,
-    //    ref this.nodes[this.HashFind(ROOT_KEY)],
-    //    ref batchRay,
-    //    distance,
-    //    internalHits);
-
-    //  hits = RayHits.Acquire();
-    //  for (int i = 0; i < internalHits.Count; i++)
-    //    internalHits[i].Raycast(
-    //      time, 
-    //      ref batchRay, 
-    //      hits,
-    //      distance,
-    //      layerMask);
-    //}
-
-    ///// <summary>
-    ///// Returns all found bodies contained in the hit cells. Note that this
-    ///// does not check the actual bounding polygons of the contained bodies.
-    ///// </summary>
-    //internal void Spherecast(
-    //  int time,
-    //  Vector2 origin,
-    //  Vector2 direction,
-    //  float radius,
-    //  out RayHits hits,
-    //  float distance,
-    //  int layerMask)
-    //{
-    //  BatchRay batchRay = new BatchRay(origin, direction);
-    //  PooledList<SnapshotLink> internalHits =
-    //    PooledList<SnapshotLink>.Acquire();
-
-    //  this.Spherecast(
-    //    time,
-    //    ref this.nodes[this.HashFind(ROOT_KEY)],
-    //    ref batchRay,
-    //    radius,
-    //    distance,
-    //    internalHits);
-
-    //  hits = RayHits.Acquire();
-    //  for (int i = 0; i < internalHits.Count; i++)
-    //    internalHits[i].Spherecast(
-    //      time,
-    //      ref batchRay,
-    //      radius,
-    //      hits,
-    //      distance,
-    //      layerMask);
-    //}
-
-    //internal void Remove(History history)
-    //{
-    //  int key = this.HashFind(history.Cell);
-    //  this.TreeRemove(ref this.nodes[key], history);
-    //}
-
-    //internal void StoreOnto(SnapshotQuadTree other)
-    //{
-    //  other.maxDepth = this.maxDepth;
-    //  other.maxBodiesPerCell = this.maxBodiesPerCell;
-    //  this.HashBlit(other);
-    //}
+    internal void StoreOnto(Quadtree other)
+    {
+      other.maxDepth = this.maxDepth;
+      other.maxBodiesPerCell = this.maxBodiesPerCell;
+      this.HashBlit(other);
+    }
 
     #region Debug
     internal void GizmoDraw(int time, bool drawGrid)
