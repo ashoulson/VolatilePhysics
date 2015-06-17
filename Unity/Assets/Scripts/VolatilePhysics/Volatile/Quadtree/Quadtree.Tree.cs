@@ -7,7 +7,7 @@ namespace Volatile.History
   internal partial class Quadtree
   {
     #region Insert/Remove/Update
-    private void TreeInsert(ref Node node, BodyHandle handle)
+    private void TreeInsert(ref Node node, BodyHandle handle, AABB aabb)
     {
       // The node will never reject the link, we add it here no matter what
       node.TotalContained++;
@@ -18,7 +18,7 @@ namespace Volatile.History
         for (int i = 0; i < 4; i++)
         {
           int key = this.HashFind(node.GetChildKey(i));
-          if (this.TreeTryInsert(ref this.nodes[key], handle))
+          if (this.TreeTryInsert(ref this.nodes[key], handle, aabb))
             return;
         }
 
@@ -28,7 +28,7 @@ namespace Volatile.History
       else if (
         node.ListCount < this.maxBodiesPerCell || 
         node.Depth >= this.maxDepth ||
-        node.CouldFit(handle, 0.5f, 0.5f) == false)
+        node.CouldFit(aabb, 0.5f, 0.5f) == false)
       {
         node.ListAdd(handle);
         handle.CellKey = node.Key;
@@ -49,7 +49,7 @@ namespace Volatile.History
         {
           next = chain.Next; // Make sure to fetch this before the insert
           int latestHash = this.HashFind(node.Key); // Old key may be invalid
-          this.TreeInsert(ref this.nodes[latestHash], chain);
+          this.TreeInsert(ref this.nodes[latestHash], chain, aabb);
           chain = next;
         }
       }
@@ -60,11 +60,12 @@ namespace Volatile.History
     /// </summary>
     private bool TreeTryInsert(
       ref Node node,
-      BodyHandle handle)
+      BodyHandle handle,
+      AABB aabb)
     {
-      if (node.IsInBounds(handle) == true)
+      if (node.IsInBounds(aabb) == true)
       {
-        this.TreeInsert(ref node, handle);
+        this.TreeInsert(ref node, handle, aabb);
         return true;
       }
 
@@ -85,7 +86,7 @@ namespace Volatile.History
           ref this.nodes[this.HashFind(node.ParentKey)]);
     }
 
-    private void TreeUpdate(ref Node node, BodyHandle handle)
+    private void TreeUpdate(ref Node node, BodyHandle handle, AABB aabb)
     {
       #region DEBUG
       // DEBUG
@@ -97,7 +98,7 @@ namespace Volatile.History
       // END DEBUG
       #endregion
 
-      if (node.IsInBounds(handle) == true)
+      if (node.IsInBounds(aabb) == true)
       {
         // In bounds, so see if we should re-insert at this node
         bool shouldReinsert =
@@ -108,7 +109,7 @@ namespace Volatile.History
         {
           node.ListRemove(handle);
           node.TotalContained--;
-          this.TreeInsert(ref node, handle);
+          this.TreeInsert(ref node, handle, aabb);
         }
       }
       else 
@@ -116,7 +117,7 @@ namespace Volatile.History
         // Out of bounds, so re-insert from the root
         node.ListRemove(handle);
         TreePropagateChildRemoval(ref node);
-        this.TreeInsert(ref this.nodes[this.HashFind(ROOT_KEY)], handle);
+        this.TreeInsert(ref this.nodes[this.HashFind(ROOT_KEY)], handle, aabb);
       }
 
       // We may have resized

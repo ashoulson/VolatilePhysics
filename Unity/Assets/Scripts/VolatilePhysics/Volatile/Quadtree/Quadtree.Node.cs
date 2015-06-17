@@ -10,11 +10,6 @@ namespace Volatile.History
     private const int INVALID_KEY = 0;
     private const int ROOT_KEY = 1;
 
-    // Masks for node data
-    private const int CONTAINED_MASK = 0x00FFFFFF;
-    private const int DEPTH_MASK = 0x0F000000;
-    private const int CHILDREN_MASK = 0x10000000;
-
     private struct Node
     {
       internal BodyHandle ListFirst { get { return this.listFirst; } }
@@ -23,8 +18,9 @@ namespace Volatile.History
       // Cell bounds for checking (world space)
       private AABB aabb;
 
-      // Stores the total count of children, depth, and flags
-      private int metadata;
+      private bool hasChildren;
+      private short totalContained;
+      private byte depth;
 
       // Used for storing the contained bodies
       private BodyHandle listFirst;
@@ -44,22 +40,22 @@ namespace Volatile.History
         AABB aabb,
         int totalContained)
       {
-        this.Depth = depth;
-        this.HasChildren = false;
+        this.depth = depth;
+        this.hasChildren = false;
         this.aabb = aabb;
-        this.TotalContained = 0;
+        this.totalContained = 0;
         this.ListClear();
       }
 
       #region Geometry
-      public bool IsInBounds(BodyHandle handle)
+      public bool IsInBounds(AABB aabb)
       {
-        return this.aabb.Contains(handle.GetCurrentAABB());
+        return this.aabb.Contains(aabb);
       }
 
-      public bool CouldFit(BodyHandle handle, float scaleW, float scaleH)
+      public bool CouldFit(AABB aabb, float scaleW, float scaleH)
       {
-        return this.aabb.CouldFit(handle.GetCurrentAABB(), scaleW, scaleH);
+        return this.aabb.CouldFit(aabb, scaleW, scaleH);
       }
       #endregion
 
@@ -80,65 +76,34 @@ namespace Volatile.History
         set { this.key = value; }
       }
 
-      public bool IsRoot { get { return this.Key == ROOT_KEY; } }
-      public bool HasBodies { get { return this.listFirst != null; } }
-
-      public int TotalContained
+      public short TotalContained
       {
-        get
-        {
-          return this.metadata & CONTAINED_MASK;
-        }
-        set
-        {
-          this.metadata =
-            (this.metadata & ~CONTAINED_MASK) | (value & CONTAINED_MASK);
-        }
-      }
-
-      public byte Depth
-      {
-        get
-        {
-          return (byte)((this.metadata & DEPTH_MASK) >> 24);
-        }
-        set
-        {
-          this.metadata =
-            (this.metadata & ~DEPTH_MASK) | ((value << 24) & DEPTH_MASK);
-        }
+        get { return this.totalContained; }
+        set { this.totalContained = value; }
       }
 
       public bool HasChildren
       {
-        get
-        {
-          return (this.metadata & CHILDREN_MASK) > 0;
-        }
-        set
-        {
-          if (value == true)
-            this.metadata |= CHILDREN_MASK;
-          else
-            this.metadata &= ~CHILDREN_MASK;
-        }
+        get { return this.hasChildren; }
+        set { this.hasChildren = value; }
+      }
+
+      public bool IsRoot { get { return this.Key == ROOT_KEY; } }
+      public bool HasBodies { get { return this.listFirst != null; } }
+
+      public byte Depth
+      {
+        get { return this.depth; }
       }
 
       public bool ShouldMerge
       {
-        get
-        {
-          return this.IsRoot == false && this.TotalContained == 0;
-        }
+        get { return this.IsRoot == false && this.TotalContained == 0; }
       }
 
       public int ParentKey
       {
-        get
-        {
-          Debug.Assert(this.IsRoot == false);
-          return this.Key >> 2;
-        }
+        get { Debug.Assert(this.IsRoot == false); return this.Key >> 2; }
       }
 
       public int GetChildKey(int which)
