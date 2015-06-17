@@ -125,6 +125,7 @@ namespace Volatile.History
     //  this.HashBlit(other);
     //}
 
+    #region Debug
     internal void GizmoDraw(int time, bool drawGrid)
     {
       int key = this.HashFind(ROOT_KEY);
@@ -136,5 +137,38 @@ namespace Volatile.History
       int key = this.HashFind(ROOT_KEY);
       this.GizmoDraw(time, ref this.nodes[key], drawGrid, boxColor);
     }
+
+    private void GizmoDraw(
+      int time,
+      ref Node node,
+      bool drawGrid)
+    {
+      this.GizmoDraw(time, ref node, drawGrid, new Color(0f, 1f, 0f, 0.3f));
+    }
+
+    private void GizmoDraw(
+      int time,
+      ref Node node,
+      bool drawGrid,
+      Color boxColor)
+    {
+      if (drawGrid == true)
+      {
+        node.GizmoDraw(time, boxColor);
+      }
+
+      if (node.HasChildren == true)
+      {
+        for (int i = 0; i < 4; i++)
+        {
+          int key = this.HashFind(node.GetChildKey(i));
+          this.GizmoDraw(time, ref this.nodes[key], drawGrid, boxColor);
+        }
+      }
+
+      //for (var iter = node.ListFirst; iter != null; iter = iter.HistNext(time))
+      //  iter.GizmoDraw(time);
+    }
+    #endregion
   }
 }

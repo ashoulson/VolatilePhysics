@@ -5,6 +5,9 @@ using System.Collections.Generic;
 
 namespace Volatile.History
 {
+  /// <summary>
+  /// Mostly taken from the .NET Dictionary class
+  /// </summary>
   internal partial class Quadtree
   {
     private const int HASH_MASK = 0x7FFFFFFF;
