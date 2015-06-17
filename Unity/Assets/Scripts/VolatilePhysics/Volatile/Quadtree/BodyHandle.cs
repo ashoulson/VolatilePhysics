@@ -44,17 +44,11 @@ namespace Volatile.History
       this.angle = angle;
     }
 
-    public AABB GetCurrentAABB()
-    {
-      return this.AABB;
-    }
-
     private Body body;
 
     // TODO: Properties
     public BodyHandle Next = null;
     public BodyHandle Prev = null;
-    private AABB AABB;
     public int CellKey;
   }
 }

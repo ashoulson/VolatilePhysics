@@ -31,16 +31,16 @@ namespace Volatile.History
         ROOT_KEY, 0, new AABB(Vector2.zero, new Vector2(extent, extent)));
     }
 
-    internal void Insert(BodyHandle handle)
+    internal void Insert(BodyHandle handle, AABB aabb)
     {
       int key = this.HashFind(ROOT_KEY);
-      this.TreeInsert(ref this.nodes[key], handle);
+      this.TreeInsert(ref this.nodes[key], handle, aabb);
     }
 
-    internal void Update(BodyHandle handle)
+    internal void Update(BodyHandle handle, AABB aabb)
     {
       int key = this.HashFind(handle.CellKey);
-      this.TreeUpdate(ref this.nodes[key], handle);
+      this.TreeUpdate(ref this.nodes[key], handle, aabb);
     }
 
     internal void Remove(BodyHandle handle)

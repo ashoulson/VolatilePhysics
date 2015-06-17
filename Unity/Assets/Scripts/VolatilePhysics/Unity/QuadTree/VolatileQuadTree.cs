@@ -18,14 +18,12 @@ public class VolatileQuadTree : MonoBehaviour
     this.sqt = new Quadtree(10, 5, 0, 25.0f);
 
     this.handle = new BodyHandle(0, new Vector2(1.0f, 1.0f), 0.0f);
-    //handle.AABB = new AABB(root.transform.position, new Vector2(0.5f, 0.5f));
-    this.sqt.Insert(handle);
+    this.sqt.Insert(handle, new AABB(root.transform.position, new Vector2(0.5f, 0.5f)));
   }
 
   void Update()
   {
-    //this.handle.AABB = new AABB(root.transform.position, new Vector2(0.5f, 0.5f));
-    this.sqt.Update(this.handle);
+    this.sqt.Update(this.handle, new AABB(root.transform.position, new Vector2(0.5f, 0.5f)));
   }
 
 
