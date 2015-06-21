@@ -28,8 +28,23 @@ namespace Volatile
   /// <summary>
   /// Data structure for attaching a Shape to a Body.
   /// </summary>
-  public class Fixture
+  internal class Fixture
   {
+    #region Factories
+    /// <summary>
+    /// Creates a new fixture taking a body and a shape independent from
+    /// one another in world space, and computing their offsets.
+    /// </summary>
+    public static Fixture FromWorldSpace(Body body, Shape shape)
+    {
+      return new Fixture(
+        shape,
+        ComputePositionOffset(body, shape),
+        ComputeFacingOffset(body, shape));
+    }
+    #endregion
+
+    #region Static Computation Functions
     /// <summary>
     /// Computes the facing-adjusted offset between a body and shape.
     /// </summary>
@@ -46,16 +61,19 @@ namespace Volatile
     {
       return shape.Facing.InvRotate(body.Facing);
     }
+    #endregion
+
+    public Shape Shape { get { return this.shape; } }
 
     private Shape shape;
-    private Vector2 positionOffset;
-    private Vector2 facingOffset;
+    internal Vector2 positionOffset; // TODO: MAKE PRIVATE
+    internal Vector2 facingOffset;
 
-    internal Fixture(Body body, Shape shape)
+    private Fixture(Shape shape, Vector2 positionOffset, Vector2 facingOffset)
     {
       this.shape = shape;
-      this.positionOffset = ComputePositionOffset(body, shape);
-      this.facingOffset = ComputeFacingOffset(body, shape);
+      this.positionOffset = positionOffset;
+      this.facingOffset = facingOffset;
     }
 
     /// <summary>
@@ -68,6 +86,16 @@ namespace Volatile
         bodyPosition + this.positionOffset.Rotate(bodyFacing);
       Vector2 shapeFacing = bodyFacing.Rotate(this.facingOffset);
       this.shape.SetWorld(shapePosition, shapeFacing);
+    }
+
+    internal float ComputeMass()
+    {
+      return this.shape.ComputeMass();
+    }
+
+    internal float ComputeInertia(Vector2 bodyFacing)
+    {
+      return this.shape.ComputeInertia(bodyFacing.Rotate(this.positionOffset));
     }
   }
 }

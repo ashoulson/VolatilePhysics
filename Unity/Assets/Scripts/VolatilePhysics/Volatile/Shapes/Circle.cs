@@ -33,9 +33,9 @@ namespace Volatile
       return sqrRadius * Mathf.PI;
     }
 
-    private static float ComputeInertia(float sqrRadius, Vector2 offset)
+    private static float ComputeInertia(Vector2 originOffset, float sqrRadius)
     {
-      return sqrRadius / 2.0f + offset.sqrMagnitude;
+      return sqrRadius / 2.0f + originOffset.sqrMagnitude;
     }
 
     private static AABB ComputeBounds(Vector2 center, float radius)
@@ -62,22 +62,6 @@ namespace Volatile
       return (point - this.worldOrigin).sqrMagnitude < this.sqrRadius;
     }
 
-    public Circle(Vector2 origin, float radius, float density = 1.0f)
-      : base()
-    {
-      this.radius = radius;
-      this.sqrRadius = radius * radius;
-      this.worldOrigin = origin;
-
-      // Defined in Shape class
-      this.Area = Circle.ComputeArea(this.sqrRadius);
-      this.Mass = Shape.ComputeMass(this.Area, density);
-
-      // TODO: This requires an offset from the body origin to work properly
-      // Move to the fixture maybe?
-      //this.Inertia = Circle.ComputeInertia(this.sqrRadius, offset);
-    }
-
     /// <summary>
     /// Creates a cache of the origin in world space. This should be called
     /// every time the world updates or the shape/body is moved externally.
@@ -87,5 +71,23 @@ namespace Volatile
       this.worldOrigin = position;
       this.AABB = Circle.ComputeBounds(this.worldOrigin, this.radius);
     }
+
+    public Circle(Vector2 origin, float radius, float density = 1.0f)
+      : base(density)
+    {
+      this.radius = radius;
+      this.sqrRadius = radius * radius;
+      this.worldOrigin = origin;
+
+      // Defined in Shape class
+      this.Area = Circle.ComputeArea(this.sqrRadius);
+    }
+
+    #region Internals
+    internal override float ComputeInertia(Vector2 offset)
+    {
+      return Circle.ComputeInertia(offset, this.sqrRadius);
+    }
+    #endregion
   }
 }

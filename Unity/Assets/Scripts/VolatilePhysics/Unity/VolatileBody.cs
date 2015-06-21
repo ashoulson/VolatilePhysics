@@ -35,7 +35,7 @@ public class VolatileBody : MonoBehaviour
   {
     if (UnityEditor.Selection.activeGameObject == this.gameObject)
     {
-      this.body.Set(transform.position, Mathf.Deg2Rad * transform.rotation.eulerAngles.z);
+      this.body.SetWorld(transform.position, Mathf.Deg2Rad * transform.rotation.eulerAngles.z);
     }
     else
     {
@@ -104,16 +104,16 @@ public class VolatileBody : MonoBehaviour
 
   public void Set(Vector2 position)
   {
-    this.body.Set(position);
+    this.body.SetWorld(position);
   }
 
   public void Set(float radians)
   {
-    this.body.Set(radians);
+    this.body.SetWorld(radians);
   }
 
   public void Set(Vector2 position, float radians)
   {
-    this.body.Set(position, radians);
+    this.body.SetWorld(position, radians);
   }
 }

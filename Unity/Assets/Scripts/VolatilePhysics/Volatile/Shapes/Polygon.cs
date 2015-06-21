@@ -69,6 +69,18 @@ namespace Volatile
       return offsets;
     }
 
+    /// <summary>
+    /// Computes the vector between the vertex and the origin, given a 
+    /// (rotation-adjusted) offset to that origin.
+    /// </summary>
+    private static Vector2 ComputeVertexOffset(
+      Vector2 vertex, 
+      Vector2 originOffset,
+      Vector2 shapeFacing)
+    {
+      return originOffset + shapeFacing.Rotate(vertex);
+    }
+
     private static Axis[] ComputeAxes(Vector2[] vertices)
     {
       Axis[] axes = new Axis[vertices.Length];
@@ -97,16 +109,25 @@ namespace Volatile
       return sum / 2.0f;
     }
 
-    // TODO: This needs to take into account the offset from the body
-    private static float ComputeInertia(Vector2[] vertices)
+    private static float ComputeInertia(
+      Vector2[] vertices, 
+      Vector2 originOffset, 
+      Vector2 shapeFacing)
     {
       float s1 = 0.0f;
       float s2 = 0.0f;
 
-      for (int i = 0; i < vertices.Length; i++)
+      // Compute the vertex offsets to the origin point
+      Vector2[] vertexOffsets = new Vector2[vertices.Length];
+      for (int i = 0; i < vertexOffsets.Length; i++)
+        vertexOffsets[i] =
+          ComputeVertexOffset(vertices[i], originOffset, shapeFacing);
+
+      // Given the offsets, compute the inertia
+      for (int i = 0; i < vertexOffsets.Length; i++)
       {
-        Vector2 v = vertices[i];
-        Vector2 u = vertices[(i + 1) % vertices.Length];
+        Vector2 v = vertexOffsets[i];
+        Vector2 u = vertexOffsets[(i + 1) % vertexOffsets.Length];
         float a = Util.Cross(u, v);
         float b = v.sqrMagnitude + u.sqrMagnitude + Vector2.Dot(v, u);
         s1 += a * b;
@@ -205,7 +226,7 @@ namespace Volatile
     {
       this.position = position;
       this.facing = facing;
-      this.ComputeWorldValues();
+      this.ComputeWorldVertices();
       this.AABB = Polygon.ComputeBounds(this.cachedWorldVertices);
     }
 
@@ -221,7 +242,7 @@ namespace Volatile
       Vector2 facing,
       Vector2[] vertices,
       float density = 1.0f)
-      : base()
+      : base(density)
     {
       this.position = origin;
       this.facing = facing;
@@ -233,12 +254,16 @@ namespace Volatile
 
       // Defined in Shape class
       this.Area = Polygon.ComputeArea(vertices);
-      this.Mass = Shape.ComputeMass(this.Area, density);
 
-      // TODO: Move this to fixture and have it take body offset into account
-      //this.Inertia = Polygon.ComputeInertia(vertices);
+      this.ComputeWorldVertices();
+    }
 
-      this.ComputeWorldValues();
+    /// <summary>
+    /// Computes inertia given an offset from the origin.
+    /// </summary>
+    internal override float ComputeInertia(Vector2 offset)
+    {
+      return Polygon.ComputeInertia(this.vertices, offset, this.facing);
     }
 
     /// <summary>
@@ -256,7 +281,7 @@ namespace Volatile
     /// <summary>
     /// Coverts the local space axes and vertices to world space.
     /// </summary>
-    private void ComputeWorldValues()
+    private void ComputeWorldVertices()
     {
       for (int i = 0; i < this.vertices.Length; i++)
       {
