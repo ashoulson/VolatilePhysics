@@ -1,4 +1,24 @@
-﻿using System;
+﻿/*
+ *  VolatilePhysics - A 2D Physics Library for Networked Games
+ *  Copyright (c) 2015 - Alexander Shoulson - http://ashoulson.com
+ *
+ *  This software is provided 'as-is', without any express or implied
+ *  warranty. In no event will the authors be held liable for any damages
+ *  arising from the use of this software.
+ *  Permission is granted to anyone to use this software for any purpose,
+ *  including commercial applications, and to alter it and redistribute it
+ *  freely, subject to the following restrictions:
+ *  
+ *  1. The origin of this software must not be misrepresented; you must not
+ *     claim that you wrote the original software. If you use this software
+ *     in a product, an acknowledgment in the product documentation would be
+ *     appreciated but is not required.
+ *  2. Altered source versions must be plainly marked as such, and must not be
+ *     misrepresented as being the original software.
+ *  3. This notice may not be removed or altered from any source distribution.
+*/
+
+using System;
 using System.Collections.Generic;
 
 using UnityEngine;
@@ -14,15 +34,15 @@ namespace Volatile.History
   /// </summary>
   // TODO: Make me hold an array instead of using a whole bunch of standalone 
   // instances
-  public class ShapeHandle
+  internal class ShapeHandle
   {
     private struct Record
     {
-      internal int time;
+      internal uint time;
       internal Vector2 position;
       internal Vector2 facing;
 
-      internal void Set(int time, Vector2 position, Vector2 facing)
+      internal void Set(uint time, Vector2 position, Vector2 facing)
       {
         this.time = time;
         this.position = position;
@@ -38,27 +58,31 @@ namespace Volatile.History
 
     internal AABB CurrentAABB { get { return this.shape.AABB; } }
 
+    private uint historyLength;
     private Record[] records;
     private Shape shape;
 
-    public ShapeHandle(Shape shape)
+    internal ShapeHandle(Shape shape, uint historyLength)
     {
+      this.historyLength = historyLength;
       this.shape = shape;
-      this.records = new Record[1];
+      this.records = new Record[this.historyLength];
+      for (int i = 0; i < this.records.Length; i++)
+        this.records[i].time = Config.INVALID_TIME;
     }
 
-    public void RecordState(int time)
+    internal void RecordState(uint time, uint slot)
     {
-      this.records[0].Set(time, this.shape.Position, this.shape.Facing);
+      this.records[slot].Set(time, this.shape.Position, this.shape.Facing);
     }
 
-    public void Rollback(int time)
+    internal void Rollback(uint time, uint slot)
     {
-      Record record = this.records[0];
+      Record record = this.records[slot];
       this.shape.SetWorld(record.position, record.facing);
     }
 
-    public void ResetShape()
+    internal void ResetShape()
     {
       this.shape.ResetFromBody();
     }

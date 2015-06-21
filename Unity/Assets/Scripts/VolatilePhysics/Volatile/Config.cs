@@ -20,8 +20,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+
+using UnityEngine;
 
 namespace Volatile
 {
@@ -36,19 +36,18 @@ namespace Volatile
     internal const float DEFAULT_FRICTION = 0.8f;
 
     /// <summary>
-    /// Maximum contacts for collision resolution
+    /// Maximum contacts for collision resolution.
     /// </summary>
     internal const int MAX_CONTACTS = 3;
 
     /// <summary>
-    /// Maximum history records stored by the rolling buffer
+    /// Maximum history records stored by the rolling buffer.
     /// </summary>
     internal const int MAX_HISTORY = 64;
 
     /// <summary>
-    /// Invalid time for initialization purposes
+    /// Invalid time for initialization purposes.
     /// </summary>
     internal const uint INVALID_TIME = uint.MaxValue;
-      
   }
 }
