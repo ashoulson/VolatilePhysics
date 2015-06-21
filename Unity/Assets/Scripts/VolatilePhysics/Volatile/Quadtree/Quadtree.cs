@@ -193,32 +193,53 @@ namespace Volatile.History
     #endregion
 
     #region Debug
-    public void GizmoDraw(int time, bool drawGrid)
+    public void GizmoDraw(
+      uint time, 
+      bool drawGrid)
     {
       if (this.nodes.Length > 0)
       {
         int key = this.HashFind(ROOT_KEY);
-        this.GizmoDraw(time, ref this.nodes[key], drawGrid);
+        this.GizmoDraw(
+          time, 
+          ref this.nodes[key], 
+          drawGrid,
+          new Color(0f, 1f, 0f, 0.3f));
       }
     }
 
-    private void GizmoDraw(int time, bool drawGrid, Color boxColor)
+    private void GizmoDraw(
+      uint time,
+      ref Node node,
+      bool drawGrid,
+      Color boxColor)
     {
-      int key = this.HashFind(ROOT_KEY);
-      this.GizmoDraw(time, ref this.nodes[key], drawGrid, boxColor);
+      if (drawGrid == true)
+      {
+        this.DrawBox(ref node, time, boxColor);
+      }
+
+      if (node.hasChildren == true)
+      {
+        for (int i = 0; i < 4; i++)
+        {
+          int key = this.HashFind(node.ChildKey(i));
+          this.GizmoDraw(time, ref this.nodes[key], drawGrid, boxColor);
+        }
+      }
+
+      this.DrawShapes(time, ref node);
     }
 
-    private void GizmoDraw(
-      int time,
-      ref Node node,
-      bool drawGrid)
+    private void DrawShapes(uint time, ref Node node)
     {
-      this.GizmoDraw(time, ref node, drawGrid, new Color(0f, 1f, 0f, 0.3f));
+      for (var iter = node.listFirst; iter != null; iter = iter.Next(time))
+        iter.DrawGizmos(time);
     }
 
-    private void GizmoDraw(
+    private void DrawBox(
       ref Node node,
-      int time,
+      uint time,
       Color boxColor)
     {
       Gizmos.color = new Color(1f, 1f, 1f, 1f);
@@ -244,37 +265,6 @@ namespace Volatile.History
         Gizmos.color = boxColor;
         Gizmos.DrawCube(node.aabb.Center, node.aabb.Extent * 2.0f);
       }
-    }
-
-    private void GizmoDraw(
-      int time,
-      ref Node node,
-      bool drawGrid,
-      Color boxColor)
-    {
-      if (drawGrid == true)
-      {
-        this.GizmoDraw(ref node, time, boxColor);
-      }
-
-      if (node.hasChildren == true)
-      {
-        for (int i = 0; i < 4; i++)
-        {
-          int key = this.HashFind(node.ChildKey(i));
-          this.GizmoDraw(time, ref this.nodes[key], drawGrid, boxColor);
-        }
-      }
-
-      //for (var iter = node.ListFirst; iter != null; iter = iter.HistNext(time))
-      //  iter.GizmoDraw(time);
-    }
-
-    private void GizmoDrawShape(
-      int time, 
-      ref Node node)
-    {
-
     }
     #endregion
   }

@@ -62,8 +62,6 @@ public class VolatileBody : MonoBehaviour
       {
         foreach (VolatileShape shape in this.shapes)
         {
-          shape.DrawShapeInEditor();
-
           // Draw True COM
           Vector2 trueShapeCOM = shape.ComputeTrueCenterOfMass();
           trueBodyCOM += trueShapeCOM;
