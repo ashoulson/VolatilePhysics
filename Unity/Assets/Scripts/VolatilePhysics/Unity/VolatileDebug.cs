@@ -7,6 +7,10 @@ using Volatile;
 
 public static class VolatileDebug 
 {
+  public const bool DRAW_AABB = false;
+  public const bool DRAW_ORIGIN = false;
+  public const bool DRAW_NORMALS = false;
+
   public static void DrawShape(
     Polygon polygon, 
     Color edgeColor, 
@@ -32,24 +36,36 @@ public static class VolatileDebug
       Gizmos.color = edgeColor;
       Gizmos.DrawLine(u, v);
 
-      // Draw normal
-      Gizmos.color = normalColor;
-      Gizmos.DrawLine(midPoint, midPoint + (n * normalLength));
+      if (VolatileDebug.DRAW_NORMALS == true)
+      {
+        // Draw normal
+        Gizmos.color = normalColor;
+        Gizmos.DrawLine(midPoint, midPoint + (n * normalLength));
+      }
 
-      // Draw line to origin
-      Gizmos.color = originColor;
-      Gizmos.DrawLine(u, polygon.Position);
+      if (VolatileDebug.DRAW_ORIGIN == true)
+      {
+        // Draw line to origin
+        Gizmos.color = originColor;
+        Gizmos.DrawLine(u, polygon.Position);
+      }
     }
 
-    // Draw origin
-    Gizmos.color = originColor;
-    Gizmos.DrawWireSphere(polygon.Position, 0.05f);
+    if (VolatileDebug.DRAW_NORMALS == true)
+    {
+      // Draw facing
+      Gizmos.color = normalColor;
+      Gizmos.DrawLine(
+        polygon.Position,
+        polygon.Position + polygon.Facing * normalLength);
+    }
 
-    // Draw facing
-    Gizmos.color = normalColor;
-    Gizmos.DrawLine(
-      polygon.Position,
-      polygon.Position + polygon.Facing * normalLength);
+    if (VolatileDebug.DRAW_ORIGIN == true)
+    {
+      // Draw origin
+      Gizmos.color = originColor;
+      Gizmos.DrawWireSphere(polygon.Position, 0.05f);
+    }
 
     Gizmos.color = current;
   }
@@ -58,24 +74,27 @@ public static class VolatileDebug
   {
     Color current = Gizmos.color;
     Gizmos.color = color;
-    Gizmos.DrawWireSphere(circle.WorldCenter, circle.Radius);
+    Gizmos.DrawWireSphere(circle.Position, circle.Radius);
     Gizmos.color = current;
   }
 
   public static void DrawAABB(AABB aabb, Color color)
   {
-    Color current = Gizmos.color;
+    if (VolatileDebug.DRAW_AABB == true)
+    {
+      Color current = Gizmos.color;
 
-    Vector2 A = new Vector2(aabb.Left, aabb.Top);
-    Vector2 B = new Vector2(aabb.Right, aabb.Top);
-    Vector2 C = new Vector2(aabb.Right, aabb.Bottom);
-    Vector2 D = new Vector2(aabb.Left, aabb.Bottom);
+      Vector2 A = new Vector2(aabb.Left, aabb.Top);
+      Vector2 B = new Vector2(aabb.Right, aabb.Top);
+      Vector2 C = new Vector2(aabb.Right, aabb.Bottom);
+      Vector2 D = new Vector2(aabb.Left, aabb.Bottom);
 
-    Gizmos.color = color;
-    Gizmos.DrawLine(A, B);
-    Gizmos.DrawLine(B, C);
-    Gizmos.DrawLine(C, D);
-    Gizmos.DrawLine(D, A);
-    Gizmos.color = current;
+      Gizmos.color = color;
+      Gizmos.DrawLine(A, B);
+      Gizmos.DrawLine(B, C);
+      Gizmos.DrawLine(C, D);
+      Gizmos.DrawLine(D, A);
+      Gizmos.color = current;
+    }
   }
 }

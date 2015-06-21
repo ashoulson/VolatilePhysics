@@ -8,7 +8,8 @@ using Volatile;
 public class ShapeTester : MonoBehaviour 
 {
   public Body body;
-  public Polygon shape;
+  //public Polygon shape;
+  public Circle shape;
 
   public Transform bodyOrigin;
   public Transform origin;
@@ -23,7 +24,8 @@ public class ShapeTester : MonoBehaviour
     for (int i = 0; i < vertices.Length; i++)
       vertices[i] = this.points[i].position;
 
-    this.shape = Polygon.FromWorldVertices(this.origin.position, this.origin.right, vertices);
+    //this.shape = Polygon.FromWorldVertices(this.origin.position, this.origin.right, vertices);
+    this.shape = Circle.FromWorldPosition(this.origin.position, 0.5f);
     this.body = new Body(this.bodyOrigin.position);
   }
 
@@ -110,29 +112,30 @@ public class ShapeTester : MonoBehaviour
   {
     if (this.shape != null)
     {
-      VolatileDebug.DrawShape(this.shape, Color.yellow, Color.red, Color.black);
+      //VolatileDebug.DrawShape(this.shape, Color.yellow, Color.red, Color.black);
+      VolatileDebug.DrawShape(this.shape, Color.yellow);
 
 
 
-      if (this.fixture != null)
-      {
-        Vector2 bodyFacing = this.bodyOrigin.right;
-        Vector2 fixtureOffset = this.fixture.positionOffset;
+      //if (this.fixture != null)
+      //{
+      //  Vector2 bodyFacing = this.bodyOrigin.right;
+      //  Vector2 fixtureOffset = this.fixture.positionOffset;
 
-        Vector2[] vertices = this.shape.LocalVertices;
+      //  Vector2[] vertices = this.shape.LocalVertices;
 
-        for (int i = 0; i < vertices.Length; i++)
-        {
-          Vector2 originOffset = bodyFacing.Rotate(fixtureOffset);
-          Vector2 vertexOffset = originOffset + this.shape.Facing.Rotate(vertices[i]);
+      //  for (int i = 0; i < vertices.Length; i++)
+      //  {
+      //    Vector2 originOffset = bodyFacing.Rotate(fixtureOffset);
+      //    Vector2 vertexOffset = originOffset + this.shape.Facing.Rotate(vertices[i]);
 
-          Vector2 origin = this.bodyOrigin.position;
-          Vector2 destination = origin + vertexOffset;
+      //    Vector2 origin = this.bodyOrigin.position;
+      //    Vector2 destination = origin + vertexOffset;
 
-          Gizmos.color = Color.white;
-          Gizmos.DrawLine(origin, destination);
-        }
-      }
+      //    Gizmos.color = Color.white;
+      //    Gizmos.DrawLine(origin, destination);
+      //  }
+      //}
     }
   }
 }
