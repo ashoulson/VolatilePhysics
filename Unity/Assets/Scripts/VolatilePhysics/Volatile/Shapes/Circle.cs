@@ -27,15 +27,23 @@ namespace Volatile
 {
   public sealed class Circle : Shape
   {
+    public static Circle FromWorldPosition(
+      Vector2 origin, 
+      float radius, 
+      float density = 1.0f)
+    {
+      return new Circle(origin, radius, density);
+    }
+
     #region Static Methods
     private static float ComputeArea(float sqrRadius)
     {
       return sqrRadius * Mathf.PI;
     }
 
-    private static float ComputeInertia(float sqrRadius, Vector2 offset)
+    private static float ComputeInertia(Vector2 originOffset, float sqrRadius)
     {
-      return sqrRadius / 2.0f + offset.sqrMagnitude;
+      return sqrRadius / 2.0f + originOffset.sqrMagnitude;
     }
 
     private static AABB ComputeBounds(Vector2 center, float radius)
@@ -45,48 +53,47 @@ namespace Volatile
     #endregion
 
     public override Shape.ShapeType Type { get { return ShapeType.Circle; } }
+    public override Vector2 Position { get { return this.origin; } }
+    public override Vector2 Facing { get { return new Vector2(1.0f, 0.0f); } }
 
-    public Vector2 WorldCenter { get { return this.cachedWorldCenter; } }
-    public Vector2 LocalCenter { get { return this.offset; } }
     public float Radius { get { return this.radius; } }
 
     private float radius;
     private float sqrRadius;
-    private Vector2 offset;
 
-    internal Vector2 cachedWorldCenter;
+    internal Vector2 origin;
 
     public override bool ContainsPoint(Vector2 point)
     {
-      return (point - this.cachedWorldCenter).sqrMagnitude < this.sqrRadius;
-    }
-
-    public Circle(float radius, Vector2 offset, float density = 1.0f)
-      : base()
-    {
-      this.radius = radius;
-      this.sqrRadius = radius * radius;
-      this.offset = offset;
-
-      // Defined in Shape class
-      this.Area = Circle.ComputeArea(this.sqrRadius);
-      this.Mass = Shape.ComputeMass(this.Area, density);
-      this.Inertia = Circle.ComputeInertia(this.sqrRadius, offset);
+      return (point - this.origin).sqrMagnitude < this.sqrRadius;
     }
 
     /// <summary>
     /// Creates a cache of the origin in world space. This should be called
     /// every time the world updates or the shape/body is moved externally.
     /// </summary>
-    internal override void UpdateWorldCache(
-      Vector2 bodyPosition, 
-      Vector2 bodyFacing)
+    public override void SetWorld(Vector2 position, Vector2 facing)
     {
-      this.cachedWorldCenter =
-        bodyPosition + this.offset.Rotate(bodyFacing);
-
-      // Note we're creating the bounding box in world space
-      this.AABB = Circle.ComputeBounds(this.cachedWorldCenter, this.radius);
+      this.origin = position;
+      this.AABB = Circle.ComputeBounds(this.origin, this.radius);
     }
+
+    private Circle(Vector2 origin, float radius, float density = 1.0f)
+      : base(density)
+    {
+      this.origin = origin;
+      this.radius = radius;
+      this.sqrRadius = radius * radius;
+
+      // Defined in Shape class
+      this.Area = Circle.ComputeArea(this.sqrRadius);
+    }
+
+    #region Internals
+    internal override float ComputeInertia(Vector2 offset)
+    {
+      return Circle.ComputeInertia(offset, this.sqrRadius);
+    }
+    #endregion
   }
 }
