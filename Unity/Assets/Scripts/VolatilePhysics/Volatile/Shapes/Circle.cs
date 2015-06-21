@@ -82,7 +82,7 @@ namespace Volatile
     /// Creates a cache of the origin in world space. This should be called
     /// every time the world updates or the shape/body is moved externally.
     /// </summary>
-    internal override void SetWorld(Vector2 position, Vector2 facing)
+    public override void SetWorld(Vector2 position, Vector2 facing)
     {
       this.worldOrigin = position;
       this.AABB = Circle.ComputeBounds(this.worldOrigin, this.radius);
