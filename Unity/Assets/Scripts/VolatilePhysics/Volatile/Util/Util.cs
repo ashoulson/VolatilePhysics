@@ -48,6 +48,11 @@ namespace Volatile
       return new Vector2(v.x * b.x - v.y * b.y, v.y * b.x + v.x * b.y);
     }
 
+    public static Vector2 InvRotate(this Vector2 v, Vector2 b)
+    {
+      return new Vector2(v.x * b.x + v.y * b.y, v.y * b.x - v.x * b.y);
+    }
+
     public static Vector2 Polar(float a)
     {
       return new Vector2(Mathf.Cos(a), Mathf.Sin(a));
