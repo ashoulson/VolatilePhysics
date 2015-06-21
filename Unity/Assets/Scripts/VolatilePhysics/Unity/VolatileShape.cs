@@ -10,19 +10,49 @@ public abstract class VolatileShape : MonoBehaviour
   [SerializeField]
   protected float density = 1.0f;
 
-  public abstract Shape Shape { get; }
+  // TODO: This is mostly a debug feature
+  [SerializeField]
+  public bool isStandalone = true;
 
-  public abstract Shape PrepareShape(VolatileBody body);
+  public abstract Shape Shape { get; }
+  public abstract void PrepareShape();
 
   public abstract void DrawShapeInGame();
   public abstract void DrawShapeInEditor();
 
   public abstract Vector2 ComputeTrueCenterOfMass();
 
-  protected Vector2 GetBodyLocalPoint(VolatileBody body, Vector2 point)
+  void Awake()
   {
-    return
-      body.transform.InverseTransformPoint(
-        this.transform.TransformPoint(point));
+    this.PrepareShape();
+  }
+
+  void Update()
+  {
+    // TODO: This is mostly a debug feature
+    if (this.isStandalone == true && this.Shape != null)
+    {
+      this.Shape.SetWorld(transform.position, transform.right);
+    }
+  }
+
+  void OnDrawGizmos()
+  {
+    // TODO: This is mostly a debug feature
+    if (this.isStandalone == true)
+    {
+      Color current = Gizmos.color;
+
+      if (this.Shape != null)
+      {
+        this.DrawShapeInGame();
+      }
+      else
+      {
+        this.DrawShapeInEditor();
+      }
+
+      Gizmos.color = current;
+    }
   }
 }

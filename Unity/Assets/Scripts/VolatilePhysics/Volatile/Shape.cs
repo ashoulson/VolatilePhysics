@@ -47,6 +47,7 @@ namespace Volatile
 
     public abstract ShapeType Type { get; }
     public abstract Vector2 Position { get; }
+    public abstract float Angle { get; }
     public abstract Vector2 Facing { get; }
 
     /// <summary>
@@ -82,6 +83,12 @@ namespace Volatile
     }
 
     public abstract void SetWorld(Vector2 position, Vector2 facing);
+
+    public void ResetFromBody()
+    {
+      if (this.Body != null)
+        this.Body.ResetShape(this);
+    }
 
     internal float ComputeMass()
     {

@@ -23,26 +23,31 @@ namespace Volatile.History
         ROOT_KEY, 0, new AABB(Vector2.zero, new Vector2(extent, extent)));
     }
 
-    internal void Insert(BodyHandle entry, AABB aabb)
+    internal void Insert(ShapeHandle entry)
     {
       int key = this.HashFind(ROOT_KEY);
-      this.TreeInsert(ref this.nodes[key], entry, aabb);
+      this.TreeInsert(ref this.nodes[key], entry);
     }
 
-    internal void Update(BodyHandle entry, AABB aabb)
+    internal void Update(ShapeHandle entry)
     {
-      int key = this.HashFind(entry.CellKey);
-      this.TreeUpdate(ref this.nodes[key], entry, aabb);
+      int key = this.HashFind(entry.cellKey);
+      this.TreeUpdate(ref this.nodes[key], entry);
     }
 
-    internal void Remove(BodyHandle entry)
+    internal void Remove(ShapeHandle entry)
     {
-      int key = this.HashFind(entry.CellKey);
+      int key = this.HashFind(entry.cellKey);
       this.TreeRemove(ref this.nodes[key], entry);
     }
 
+    internal void BlitOnto(Quadtree other)
+    {
+      other.ReceiveBlit(this);
+    }
+
     #region Tree Functionality
-    private void TreeInsert(ref Node node, BodyHandle entry, AABB aabb)
+    private void TreeInsert(ref Node node, ShapeHandle entry)
     {
       // The node will never reject the link, we add it here no matter what
       node.totalContained++;
@@ -53,38 +58,39 @@ namespace Volatile.History
         for (int i = 0; i < 4; i++)
         {
           int key = this.HashFind(node.ChildKey(i));
-          if (this.TreeTryInsert(ref this.nodes[key], entry, aabb))
+          if (this.TreeTryInsert(ref this.nodes[key], entry))
             return;
         }
 
         this.NodeListAdd(ref node, entry);
-        entry.CellKey = node.key;
+        entry.cellKey = node.key;
       }
       else if (
         node.listCount < this.maxBodiesPerCell ||
         node.depth >= this.maxDepth ||
-        node.AABBCouldFit(aabb, 0.5f, 0.5f) == false)
+        // We only ever consider the current AABB when inserting/updating
+        node.AABBCouldFit(entry.CurrentAABB, 0.5f, 0.5f) == false)
       {
         this.NodeListAdd(ref node, entry);
-        entry.CellKey = node.key;
+        entry.cellKey = node.key;
       }
       else // We need to split
       {
         // Add the new entry to the end of the chain, then rip out the
         // chain and re-add everything that was on it
         this.NodeListAdd(ref node, entry);
-        BodyHandle chain = node.listFirst;
+        ShapeHandle chain = node.listFirst;
         this.NodeListClear(ref node);
         node.totalContained = 0;
         this.NodeSplit(ref node);
 
         // Re-insert the bodies we just removed
-        BodyHandle next;
+        ShapeHandle next;
         while (chain != null)
         {
-          next = chain.Next; // Make sure to fetch this before the insert
+          next = chain.next; // Make sure to fetch this before the insert
           int latestHash = this.HashFind(node.key); // Old key may be invalid
-          this.TreeInsert(ref this.nodes[latestHash], chain, aabb);
+          this.TreeInsert(ref this.nodes[latestHash], chain);
           chain = next;
         }
       }
@@ -95,19 +101,19 @@ namespace Volatile.History
     /// </summary>
     private bool TreeTryInsert(
       ref Node node,
-      BodyHandle entry,
-      AABB aabb)
+      ShapeHandle entry)
     {
-      if (node.AABBContains(aabb) == true)
+      // We only ever consider the current AABB when inserting/updating
+      if (node.AABBContains(entry.CurrentAABB) == true)
       {
-        this.TreeInsert(ref node, entry, aabb);
+        this.TreeInsert(ref node, entry);
         return true;
       }
 
       return false;
     }
 
-    private void TreeRemove(ref Node node, BodyHandle entry)
+    private void TreeRemove(ref Node node, ShapeHandle entry)
     {
       this.NodeListRemove(ref node, entry);
       this.TreePropagateChildRemoval(ref node);
@@ -121,11 +127,12 @@ namespace Volatile.History
           ref this.nodes[this.HashFind(node.ParentKey)]);
     }
 
-    private void TreeUpdate(ref Node node, BodyHandle entry, AABB aabb)
+    private void TreeUpdate(ref Node node, ShapeHandle entry)
     {
       Debug.Assert(node.ListContains(entry));
 
-      if (node.AABBContains(aabb) == true)
+      // We only ever consider the current AABB when inserting/updating
+      if (node.AABBContains(entry.CurrentAABB) == true)
       {
         // AABB can fit, so see if we should re-insert at this node
         bool shouldReinsert =
@@ -136,7 +143,7 @@ namespace Volatile.History
         {
           this.NodeListRemove(ref node, entry);
           node.totalContained--;
-          this.TreeInsert(ref node, entry, aabb);
+          this.TreeInsert(ref node, entry);
         }
       }
       else
@@ -144,7 +151,7 @@ namespace Volatile.History
         // Out of bounds, so re-insert from the root
         this.NodeListRemove(ref node, entry);
         TreePropagateChildRemoval(ref node);
-        this.TreeInsert(ref this.nodes[this.HashFind(ROOT_KEY)], entry, aabb);
+        this.TreeInsert(ref this.nodes[this.HashFind(ROOT_KEY)], entry);
       }
 
       // We may have resized, so get a new reference from the key
@@ -343,29 +350,29 @@ namespace Volatile.History
       this.NodeListClear(ref node);
     }
 
-    private void NodeListAdd(ref Node node, BodyHandle entry)
+    private void NodeListAdd(ref Node node, ShapeHandle entry)
     {
-      entry.Next = node.listFirst;
+      entry.next = node.listFirst;
       if (node.listFirst != null)
-        node.listFirst.Prev = entry;
+        node.listFirst.prev = entry;
       node.listFirst = entry;
       if (node.listLast == null)
         node.listLast = entry;
-      entry.Prev = null;
+      entry.prev = null;
       node.listCount++;
     }
 
-    private void NodeListRemove(ref Node node, BodyHandle entry)
+    private void NodeListRemove(ref Node node, ShapeHandle entry)
     {
-      BodyHandle nextEntry = entry.Next;
-      BodyHandle prevEntry = entry.Prev;
+      ShapeHandle nextEntry = entry.next;
+      ShapeHandle prevEntry = entry.prev;
 
       if (node.listFirst == entry)
         node.listFirst = nextEntry;
       if (nextEntry != null)
-        nextEntry.Prev = prevEntry;
+        nextEntry.prev = prevEntry;
       if (prevEntry != null)
-        prevEntry.Next = nextEntry;
+        prevEntry.next = nextEntry;
       node.listCount--;
     }
 

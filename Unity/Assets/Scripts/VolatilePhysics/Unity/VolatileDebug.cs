@@ -16,6 +16,7 @@ public static class VolatileDebug
     Color edgeColor, 
     Color normalColor,
     Color originColor,
+    Color aabbColor,
     float normalLength = 0.25f)
   {
     Color current = Gizmos.color;
@@ -67,34 +68,60 @@ public static class VolatileDebug
       Gizmos.DrawWireSphere(polygon.Position, 0.05f);
     }
 
+    if (VolatileDebug.DRAW_AABB == true)
+    {
+      VolatileDebug.DrawAABB(polygon.AABB, aabbColor);
+    }
+
     Gizmos.color = current;
   }
 
-  public static void DrawShape(Circle circle, Color color)
+  public static void DrawShape(
+    Circle circle, 
+    Color circleColor, 
+    Color aabbColor)
   {
     Color current = Gizmos.color;
-    Gizmos.color = color;
+
+    Gizmos.color = circleColor;
     Gizmos.DrawWireSphere(circle.Position, circle.Radius);
+
+    if (VolatileDebug.DRAW_AABB == true)
+    {
+      VolatileDebug.DrawAABB(circle.AABB, aabbColor);
+    }
+
+    Gizmos.color = current;
+  }
+
+  public static void DrawBody(
+    Body body,
+    Color aabbColor)
+  {
+    Color current = Gizmos.color;
+
+    if (VolatileDebug.DRAW_AABB == true)
+    {
+      VolatileDebug.DrawAABB(body.AABB, aabbColor);
+    }
+
     Gizmos.color = current;
   }
 
   public static void DrawAABB(AABB aabb, Color color)
   {
-    if (VolatileDebug.DRAW_AABB == true)
-    {
-      Color current = Gizmos.color;
+    Color current = Gizmos.color;
 
-      Vector2 A = new Vector2(aabb.Left, aabb.Top);
-      Vector2 B = new Vector2(aabb.Right, aabb.Top);
-      Vector2 C = new Vector2(aabb.Right, aabb.Bottom);
-      Vector2 D = new Vector2(aabb.Left, aabb.Bottom);
+    Vector2 A = new Vector2(aabb.Left, aabb.Top);
+    Vector2 B = new Vector2(aabb.Right, aabb.Top);
+    Vector2 C = new Vector2(aabb.Right, aabb.Bottom);
+    Vector2 D = new Vector2(aabb.Left, aabb.Bottom);
 
-      Gizmos.color = color;
-      Gizmos.DrawLine(A, B);
-      Gizmos.DrawLine(B, C);
-      Gizmos.DrawLine(C, D);
-      Gizmos.DrawLine(D, A);
-      Gizmos.color = current;
-    }
+    Gizmos.color = color;
+    Gizmos.DrawLine(A, B);
+    Gizmos.DrawLine(B, C);
+    Gizmos.DrawLine(C, D);
+    Gizmos.DrawLine(D, A);
+    Gizmos.color = current;
   }
 }

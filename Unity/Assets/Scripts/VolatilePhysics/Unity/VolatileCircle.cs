@@ -13,13 +13,12 @@ public class VolatileCircle : VolatileShape
   public override Shape Shape { get { return this.shape; } }
   private Circle shape;
 
-  public override Shape PrepareShape(VolatileBody body)
+  public override void PrepareShape()
   {
     this.shape = Circle.FromWorldPosition(
       transform.position,
       radius, 
       this.density);
-    return this.shape;
   }
 
   public override void DrawShapeInGame()
@@ -28,9 +27,7 @@ public class VolatileCircle : VolatileShape
     {
       VolatileDebug.DrawShape(
         this.shape, 
-        new Color(1.0f, 1.0f, 0.0f));
-      VolatileDebug.DrawAABB(
-        this.shape.AABB, 
+        new Color(1.0f, 1.0f, 0.0f),
         new Color(1.0f, 0.5f, 0.0f, 0.5f));
     }
   }

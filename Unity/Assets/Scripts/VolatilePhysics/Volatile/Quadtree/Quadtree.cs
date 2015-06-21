@@ -23,8 +23,8 @@ namespace Volatile.History
       internal byte depth;
 
       // Used for storing the contained bodies
-      internal BodyHandle listFirst;
-      internal BodyHandle listLast;
+      internal ShapeHandle listFirst;
+      internal ShapeHandle listLast;
       internal int listCount;
 
       // Index of next entry for hash table, -1 if last
@@ -60,9 +60,9 @@ namespace Volatile.History
         return (this.key << 2) + which;
       }
 
-      internal bool ListContains(BodyHandle entry)
+      internal bool ListContains(ShapeHandle entry)
       {
-        for (var iter = this.listFirst; iter != null; iter = iter.Next)
+        for (var iter = this.listFirst; iter != null; iter = iter.next)
           if (iter == entry)
             return true;
         return false;
@@ -104,10 +104,19 @@ namespace Volatile.History
       get { return this.nodes.Length; }
     }
 
+    public Quadtree()
+    {
+      this.buckets = new int[0];
+      this.nodes = new Node[0];
+      this.count = 0;
+      this.freeList = -1;
+      this.freeCount = 0;
+    }
+
     /// <summary>
     /// Blits the other quadtree onto this one.
     /// </summary>
-    protected void ReceiveBlit(Quadtree other)
+    internal void ReceiveBlit(Quadtree other)
     {
       if (this.buckets.Length != other.buckets.Length)
         this.buckets = new int[other.buckets.Length];
@@ -157,8 +166,11 @@ namespace Volatile.History
     #region Debug
     public void GizmoDraw(int time, bool drawGrid)
     {
-      int key = this.HashFind(ROOT_KEY);
-      this.GizmoDraw(time, ref this.nodes[key], drawGrid);
+      if (this.nodes.Length > 0)
+      {
+        int key = this.HashFind(ROOT_KEY);
+        this.GizmoDraw(time, ref this.nodes[key], drawGrid);
+      }
     }
 
     private void GizmoDraw(int time, bool drawGrid, Color boxColor)
