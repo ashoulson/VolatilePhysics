@@ -82,6 +82,6 @@ namespace Volatile
       this.id = nextId++;
     }
 
-    internal abstract void SetWorld(Vector2 position, Vector2 facing);
+    public abstract void SetWorld(Vector2 position, Vector2 facing);
   }
 }
