@@ -44,10 +44,10 @@ namespace Volatile.History
     public ShapeHandle(Shape shape)
     {
       this.shape = shape;
-      this.records = new Record[0];
+      this.records = new Record[1];
     }
 
-    public void StoreRecord(int time)
+    public void RecordState(int time)
     {
       this.records[0].Set(time, this.shape.Position, this.shape.Facing);
     }

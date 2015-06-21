@@ -16,7 +16,6 @@ public class VolatileQuadTree : MonoBehaviour
 
   void Awake()
   {
-    Debug.Log("VolatileQuadTree");
     this.active = new MutableQuadtree(10, 5, 0, 25.0f);
     this.stored = new Quadtree();
     this.handle = new ShapeHandle(this.shape.Shape);
@@ -27,12 +26,20 @@ public class VolatileQuadTree : MonoBehaviour
   {
     this.active.Update(this.handle);
     if (Input.GetKeyDown(KeyCode.B))
+    {
       this.active.BlitOnto(this.stored);
+      this.handle.RecordState(0);
+    }
   }
 
   void OnDrawGizmos()
   {
     if (this.stored != null)
+    {
       this.stored.GizmoDraw(0, true);
+      
+      this.handle.Rollback(0);
+      this.shape.DrawShapeInGame();
+    }
   }
 }
