@@ -16,8 +16,8 @@ public class VolatileCircle : VolatileShape
   public override Shape PrepareShape(VolatileBody body)
   {
     this.shape = new Circle(
-      radius, 
       this.GetBodyLocalPoint(Vector2.zero, body),
+      radius, 
       this.density);
     return this.shape;
   }

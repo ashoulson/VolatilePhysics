@@ -175,7 +175,7 @@ namespace Volatile
     {
       this.Facing = Util.Polar(this.Angle);
       for (int i = 0; i < this.shapes.Count; i++)
-        this.shapes[i].UpdateWorldCache(this.Position, this.Facing);
+        this.shapes[i].SetWorld(this.Position, this.Facing);
       this.UpdateAABB();
     }
 

@@ -18,7 +18,7 @@ public class VolatilePolygon : VolatileShape
     Vector2[] vertices = new Vector2[this.points.Length];
     for (int i = 0; i < this.points.Length; i++)
       vertices[i] = this.GetBodyLocalPoint(body, this.points[i].localPosition);
-    this.shape = new Polygon(vertices, this.density);
+    //this.shape = new Polygon(vertices, this.density);
     return this.shape;
   }
 
@@ -29,7 +29,8 @@ public class VolatilePolygon : VolatileShape
       VolatileDebug.DrawShape(
         this.shape, 
         new Color(1.0f, 1.0f, 0.0f), 
-        new Color(1.0f, 0.0f, 1.0f));
+        new Color(1.0f, 0.0f, 1.0f),
+        Color.black);
       VolatileDebug.DrawAABB(
         this.shape.AABB, 
         new Color(1.0f, 0.5f, 0.0f, 0.5f));
