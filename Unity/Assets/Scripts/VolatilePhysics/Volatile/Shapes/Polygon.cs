@@ -176,7 +176,7 @@ namespace Volatile
 
     #region Properties
     public override Shape.ShapeType Type { get { return ShapeType.Polygon; } }
-    public override Vector2 Position { get { return this.position; } }
+    public override Vector2 Position { get { return this.origin; } }
     public override Vector2 Facing { get { return this.facing; } }
 
     public Vector2[] LocalVertices 
@@ -206,7 +206,7 @@ namespace Volatile
     private Axis[] axes;
 
     // World space values
-    private Vector2 position;
+    private Vector2 origin;
     private Vector2 facing;
 
     // Cached world space computation results
@@ -224,7 +224,7 @@ namespace Volatile
 
     public override void SetWorld(Vector2 position, Vector2 facing)
     {
-      this.position = position;
+      this.origin = position;
       this.facing = facing;
       this.ComputeWorldVertices();
       this.AABB = Polygon.ComputeBounds(this.cachedWorldVertices);
@@ -237,14 +237,14 @@ namespace Volatile
     /// <param name="origin">Shape origin point in world space.</param>
     /// <param name="vertices">Vertex positions relative to the origin.</param>
     /// <param name="density">Shape density.</param>
-    internal Polygon(
+    private Polygon(
       Vector2 origin,
       Vector2 facing,
       Vector2[] vertices,
       float density = 1.0f)
       : base(density)
     {
-      this.position = origin;
+      this.origin = origin;
       this.facing = facing;
       this.vertices = vertices;
 
@@ -286,11 +286,11 @@ namespace Volatile
       for (int i = 0; i < this.vertices.Length; i++)
       {
         this.cachedWorldVertices[i] =
-          this.position + this.vertices[i].Rotate(this.facing);
+          this.origin + this.vertices[i].Rotate(this.facing);
 
         Vector2 normal = this.axes[i].Normal.Rotate(this.facing);
         float dot =
-          Vector2.Dot(normal, this.position) +
+          Vector2.Dot(normal, this.origin) +
           this.axes[i].Width;
         this.cachedWorldAxes[i] = new Axis(normal, dot);
       }

@@ -27,6 +27,14 @@ namespace Volatile
 {
   public sealed class Circle : Shape
   {
+    public static Circle FromWorldPosition(
+      Vector2 origin, 
+      float radius, 
+      float density = 1.0f)
+    {
+      return new Circle(origin, radius, density);
+    }
+
     #region Static Methods
     private static float ComputeArea(float sqrRadius)
     {
@@ -45,21 +53,19 @@ namespace Volatile
     #endregion
 
     public override Shape.ShapeType Type { get { return ShapeType.Circle; } }
-    public override Vector2 Position { get { return this.worldOrigin; } }
+    public override Vector2 Position { get { return this.origin; } }
     public override Vector2 Facing { get { return new Vector2(1.0f, 0.0f); } }
 
-    public Vector2 WorldCenter { get { return this.worldOrigin; } }
-    public Vector2 LocalCenter { get { return Vector2.zero; } } //return this.offset; } }
     public float Radius { get { return this.radius; } }
 
     private float radius;
     private float sqrRadius;
 
-    internal Vector2 worldOrigin;
+    internal Vector2 origin;
 
     public override bool ContainsPoint(Vector2 point)
     {
-      return (point - this.worldOrigin).sqrMagnitude < this.sqrRadius;
+      return (point - this.origin).sqrMagnitude < this.sqrRadius;
     }
 
     /// <summary>
@@ -68,16 +74,16 @@ namespace Volatile
     /// </summary>
     public override void SetWorld(Vector2 position, Vector2 facing)
     {
-      this.worldOrigin = position;
-      this.AABB = Circle.ComputeBounds(this.worldOrigin, this.radius);
+      this.origin = position;
+      this.AABB = Circle.ComputeBounds(this.origin, this.radius);
     }
 
-    public Circle(Vector2 origin, float radius, float density = 1.0f)
+    protected Circle(Vector2 origin, float radius, float density = 1.0f)
       : base(density)
     {
+      this.origin = origin;
       this.radius = radius;
       this.sqrRadius = radius * radius;
-      this.worldOrigin = origin;
 
       // Defined in Shape class
       this.Area = Circle.ComputeArea(this.sqrRadius);
