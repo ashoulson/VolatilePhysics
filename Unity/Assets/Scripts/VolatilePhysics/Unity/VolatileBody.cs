@@ -56,13 +56,7 @@ public class VolatileBody : MonoBehaviour
     {
       if (Application.isPlaying)
       {
-        foreach (VolatileShape shape in this.shapes)
-        {
-          shape.DrawShapeInGame();
-          VolatileDebug.DrawBody(
-            this.body,
-            new Color(1.0f, 0.5f, 0.0f));
-        }
+        VolatileDebug.DrawBody(this.body);
       }
       else
       {
@@ -79,7 +73,7 @@ public class VolatileBody : MonoBehaviour
       }
     }
 
-    if (!Application.isPlaying)
+    if (Application.isPlaying == false)
     {
       // Draw Body Root
       Gizmos.color = new Color(1.0f, 0.5f, 0.0f);

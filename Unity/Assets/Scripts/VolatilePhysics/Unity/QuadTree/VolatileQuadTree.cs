@@ -8,38 +8,34 @@ using Volatile.History;
 
 public class VolatileQuadTree : MonoBehaviour 
 {
-  private MutableQuadtree active;
-  private Quadtree stored;
-
+  private QuadtreeBuffer buffer;
   public VolatileShape shape;
-  private ShapeHandle handle;
+
+  private bool updated;
 
   void Awake()
   {
-    this.active = new MutableQuadtree(10, 5, 0, 25.0f);
-    this.stored = new Quadtree();
-    this.handle = new ShapeHandle(this.shape.Shape);
-    this.active.Insert(handle);
+    this.buffer = new QuadtreeBuffer(0, 1, 10, 5, 0, 25.0f);
+    this.buffer.AddShape(this.shape.Shape);
+
+    this.updated = false;
   }
 
   void Update()
   {
-    this.active.Update(this.handle);
-    if (Input.GetKeyDown(KeyCode.B))
+    if (Input.GetKeyDown(KeyCode.A))
     {
-      this.active.BlitOnto(this.stored);
-      this.handle.RecordState(0);
+      this.buffer.Update(0);
+      this.updated = true;
     }
   }
 
   void OnDrawGizmos()
   {
-    if (this.stored != null)
+    if (this.updated == true)
     {
-      this.stored.GizmoDraw(0, true);
-      
-      this.handle.Rollback(0);
-      this.shape.DrawShapeInGame();
+      Quadtree tree = this.buffer.GetQuadTree(0);
+      tree.GizmoDraw(0, true);
     }
   }
 }

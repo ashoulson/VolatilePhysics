@@ -29,14 +29,7 @@ public class VolatilePolygon : VolatileShape
   public override void DrawShapeInGame()
   {
     if (this.shape != null)
-    {
-      VolatileDebug.DrawShape(
-        this.shape, 
-        new Color(1.0f, 1.0f, 0.0f), 
-        new Color(1.0f, 0.0f, 1.0f),
-        Color.black,
-        new Color(1.0f, 0.5f, 0.0f, 0.5f));
-    }
+      VolatileDebug.DrawShape(this.shape);
   }
 
   public override void DrawShapeInEditor()

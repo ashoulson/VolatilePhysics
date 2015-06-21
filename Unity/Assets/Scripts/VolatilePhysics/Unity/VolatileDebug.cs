@@ -7,9 +7,71 @@ using Volatile;
 
 public static class VolatileDebug 
 {
-  public const bool DRAW_AABB = false;
-  public const bool DRAW_ORIGIN = false;
-  public const bool DRAW_NORMALS = false;
+  public static void DrawBody(Body body)
+  {
+    VolatileDebug.DrawBody(
+      body,
+      new Color(0.0f, 1.0f, 1.0f),
+      new Color(1.0f, 0.0f, 1.0f),
+      new Color(1.0f, 0.0f, 0.0f),
+      new Color(0.0f, 0.0f, 0.0f),
+      new Color(0.1f, 0.0f, 0.5f),
+      new Color(0.75f, 0.0f, 0.3f, 0.5f),
+      0.25f);
+  }
+
+  public static void DrawShape(Polygon shape)
+  {
+    VolatileDebug.DrawShape(
+      shape,
+      new Color(0.0f, 1.0f, 1.0f),
+      new Color(1.0f, 0.0f, 1.0f),
+      new Color(0.0f, 0.0f, 0.0f),
+      new Color(0.75f, 0.0f, 0.3f),
+      0.25f);
+  }
+
+  public static void DrawShape(Circle shape)
+  {
+    VolatileDebug.DrawShape(
+      shape,
+      new Color(0.0f, 1.0f, 1.0f),
+      new Color(1.0f, 0.0f, 0.5f));
+  }
+
+  public static void DrawAABB(AABB aabb)
+  {
+    VolatileDebug.DrawAABB(
+      aabb,
+      new Color(1.0f, 0.0f, 0.5f));
+  }
+
+  public static void DrawShape(
+    Shape shape,
+    Color edgeColor, 
+    Color normalColor,
+    Color originColor,
+    Color aabbColor,
+    float normalLength)
+  {
+    if (shape.Type == Shape.ShapeType.Circle)
+    {
+      VolatileDebug.DrawShape(
+        (Circle)shape, 
+        edgeColor, 
+        aabbColor);
+    }
+    else if (shape.Type == Shape.ShapeType.Polygon)
+    {
+      VolatileDebug.DrawShape(
+        (Polygon)shape,
+        edgeColor, 
+        normalColor,
+        originColor,
+        aabbColor,
+        normalLength);
+    }
+  }
 
   public static void DrawShape(
     Polygon polygon, 
@@ -17,7 +79,7 @@ public static class VolatileDebug
     Color normalColor,
     Color originColor,
     Color aabbColor,
-    float normalLength = 0.25f)
+    float normalLength)
   {
     Color current = Gizmos.color;
 
@@ -37,41 +99,26 @@ public static class VolatileDebug
       Gizmos.color = edgeColor;
       Gizmos.DrawLine(u, v);
 
-      if (VolatileDebug.DRAW_NORMALS == true)
-      {
-        // Draw normal
-        Gizmos.color = normalColor;
-        Gizmos.DrawLine(midPoint, midPoint + (n * normalLength));
-      }
-
-      if (VolatileDebug.DRAW_ORIGIN == true)
-      {
-        // Draw line to origin
-        Gizmos.color = originColor;
-        Gizmos.DrawLine(u, polygon.Position);
-      }
-    }
-
-    if (VolatileDebug.DRAW_NORMALS == true)
-    {
-      // Draw facing
+      // Draw normal
       Gizmos.color = normalColor;
-      Gizmos.DrawLine(
-        polygon.Position,
-        polygon.Position + polygon.Facing * normalLength);
-    }
+      Gizmos.DrawLine(midPoint, midPoint + (n * normalLength));
 
-    if (VolatileDebug.DRAW_ORIGIN == true)
-    {
-      // Draw origin
+      // Draw line to origin
       Gizmos.color = originColor;
-      Gizmos.DrawWireSphere(polygon.Position, 0.05f);
+      Gizmos.DrawLine(u, polygon.Position);
     }
 
-    if (VolatileDebug.DRAW_AABB == true)
-    {
-      VolatileDebug.DrawAABB(polygon.AABB, aabbColor);
-    }
+    // Draw facing
+    Gizmos.color = normalColor;
+    Gizmos.DrawLine(
+      polygon.Position,
+      polygon.Position + polygon.Facing * normalLength);
+
+    // Draw origin
+    Gizmos.color = originColor;
+    Gizmos.DrawWireSphere(polygon.Position, 0.05f);
+
+    VolatileDebug.DrawAABB(polygon.AABB, aabbColor);
 
     Gizmos.color = current;
   }
@@ -86,29 +133,50 @@ public static class VolatileDebug
     Gizmos.color = circleColor;
     Gizmos.DrawWireSphere(circle.Position, circle.Radius);
 
-    if (VolatileDebug.DRAW_AABB == true)
-    {
-      VolatileDebug.DrawAABB(circle.AABB, aabbColor);
-    }
+    VolatileDebug.DrawAABB(circle.AABB, aabbColor);
 
     Gizmos.color = current;
   }
 
   public static void DrawBody(
     Body body,
-    Color aabbColor)
+    Color edgeColor,
+    Color normalColor,
+    Color bodyOriginColor,
+    Color shapeOriginColor,
+    Color bodyAabbColor,
+    Color shapeAabbColor,
+    float normalLength)
   {
     Color current = Gizmos.color;
 
-    if (VolatileDebug.DRAW_AABB == true)
-    {
-      VolatileDebug.DrawAABB(body.AABB, aabbColor);
-    }
+    // Draw origin
+    Gizmos.color = bodyOriginColor;
+    Gizmos.DrawWireSphere(body.Position, 0.1f);
+
+    // Draw facing
+    Gizmos.color = normalColor;
+    Gizmos.DrawLine(
+      body.Position,
+      body.Position + body.Facing * normalLength);
+
+    VolatileDebug.DrawAABB(body.AABB, bodyAabbColor);
+
+    foreach (Shape shape in body.Shapes)
+      VolatileDebug.DrawShape(
+        shape,
+        edgeColor,
+        normalColor,
+        shapeOriginColor,
+        shapeAabbColor,
+        normalLength);
 
     Gizmos.color = current;
   }
 
-  public static void DrawAABB(AABB aabb, Color color)
+  public static void DrawAABB(
+    AABB aabb, 
+    Color aabbColor)
   {
     Color current = Gizmos.color;
 
@@ -117,7 +185,7 @@ public static class VolatileDebug
     Vector2 C = new Vector2(aabb.Right, aabb.Bottom);
     Vector2 D = new Vector2(aabb.Left, aabb.Bottom);
 
-    Gizmos.color = color;
+    Gizmos.color = aabbColor;
     Gizmos.DrawLine(A, B);
     Gizmos.DrawLine(B, C);
     Gizmos.DrawLine(C, D);

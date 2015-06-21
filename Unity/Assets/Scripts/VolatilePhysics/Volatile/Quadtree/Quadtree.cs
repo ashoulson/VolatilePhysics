@@ -1,7 +1,27 @@
-﻿using UnityEngine;
+﻿/*
+ *  VolatilePhysics - A 2D Physics Library for Networked Games
+ *  Copyright (c) 2015 - Alexander Shoulson - http://ashoulson.com
+ *
+ *  This software is provided 'as-is', without any express or implied
+ *  warranty. In no event will the authors be held liable for any damages
+ *  arising from the use of this software.
+ *  Permission is granted to anyone to use this software for any purpose,
+ *  including commercial applications, and to alter it and redistribute it
+ *  freely, subject to the following restrictions:
+ *  
+ *  1. The origin of this software must not be misrepresented; you must not
+ *     claim that you wrote the original software. If you use this software
+ *     in a product, an acknowledgment in the product documentation would be
+ *     appreciated but is not required.
+ *  2. Altered source versions must be plainly marked as such, and must not be
+ *     misrepresented as being the original software.
+ *  3. This notice may not be removed or altered from any source distribution.
+*/
+
 using System;
-using System.Collections;
 using System.Collections.Generic;
+
+using UnityEngine;
 
 namespace Volatile.History
 {
@@ -87,12 +107,20 @@ namespace Volatile.History
     // Hashing constants
     protected const int HASH_MASK = 0x7FFFFFFF;
 
+    // Quadtree data
+    protected uint time;
+
     // Hashtable data
     protected int[] buckets;
     protected Node[] nodes;
     protected int count;
     protected int freeList;
     protected int freeCount;
+
+    internal bool IsValid 
+    {
+      get { return this.time != Config.INVALID_TIME; } 
+    }
 
     internal int HashCount
     {
@@ -106,6 +134,7 @@ namespace Volatile.History
 
     public Quadtree()
     {
+      this.time = Config.INVALID_TIME;
       this.buckets = new int[0];
       this.nodes = new Node[0];
       this.count = 0;
@@ -118,6 +147,8 @@ namespace Volatile.History
     /// </summary>
     internal void ReceiveBlit(Quadtree other)
     {
+      Debug.Assert(other.IsValid == true);
+
       if (this.buckets.Length != other.buckets.Length)
         this.buckets = new int[other.buckets.Length];
       if (this.nodes.Length != other.nodes.Length)
@@ -129,10 +160,8 @@ namespace Volatile.History
       this.count = other.count;
       this.freeList = other.freeList;
       this.freeCount = other.freeCount;
+      this.time = other.time;
     }
-
-    #region Node Functionality
-    #endregion
 
     #region Hashing Functionality
     /// <summary>
@@ -239,6 +268,13 @@ namespace Volatile.History
 
       //for (var iter = node.ListFirst; iter != null; iter = iter.HistNext(time))
       //  iter.GizmoDraw(time);
+    }
+
+    private void GizmoDrawShape(
+      int time, 
+      ref Node node)
+    {
+
     }
     #endregion
   }
