@@ -17,8 +17,13 @@ public class VolatilePolygon : VolatileShape
   {
     Vector2[] vertices = new Vector2[this.points.Length];
     for (int i = 0; i < this.points.Length; i++)
-      vertices[i] = this.GetBodyLocalPoint(body, this.points[i].localPosition);
-    //this.shape = new Polygon(vertices, this.density);
+      vertices[i] = this.points[i].position;
+    this.shape = 
+      Polygon.FromWorldVertices(
+        this.transform.position,
+        this.transform.right, 
+        vertices, 
+        this.density);
     return this.shape;
   }
 
@@ -40,14 +45,21 @@ public class VolatilePolygon : VolatileShape
   public override void DrawShapeInEditor()
   {
     Color current = Gizmos.color;
-    Gizmos.color = Color.white;
 
     for (int i = 0; i < this.points.Length; i++)
     {
+      Gizmos.color = Color.white;
       Vector2 u = this.points[i].position;
       Vector2 v = this.points[(i + 1) % this.points.Length].position;
       Gizmos.DrawLine(u, v);
+
+      Gizmos.color = Color.black;
+      Gizmos.DrawLine(this.points[i].position, this.transform.position);
     }
+
+    // Draw origin
+    Gizmos.color = Color.black;
+    Gizmos.DrawWireSphere(this.transform.position, 0.05f);
 
     Gizmos.color = current;
   }

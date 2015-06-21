@@ -80,7 +80,7 @@ public class ShapeTester : MonoBehaviour
 
   void Update()
   {
-    this.body.Set(this.bodyOrigin.position, Mathf.Deg2Rad * this.bodyOrigin.rotation.eulerAngles.z);
+    this.body.SetWorld(this.bodyOrigin.position, Mathf.Deg2Rad * this.bodyOrigin.rotation.eulerAngles.z);
     if (this.fixture != null)
     {
       this.fixture.Apply(this.body.Position, this.body.Facing);
@@ -92,7 +92,7 @@ public class ShapeTester : MonoBehaviour
 
     if (Input.GetKeyDown(KeyCode.A))
     {
-      this.fixture = new Fixture(this.body, this.shape);
+      this.fixture = Fixture.FromWorldSpace(this.body, this.shape);
     }
     if (Input.GetKeyDown(KeyCode.S))
     {
@@ -111,6 +111,28 @@ public class ShapeTester : MonoBehaviour
     if (this.shape != null)
     {
       VolatileDebug.DrawShape(this.shape, Color.yellow, Color.red, Color.black);
+
+
+
+      if (this.fixture != null)
+      {
+        Vector2 bodyFacing = this.bodyOrigin.right;
+        Vector2 fixtureOffset = this.fixture.positionOffset;
+
+        Vector2[] vertices = this.shape.LocalVertices;
+
+        for (int i = 0; i < vertices.Length; i++)
+        {
+          Vector2 originOffset = bodyFacing.Rotate(fixtureOffset);
+          Vector2 vertexOffset = originOffset + this.shape.Facing.Rotate(vertices[i]);
+
+          Vector2 origin = this.bodyOrigin.position;
+          Vector2 destination = origin + vertexOffset;
+
+          Gizmos.color = Color.white;
+          Gizmos.DrawLine(origin, destination);
+        }
+      }
     }
   }
 }

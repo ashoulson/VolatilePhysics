@@ -28,25 +28,21 @@ namespace Volatile
   public sealed class Body
   {
     /// <summary>
-    /// User token, for attaching data to this shape
+    /// User token, for attaching arbitrary data to this body.
     /// </summary>
     public object Token { get; set; }
 
-    public IEnumerable<Shape> Shapes
-    {
-      get { return this.shapes.AsReadOnly(); }
-    }
-
+    public World World { get; internal set; }
     public bool UseGravity { get; set; }
-
     public bool IsStatic { get; private set; }
+    public IEnumerable<Shape> Shapes { get { return this.GetShapes(); } }
 
     public Vector2 Position { get; private set; }
     public Vector2 LinearVelocity { get; private set; }
     public Vector2 Force { get; private set; }
 
     public float Angle { get; private set; }
-    public float AngularVelocity { get; internal set; } // TEMP: Make this private again
+    public float AngularVelocity { get; internal set; } // (TEMP) TODO: Make this private again 
     public float Torque { get; private set; }
 
     public Vector2 Facing { get; private set; }
@@ -57,21 +53,18 @@ namespace Volatile
     internal Vector2 BiasVelocity { get; private set; }
     internal float BiasRotation { get; private set; }
 
-    public World World { get; internal set; }
+    private List<Fixture> fixtures;
 
-    private List<Shape> shapes;
-
-    #region Shape Management
+    #region Fixture/Shape Management
+    /// <summary>
+    /// Adds a shape, using a fixture to "pin" that shape to the body
+    /// relative to its current position and rotation offset from the body.
+    /// Any subsequent movement of the body will also move the shape.
+    /// </summary>
     public void AddShape(Shape shape)
     {
-      this.shapes.Add(shape);
+      this.fixtures.Add(Fixture.FromWorldSpace(this, shape));
       shape.Body = this;
-    }
-
-    public void RemoveShape(Shape shape)
-    {
-      this.shapes.Remove(shape);
-      shape.Body = null;
     }
 
     /// <summary>
@@ -79,8 +72,17 @@ namespace Volatile
     /// </summary>
     public void Initialize()
     {
-      this.ComputeBodyProperties();
-      this.UpdateWorldCache();
+      this.ComputeDynamics();
+      this.ApplyPositions();
+    }
+
+    /// <summary>
+    /// Extracts the shape from each fixture.
+    /// </summary>
+    private IEnumerable<Shape> GetShapes()
+    {
+      foreach (Fixture fixture in this.fixtures)
+        yield return fixture.Shape;
     }
     #endregion
 
@@ -107,23 +109,23 @@ namespace Volatile
     #endregion
 
     #region Position and Orientation
-    public void Set(Vector2 position)
+    public void SetWorld(Vector2 position)
     {
       this.Position = position;
-      this.UpdateWorldCache();
+      this.ApplyPositions();
     }
 
-    public void Set(float radians)
+    public void SetWorld(float radians)
     {
       this.Angle = radians;
-      this.UpdateWorldCache();
+      this.ApplyPositions();
     }
 
-    public void Set(Vector2 position, float radians)
+    public void SetWorld(Vector2 position, float radians)
     {
       this.Position = position;
       this.Angle = radians;
-      this.UpdateWorldCache();
+      this.ApplyPositions();
     }
     #endregion
 
@@ -131,8 +133,9 @@ namespace Volatile
     {
       this.Position = position;
       this.Angle = radians;
+      this.Facing = Util.Polar(radians);
       this.UseGravity = useGravity;
-      this.shapes = new List<Shape>();
+      this.fixtures = new List<Fixture>();
     }
 
     public Body(Vector2 position, bool useGravity = true)
@@ -143,7 +146,7 @@ namespace Volatile
     internal void Update(float deltaTime)
     {
       this.Integrate(deltaTime);
-      this.UpdateWorldCache();
+      this.ApplyPositions();
     }
 
     #region Collision
@@ -171,35 +174,39 @@ namespace Volatile
     #endregion
 
     #region Helper Functions
-    private void UpdateWorldCache()
+    /// <summary>
+    /// Takes the new position and angle and applies to the AABB and fixtures.
+    /// </summary>
+    private void ApplyPositions()
     {
       this.Facing = Util.Polar(this.Angle);
-      for (int i = 0; i < this.shapes.Count; i++)
-        this.shapes[i].SetWorld(this.Position, this.Facing);
+      for (int i = 0; i < this.fixtures.Count; i++)
+        this.fixtures[i].Apply(this.Position, this.Facing);
       this.UpdateAABB();
     }
 
+    /// <summary>
+    /// Builds the AABB by combining all the shape AABBs.
+    /// </summary>
     private void UpdateAABB()
     {
-      if (this.shapes.Count == 1)
+      if (this.fixtures.Count == 1)
       {
-        this.AABB = this.shapes[0].AABB;
+        this.AABB = this.fixtures[0].Shape.AABB;
       }
       else
       {
         float top = Mathf.NegativeInfinity;
         float right = Mathf.NegativeInfinity;
-
         float bottom = Mathf.Infinity;
         float left = Mathf.Infinity;
 
-        for (int i = 0; i < this.shapes.Count; i++)
+        for (int i = 0; i < this.fixtures.Count; i++)
         {
-          AABB aabb = this.shapes[i].AABB;
+          AABB aabb = this.fixtures[i].Shape.AABB;
 
           top = Mathf.Max(top, aabb.Top);
           right = Mathf.Max(right, aabb.Right);
-
           bottom = Mathf.Min(bottom, aabb.Bottom);
           left = Mathf.Min(left, aabb.Left);
         }
@@ -208,6 +215,9 @@ namespace Volatile
       }
     }
 
+    /// <summary>
+    /// Computes forces and dynamics and applies them to position and angle.
+    /// </summary>
     private void Integrate(float deltaTime)
     {
       // Apply damping
@@ -253,15 +263,18 @@ namespace Volatile
       this.BiasRotation = 0.0f;
     }
 
-    private void ComputeBodyProperties()
+    private void ComputeDynamics()
     {
       float mass = 0.0f;
       float inertia = 0.0f;
 
-      foreach (Shape s in this.shapes)
+      foreach (Fixture f in this.fixtures)
       {
-        mass += s.Mass;
-        inertia += s.Mass * s.Inertia;
+        float curMass = f.ComputeMass();
+        float curInertia = f.ComputeInertia(this.Facing);
+
+        mass += curMass;
+        inertia += curMass * curInertia;
       }
 
       if (mass == 0.0f)
