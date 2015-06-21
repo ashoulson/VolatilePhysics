@@ -78,7 +78,7 @@ namespace Volatile
       this.AABB = Circle.ComputeBounds(this.origin, this.radius);
     }
 
-    protected Circle(Vector2 origin, float radius, float density = 1.0f)
+    private Circle(Vector2 origin, float radius, float density = 1.0f)
       : base(density)
     {
       this.origin = origin;
