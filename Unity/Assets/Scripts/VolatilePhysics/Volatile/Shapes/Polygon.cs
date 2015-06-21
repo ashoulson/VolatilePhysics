@@ -153,9 +153,10 @@ namespace Volatile
     }
     #endregion
 
+    #region Properties
     public override Shape.ShapeType Type { get { return ShapeType.Polygon; } }
-    public override Vector2 Position { get { return this.worldOrigin; } }
-    public override Vector2 Facing { get { return this.worldFacing; } }
+    public override Vector2 Position { get { return this.position; } }
+    public override Vector2 Facing { get { return this.facing; } }
 
     public Vector2[] LocalVertices 
     { 
@@ -176,15 +177,21 @@ namespace Volatile
     {
       get { return Polygon.CloneNormals(this.cachedWorldAxes); }
     }
+    #endregion
 
+    #region Fields
+    // Local space values
     private Vector2[] vertices;
     private Axis[] axes;
 
-    private Vector2 worldOrigin;
-    private Vector2 worldFacing;
+    // World space values
+    private Vector2 position;
+    private Vector2 facing;
 
+    // Cached world space computation results
     internal Vector2[] cachedWorldVertices;
     internal Axis[] cachedWorldAxes;
+    #endregion
 
     public override bool ContainsPoint(Vector2 point)
     {
@@ -194,18 +201,15 @@ namespace Volatile
       return true;
     }
 
-    /// <summary>
-    /// Special case that ignores axes pointing away from the normal.
-    /// </summary>
-    internal bool ContainsPointPartial(Vector2 point, Vector2 normal)
+    public override void SetWorld(Vector2 position, Vector2 facing)
     {
-      foreach (Axis axis in this.cachedWorldAxes)
-        if (Vector2.Dot(axis.Normal, normal) >= 0.0f && 
-            Vector2.Dot(axis.Normal, point) > axis.Width)
-          return false;
-      return true;
+      this.position = position;
+      this.facing = facing;
+      this.ComputeWorldValues();
+      this.AABB = Polygon.ComputeBounds(this.cachedWorldVertices);
     }
 
+    #region Internals
     /// <summary>
     /// Creates a new polygon from an origin and local-space vertices.
     /// </summary>
@@ -213,14 +217,14 @@ namespace Volatile
     /// <param name="vertices">Vertex positions relative to the origin.</param>
     /// <param name="density">Shape density.</param>
     internal Polygon(
-      Vector2 origin, 
-      Vector2 facing, 
-      Vector2[] vertices, 
+      Vector2 origin,
+      Vector2 facing,
+      Vector2[] vertices,
       float density = 1.0f)
       : base()
     {
-      this.worldOrigin = origin;
-      this.worldFacing = facing;
+      this.position = origin;
+      this.facing = facing;
       this.vertices = vertices;
 
       this.axes = Polygon.ComputeAxes(this.vertices);
@@ -234,30 +238,38 @@ namespace Volatile
       // TODO: Move this to fixture and have it take body offset into account
       //this.Inertia = Polygon.ComputeInertia(vertices);
 
-      this.ComputeWorldVertices();
+      this.ComputeWorldValues();
     }
 
-    internal override void SetWorld(Vector2 position, Vector2 facing)
+    /// <summary>
+    /// Special case that ignores axes pointing away from the normal.
+    /// </summary>
+    internal bool ContainsPointPartial(Vector2 point, Vector2 normal)
     {
-      this.worldOrigin = position;
-      this.worldFacing = facing;
-      this.ComputeWorldVertices();
-      this.AABB = Polygon.ComputeBounds(this.cachedWorldVertices);
+      foreach (Axis axis in this.cachedWorldAxes)
+        if (Vector2.Dot(axis.Normal, normal) >= 0.0f &&
+            Vector2.Dot(axis.Normal, point) > axis.Width)
+          return false;
+      return true;
     }
 
-    private void ComputeWorldVertices()
+    /// <summary>
+    /// Coverts the local space axes and vertices to world space.
+    /// </summary>
+    private void ComputeWorldValues()
     {
       for (int i = 0; i < this.vertices.Length; i++)
       {
         this.cachedWorldVertices[i] =
-          this.worldOrigin + this.vertices[i].Rotate(this.worldFacing);
+          this.position + this.vertices[i].Rotate(this.facing);
 
-        Vector2 normal = this.axes[i].Normal.Rotate(this.worldFacing);
+        Vector2 normal = this.axes[i].Normal.Rotate(this.facing);
         float dot =
-          Vector2.Dot(normal, this.worldOrigin) +
+          Vector2.Dot(normal, this.position) +
           this.axes[i].Width;
         this.cachedWorldAxes[i] = new Axis(normal, dot);
       }
     }
+    #endregion
   }
 }
