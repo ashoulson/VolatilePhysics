@@ -27,7 +27,7 @@ namespace Volatile.History
 {
   internal class QuadtreeBuffer
   {
-    private static uint SlotForTime(uint time, uint historyLength)
+    internal static uint SlotForTime(uint time, uint historyLength)
     {
       return time % historyLength;
     }
@@ -74,13 +74,13 @@ namespace Volatile.History
 
     internal void Update(uint time)
     {
+      this.current.Time = time;
       this.UpdateShapes();
       this.Store(time);
     }
 
     private void Store(uint time)
     {
-      this.current.Time = time;
       uint slot = QuadtreeBuffer.SlotForTime(time, this.historyLength);
       foreach (ShapeHandle entry in this.shapes)
         entry.RecordState(time, slot);

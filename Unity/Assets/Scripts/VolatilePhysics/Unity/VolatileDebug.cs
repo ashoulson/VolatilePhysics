@@ -20,7 +20,7 @@ public static class VolatileDebug
       0.25f);
   }
 
-  public static void DrawShape(Polygon shape)
+  public static void DrawShape(Shape shape)
   {
     VolatileDebug.DrawShape(
       shape,
@@ -29,14 +29,6 @@ public static class VolatileDebug
       new Color(0.0f, 0.0f, 0.0f),
       new Color(0.75f, 0.0f, 0.3f),
       0.25f);
-  }
-
-  public static void DrawShape(Circle shape)
-  {
-    VolatileDebug.DrawShape(
-      shape,
-      new Color(0.0f, 1.0f, 1.0f),
-      new Color(1.0f, 0.0f, 0.5f));
   }
 
   public static void DrawAABB(AABB aabb)

@@ -41,12 +41,18 @@ namespace Volatile.History
       internal uint time;
       internal Vector2 position;
       internal Vector2 facing;
+      internal ShapeHandle next;
 
-      internal void Set(uint time, Vector2 position, Vector2 facing)
+      internal void Set(
+        uint time, 
+        Vector2 position, 
+        Vector2 facing,
+        ShapeHandle next)
       {
         this.time = time;
         this.position = position;
         this.facing = facing;
+        this.next = next;
       }
     }
 
@@ -73,7 +79,11 @@ namespace Volatile.History
 
     internal void RecordState(uint time, uint slot)
     {
-      this.records[slot].Set(time, this.shape.Position, this.shape.Facing);
+      this.records[slot].Set(
+        time, 
+        this.shape.Position, 
+        this.shape.Facing,
+        this.next);
     }
 
     internal void Rollback(uint time, uint slot)
@@ -86,5 +96,23 @@ namespace Volatile.History
     {
       this.shape.ResetFromBody();
     }
+
+    internal ShapeHandle Next(uint time)
+    {
+      uint slot = QuadtreeBuffer.SlotForTime(time, this.historyLength);
+      Debug.Assert(this.records[slot].time == time);
+      return this.records[slot].next;
+    }
+
+    #region Debug
+    internal void DrawGizmos(uint time)
+    {
+      this.Rollback(
+        time,
+        QuadtreeBuffer.SlotForTime(time, this.historyLength));
+      VolatileDebug.DrawShape(this.shape);
+      this.ResetShape();
+    }
+    #endregion
   }
 }
