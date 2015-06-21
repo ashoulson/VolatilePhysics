@@ -53,7 +53,7 @@ namespace Volatile
     internal Vector2 BiasVelocity { get; private set; }
     internal float BiasRotation { get; private set; }
 
-    private List<Fixture> fixtures;
+    private Dictionary<Shape, Fixture> fixtures;
 
     #region Fixture/Shape Management
     /// <summary>
@@ -63,7 +63,7 @@ namespace Volatile
     /// </summary>
     public void AddShape(Shape shape)
     {
-      this.fixtures.Add(Fixture.FromWorldSpace(this, shape));
+      this.fixtures.Add(shape, Fixture.FromWorldSpace(this, shape));
       shape.Body = this;
     }
 
@@ -73,7 +73,7 @@ namespace Volatile
     public void Initialize()
     {
       this.ComputeDynamics();
-      this.ApplyPositions();
+      this.ApplyPosition();
     }
 
     /// <summary>
@@ -81,7 +81,7 @@ namespace Volatile
     /// </summary>
     private IEnumerable<Shape> GetShapes()
     {
-      foreach (Fixture fixture in this.fixtures)
+      foreach (Fixture fixture in this.fixtures.Values)
         yield return fixture.Shape;
     }
     #endregion
@@ -112,20 +112,20 @@ namespace Volatile
     public void SetWorld(Vector2 position)
     {
       this.Position = position;
-      this.ApplyPositions();
+      this.ApplyPosition();
     }
 
     public void SetWorld(float radians)
     {
       this.Angle = radians;
-      this.ApplyPositions();
+      this.ApplyPosition();
     }
 
     public void SetWorld(Vector2 position, float radians)
     {
       this.Position = position;
       this.Angle = radians;
-      this.ApplyPositions();
+      this.ApplyPosition();
     }
     #endregion
 
@@ -135,7 +135,7 @@ namespace Volatile
       this.Angle = radians;
       this.Facing = Util.Polar(radians);
       this.UseGravity = useGravity;
-      this.fixtures = new List<Fixture>();
+      this.fixtures = new Dictionary<Shape, Fixture>();
     }
 
     public Body(Vector2 position, bool useGravity = true)
@@ -146,7 +146,7 @@ namespace Volatile
     internal void Update(float deltaTime)
     {
       this.Integrate(deltaTime);
-      this.ApplyPositions();
+      this.ApplyPosition();
     }
 
     #region Collision
@@ -175,14 +175,24 @@ namespace Volatile
 
     #region Helper Functions
     /// <summary>
-    /// Takes the new position and angle and applies to the AABB and fixtures.
+    /// Applies the current position and angle to shapes and the AABB.
+    /// Use this function for resetting shapes if they were moved for tests.
     /// </summary>
-    private void ApplyPositions()
+    internal void ApplyPosition()
     {
       this.Facing = Util.Polar(this.Angle);
-      for (int i = 0; i < this.fixtures.Count; i++)
-        this.fixtures[i].Apply(this.Position, this.Facing);
+      foreach (Fixture fixture in this.fixtures.Values)
+        fixture.Apply(this.Position, this.Facing);
       this.UpdateAABB();
+    }
+
+    /// <summary>
+    /// Returns a shape to its original body-relative position. Note that
+    /// this function does not recompute body facing or the AABB.
+    /// </summary>
+    internal void ResetShape(Shape shape)
+    {
+      this.fixtures[shape].Apply(this.Position, this.Facing);
     }
 
     /// <summary>
@@ -190,29 +200,21 @@ namespace Volatile
     /// </summary>
     private void UpdateAABB()
     {
-      if (this.fixtures.Count == 1)
+      float top = Mathf.NegativeInfinity;
+      float right = Mathf.NegativeInfinity;
+      float bottom = Mathf.Infinity;
+      float left = Mathf.Infinity;
+
+      foreach (Fixture fixture in this.fixtures.Values)
       {
-        this.AABB = this.fixtures[0].Shape.AABB;
+        AABB aabb = fixture.Shape.AABB;
+        top = Mathf.Max(top, aabb.Top);
+        right = Mathf.Max(right, aabb.Right);
+        bottom = Mathf.Min(bottom, aabb.Bottom);
+        left = Mathf.Min(left, aabb.Left);
       }
-      else
-      {
-        float top = Mathf.NegativeInfinity;
-        float right = Mathf.NegativeInfinity;
-        float bottom = Mathf.Infinity;
-        float left = Mathf.Infinity;
 
-        for (int i = 0; i < this.fixtures.Count; i++)
-        {
-          AABB aabb = this.fixtures[i].Shape.AABB;
-
-          top = Mathf.Max(top, aabb.Top);
-          right = Mathf.Max(right, aabb.Right);
-          bottom = Mathf.Min(bottom, aabb.Bottom);
-          left = Mathf.Min(left, aabb.Left);
-        }
-
-        this.AABB = new AABB(top, bottom, left, right);
-      }
+      this.AABB = new AABB(top, bottom, left, right);
     }
 
     /// <summary>
@@ -268,10 +270,10 @@ namespace Volatile
       float mass = 0.0f;
       float inertia = 0.0f;
 
-      foreach (Fixture f in this.fixtures)
+      foreach (Fixture fixture in this.fixtures.Values)
       {
-        float curMass = f.ComputeMass();
-        float curInertia = f.ComputeInertia(this.Facing);
+        float curMass = fixture.ComputeMass();
+        float curInertia = fixture.ComputeInertia(this.Facing);
 
         mass += curMass;
         inertia += curMass * curInertia;

@@ -13,8 +13,9 @@ public class VolatilePolygon : VolatileShape
   public override Shape Shape { get { return this.shape; } }
   private Polygon shape;
 
-  public override Shape PrepareShape(VolatileBody body)
+  public override void PrepareShape()
   {
+    Debug.Log("VolatilePolygon");
     Vector2[] vertices = new Vector2[this.points.Length];
     for (int i = 0; i < this.points.Length; i++)
       vertices[i] = this.points[i].position;
@@ -24,7 +25,6 @@ public class VolatilePolygon : VolatileShape
         this.transform.right, 
         vertices, 
         this.density);
-    return this.shape;
   }
 
   public override void DrawShapeInGame()
@@ -35,9 +35,7 @@ public class VolatilePolygon : VolatileShape
         this.shape, 
         new Color(1.0f, 1.0f, 0.0f), 
         new Color(1.0f, 0.0f, 1.0f),
-        Color.black);
-      VolatileDebug.DrawAABB(
-        this.shape.AABB, 
+        Color.black,
         new Color(1.0f, 0.5f, 0.0f, 0.5f));
     }
   }

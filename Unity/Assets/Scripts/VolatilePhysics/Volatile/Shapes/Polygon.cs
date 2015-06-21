@@ -178,6 +178,7 @@ namespace Volatile
     public override Shape.ShapeType Type { get { return ShapeType.Polygon; } }
     public override Vector2 Position { get { return this.origin; } }
     public override Vector2 Facing { get { return this.facing; } }
+    public override float Angle { get { return this.facing.Angle(); } }
 
     public Vector2[] LocalVertices 
     { 

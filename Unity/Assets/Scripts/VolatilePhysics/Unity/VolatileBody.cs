@@ -22,7 +22,10 @@ public class VolatileBody : MonoBehaviour
       Mathf.Deg2Rad * transform.eulerAngles.z, 
       this.useGravity);
     foreach (VolatileShape shape in this.shapes)
-      this.body.AddShape(shape.PrepareShape(this));
+    {
+      this.body.AddShape(shape.Shape);
+      shape.isStandalone = false;
+    }
     this.body.Initialize();
   }
 
@@ -56,8 +59,8 @@ public class VolatileBody : MonoBehaviour
         foreach (VolatileShape shape in this.shapes)
         {
           shape.DrawShapeInGame();
-          VolatileDebug.DrawAABB(
-            this.body.AABB,
+          VolatileDebug.DrawBody(
+            this.body,
             new Color(1.0f, 0.5f, 0.0f));
         }
       }

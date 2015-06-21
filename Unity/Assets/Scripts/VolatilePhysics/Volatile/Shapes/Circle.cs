@@ -55,6 +55,7 @@ namespace Volatile
     public override Shape.ShapeType Type { get { return ShapeType.Circle; } }
     public override Vector2 Position { get { return this.origin; } }
     public override Vector2 Facing { get { return new Vector2(1.0f, 0.0f); } }
+    public override float Angle { get { return 0.0f; } }
 
     public float Radius { get { return this.radius; } }
 
