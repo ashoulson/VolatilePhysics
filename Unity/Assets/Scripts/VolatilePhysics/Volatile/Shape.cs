@@ -52,6 +52,9 @@ namespace Volatile
 
     public abstract ShapeType Type { get; }
 
+    public abstract Vector2 Position { get; }
+    public abstract Vector2 Facing { get; }
+
     /// <summary>
     /// User token, for attaching data to this shape
     /// </summary>
@@ -79,8 +82,6 @@ namespace Volatile
       this.id = nextId++;
     }
 
-    internal abstract void UpdateWorldCache(
-      Vector2 bodyPosition, 
-      Vector2 bodyFacing);
+    internal abstract void SetWorld(Vector2 position, Vector2 facing);
   }
 }

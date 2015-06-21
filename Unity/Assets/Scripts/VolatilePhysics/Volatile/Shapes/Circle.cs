@@ -45,48 +45,47 @@ namespace Volatile
     #endregion
 
     public override Shape.ShapeType Type { get { return ShapeType.Circle; } }
+    public override Vector2 Position { get { return this.worldOrigin; } }
+    public override Vector2 Facing { get { return new Vector2(1.0f, 0.0f); } }
 
-    public Vector2 WorldCenter { get { return this.cachedWorldCenter; } }
-    public Vector2 LocalCenter { get { return this.offset; } }
+    public Vector2 WorldCenter { get { return this.worldOrigin; } }
+    public Vector2 LocalCenter { get { return Vector2.zero; } } //return this.offset; } }
     public float Radius { get { return this.radius; } }
 
     private float radius;
     private float sqrRadius;
-    private Vector2 offset;
 
-    internal Vector2 cachedWorldCenter;
+    internal Vector2 worldOrigin;
 
     public override bool ContainsPoint(Vector2 point)
     {
-      return (point - this.cachedWorldCenter).sqrMagnitude < this.sqrRadius;
+      return (point - this.worldOrigin).sqrMagnitude < this.sqrRadius;
     }
 
-    public Circle(float radius, Vector2 offset, float density = 1.0f)
+    public Circle(Vector2 origin, float radius, float density = 1.0f)
       : base()
     {
       this.radius = radius;
       this.sqrRadius = radius * radius;
-      this.offset = offset;
+      this.worldOrigin = origin;
 
       // Defined in Shape class
       this.Area = Circle.ComputeArea(this.sqrRadius);
       this.Mass = Shape.ComputeMass(this.Area, density);
-      this.Inertia = Circle.ComputeInertia(this.sqrRadius, offset);
+
+      // TODO: This requires an offset from the body origin to work properly
+      // Move to the fixture maybe?
+      //this.Inertia = Circle.ComputeInertia(this.sqrRadius, offset);
     }
 
     /// <summary>
     /// Creates a cache of the origin in world space. This should be called
     /// every time the world updates or the shape/body is moved externally.
     /// </summary>
-    internal override void UpdateWorldCache(
-      Vector2 bodyPosition, 
-      Vector2 bodyFacing)
+    internal override void SetWorld(Vector2 position, Vector2 facing)
     {
-      this.cachedWorldCenter =
-        bodyPosition + this.offset.Rotate(bodyFacing);
-
-      // Note we're creating the bounding box in world space
-      this.AABB = Circle.ComputeBounds(this.cachedWorldCenter, this.radius);
+      this.worldOrigin = position;
+      this.AABB = Circle.ComputeBounds(this.worldOrigin, this.radius);
     }
   }
 }

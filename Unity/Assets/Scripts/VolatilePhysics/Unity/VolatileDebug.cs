@@ -11,6 +11,7 @@ public static class VolatileDebug
     Polygon polygon, 
     Color edgeColor, 
     Color normalColor,
+    Color originColor,
     float normalLength = 0.25f)
   {
     Color current = Gizmos.color;
@@ -34,7 +35,21 @@ public static class VolatileDebug
       // Draw normal
       Gizmos.color = normalColor;
       Gizmos.DrawLine(midPoint, midPoint + (n * normalLength));
+
+      // Draw line to origin
+      Gizmos.color = originColor;
+      Gizmos.DrawLine(u, polygon.Position);
     }
+
+    // Draw origin
+    Gizmos.color = originColor;
+    Gizmos.DrawWireSphere(polygon.Position, 0.05f);
+
+    // Draw facing
+    Gizmos.color = normalColor;
+    Gizmos.DrawLine(
+      polygon.Position,
+      polygon.Position + polygon.Facing * normalLength);
 
     Gizmos.color = current;
   }

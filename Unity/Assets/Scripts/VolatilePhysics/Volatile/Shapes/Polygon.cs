@@ -27,7 +27,48 @@ namespace Volatile
 {
   public sealed class Polygon : Shape
   {
-    #region Static Methods
+    #region Factory Functions
+    public static Polygon FromWorldVertices(
+      Vector2 origin,
+      Vector2 facing, 
+      Vector2[] vertices, 
+      float density = 1.0f)
+    {
+      return new Polygon(
+        origin,
+        facing,
+        Polygon.ComputeOffsetVertices(origin, facing, vertices),
+        density);
+    }
+
+    public static Polygon FromLocalVertices(
+      Vector2 origin,
+      Vector2 facing, 
+      Vector2[] vertices,
+      float density = 1.0f)
+    {
+      return new Polygon(origin, facing, vertices, density);
+    }
+    #endregion
+
+    #region Private Static Methods
+    /// <summary>
+    /// Converts world space vertices to offsets.
+    /// </summary>
+    /// <param name="origin">Shape origin point in world space.</param>
+    /// <param name="vertices">Vertex positions in world space.</param>
+    /// <returns></returns>
+    private static Vector2[] ComputeOffsetVertices(
+      Vector2 origin,
+      Vector2 facing,
+      Vector2[] vertices)
+    {
+      Vector2[] offsets = new Vector2[vertices.Length];
+      for (int i = 0; i < offsets.Length; i++)
+        offsets[i] = ((vertices[i]) - origin).InvRotate(facing);
+      return offsets;
+    }
+
     private static Axis[] ComputeAxes(Vector2[] vertices)
     {
       Axis[] axes = new Axis[vertices.Length];
@@ -56,6 +97,7 @@ namespace Volatile
       return sum / 2.0f;
     }
 
+    // TODO: This needs to take into account the offset from the body
     private static float ComputeInertia(Vector2[] vertices)
     {
       float s1 = 0.0f;
@@ -112,6 +154,8 @@ namespace Volatile
     #endregion
 
     public override Shape.ShapeType Type { get { return ShapeType.Polygon; } }
+    public override Vector2 Position { get { return this.worldOrigin; } }
+    public override Vector2 Facing { get { return this.worldFacing; } }
 
     public Vector2[] LocalVertices 
     { 
@@ -136,6 +180,9 @@ namespace Volatile
     private Vector2[] vertices;
     private Axis[] axes;
 
+    private Vector2 worldOrigin;
+    private Vector2 worldFacing;
+
     internal Vector2[] cachedWorldVertices;
     internal Axis[] cachedWorldAxes;
 
@@ -159,43 +206,58 @@ namespace Volatile
       return true;
     }
 
-    public Polygon(Vector2[] vertices, float density = 1.0f)
+    /// <summary>
+    /// Creates a new polygon from an origin and local-space vertices.
+    /// </summary>
+    /// <param name="origin">Shape origin point in world space.</param>
+    /// <param name="vertices">Vertex positions relative to the origin.</param>
+    /// <param name="density">Shape density.</param>
+    internal Polygon(
+      Vector2 origin, 
+      Vector2 facing, 
+      Vector2[] vertices, 
+      float density = 1.0f)
       : base()
     {
+      this.worldOrigin = origin;
+      this.worldFacing = facing;
       this.vertices = vertices;
-      this.axes = Polygon.ComputeAxes(vertices);
+
+      this.axes = Polygon.ComputeAxes(this.vertices);
       this.cachedWorldVertices = new Vector2[this.vertices.Length];
       this.cachedWorldAxes = new Axis[this.vertices.Length];
 
       // Defined in Shape class
       this.Area = Polygon.ComputeArea(vertices);
       this.Mass = Shape.ComputeMass(this.Area, density);
-      this.Inertia = Polygon.ComputeInertia(vertices);
+
+      // TODO: Move this to fixture and have it take body offset into account
+      //this.Inertia = Polygon.ComputeInertia(vertices);
+
+      this.ComputeWorldVertices();
     }
 
-    /// <summary>
-    /// Creates a cache of the vertices and axes in world space. This should
-    /// be called every time the world updates or the shape/body is moved
-    /// externally.
-    /// </summary>
-    internal override void UpdateWorldCache(
-      Vector2 bodyPosition,
-      Vector2 bodyFacing)
+    internal override void SetWorld(Vector2 position, Vector2 facing)
+    {
+      this.worldOrigin = position;
+      this.worldFacing = facing;
+      this.ComputeWorldVertices();
+      this.AABB = Polygon.ComputeBounds(this.cachedWorldVertices);
+    }
+
+    private void ComputeWorldVertices()
     {
       for (int i = 0; i < this.vertices.Length; i++)
       {
         this.cachedWorldVertices[i] =
-          bodyPosition + this.vertices[i].Rotate(bodyFacing);
+          this.worldOrigin + this.vertices[i].Rotate(this.worldFacing);
 
-        Vector2 normal = this.axes[i].Normal.Rotate(bodyFacing);
+        Vector2 normal = this.axes[i].Normal.Rotate(this.worldFacing);
         float dot =
-          Vector2.Dot(normal, bodyPosition) +
+          Vector2.Dot(normal, this.worldOrigin) +
           this.axes[i].Width;
         this.cachedWorldAxes[i] = new Axis(normal, dot);
       }
-
-      // Note we're creating the bounding box in world space
-      this.AABB = Polygon.ComputeBounds(this.cachedWorldVertices);
     }
   }
 }
