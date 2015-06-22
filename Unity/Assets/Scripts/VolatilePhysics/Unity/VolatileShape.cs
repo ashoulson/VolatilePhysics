@@ -43,7 +43,7 @@ public abstract class VolatileShape : MonoBehaviour
 
       if (this.Shape != null)
       {
-        DebugDraw.Draw(this.Shape);
+        Util.Draw(this.Shape);
       }
       else
       {

@@ -89,6 +89,12 @@ namespace Volatile.History
       this.buffer.Update(this.time);
     }
 
+    internal override void BroadPhase(List<Manifold> manifolds)
+    {
+      // TODO: Use quadtree for broadphase
+      base.BroadPhase(manifolds);
+    }
+
     internal Quadtree GetTree(int time)
     {
       if (this.IsTimeInBounds(time) == true)
