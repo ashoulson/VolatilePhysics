@@ -34,7 +34,7 @@ public class VolatileQuadTree : MonoBehaviour
   {
     if (this.updated == true)
     {
-      Quadtree tree = this.buffer.GetQuadTree(0);
+      Quadtree tree = this.buffer.GetTree(0);
       tree.GizmoDraw(0, true);
     }
   }

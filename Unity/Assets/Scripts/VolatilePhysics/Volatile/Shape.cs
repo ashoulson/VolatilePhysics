@@ -66,8 +66,8 @@ namespace Volatile
     internal float restitution = Config.DEFAULT_RESTITUTION;
 
     // TODO: Remove static here
-    protected static uint nextId = 0;
-    internal uint id;
+    protected static int nextId = 0;
+    internal int id;
 
     public abstract bool ContainsPoint(Vector2 v);
 

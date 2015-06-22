@@ -36,6 +36,17 @@ namespace Volatile
     internal const float DEFAULT_FRICTION = 0.8f;
 
     /// <summary>
+    /// Fixed update delta time for body integration. Should be set to
+    /// Unity's Time.fixedDeltaTime.
+    /// </summary>
+    internal const float DELTA_TIME = 0.02f;
+
+    /// <summary>
+    /// Number of iterations when updating the world.
+    /// </summary>
+    internal const int NUM_ITERATIONS = 20;
+
+    /// <summary>
     /// Maximum contacts for collision resolution.
     /// </summary>
     internal const int MAX_CONTACTS = 3;
@@ -48,6 +59,6 @@ namespace Volatile
     /// <summary>
     /// Invalid time for initialization purposes.
     /// </summary>
-    internal const uint INVALID_TIME = uint.MaxValue;
+    internal const int INVALID_TIME = -1;
   }
 }
