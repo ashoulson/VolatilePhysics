@@ -27,7 +27,7 @@ namespace Volatile.History
 {
   internal class QuadtreeBuffer
   {
-    internal static uint SlotForTime(uint time, uint historyLength)
+    internal static int SlotForTime(int time, int historyLength)
     {
       return time % historyLength;
     }
@@ -35,11 +35,11 @@ namespace Volatile.History
     private List<ShapeHandle> shapes;
     private Quadtree[] history;
     private MutableQuadtree current;
-    private uint historyLength;
+    private int historyLength;
 
     internal QuadtreeBuffer(
-      uint time, 
-      uint historyLength,
+      int startingTime, 
+      int historyLength,
       int initialCapacity, 
       int maxDepth, 
       int maxBodiesPerCell,
@@ -48,7 +48,7 @@ namespace Volatile.History
       this.historyLength = historyLength;
       this.current = 
         new MutableQuadtree(
-          time, 
+          startingTime, 
           initialCapacity, 
           maxDepth, 
           maxBodiesPerCell, 
@@ -59,9 +59,10 @@ namespace Volatile.History
       this.shapes = new List<ShapeHandle>();
     }
 
-    internal Quadtree GetQuadTree(uint time)
+    internal Quadtree GetTree(int time)
     {
-      uint slot = QuadtreeBuffer.SlotForTime(time, this.historyLength);
+      int slot = QuadtreeBuffer.SlotForTime(time, this.historyLength);
+      Debug.Log("Getting tree at " + time);
       return this.history[slot];
     }
 
@@ -72,16 +73,16 @@ namespace Volatile.History
       this.current.Insert(entry);
     }
 
-    internal void Update(uint time)
+    internal void Update(int time)
     {
       this.current.Time = time;
       this.UpdateShapes();
       this.Store(time);
     }
 
-    private void Store(uint time)
+    private void Store(int time)
     {
-      uint slot = QuadtreeBuffer.SlotForTime(time, this.historyLength);
+      int slot = QuadtreeBuffer.SlotForTime(time, this.historyLength);
       foreach (ShapeHandle entry in this.shapes)
         entry.RecordState(time, slot);
       this.history[slot].ReceiveBlit(this.current);

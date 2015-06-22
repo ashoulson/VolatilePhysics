@@ -30,20 +30,20 @@ namespace Volatile.History
     private int maxDepth;
     private int maxBodiesPerCell;
 
-    internal uint Time 
+    internal int Time 
     {
       get { return this.time; }
       set { this.time = value; }
     }
 
     internal MutableQuadtree(
-      uint currentTime,
+      int startingTime,
       int initialCapacity,
       int maxDepth,
       int maxBodiesPerCell,
       float extent)
     {
-      this.time = currentTime;
+      this.time = startingTime;
       this.HashInit(initialCapacity);
       this.maxDepth = maxDepth;
       this.maxBodiesPerCell = maxBodiesPerCell;

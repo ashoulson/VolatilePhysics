@@ -108,7 +108,7 @@ namespace Volatile.History
     protected const int HASH_MASK = 0x7FFFFFFF;
 
     // Quadtree data
-    protected uint time;
+    protected int time;
 
     // Hashtable data
     protected int[] buckets;
@@ -194,7 +194,7 @@ namespace Volatile.History
 
     #region Debug
     public void GizmoDraw(
-      uint time, 
+      int time, 
       bool drawGrid)
     {
       if (this.nodes.Length > 0)
@@ -209,7 +209,7 @@ namespace Volatile.History
     }
 
     private void GizmoDraw(
-      uint time,
+      int time,
       ref Node node,
       bool drawGrid,
       Color boxColor)
@@ -231,7 +231,7 @@ namespace Volatile.History
       this.DrawShapes(time, ref node);
     }
 
-    private void DrawShapes(uint time, ref Node node)
+    private void DrawShapes(int time, ref Node node)
     {
       for (var iter = node.listFirst; iter != null; iter = iter.Next(time))
         iter.DrawGizmos(time);
@@ -239,7 +239,7 @@ namespace Volatile.History
 
     private void DrawBox(
       ref Node node,
-      uint time,
+      int time,
       Color boxColor)
     {
       Gizmos.color = new Color(1f, 1f, 1f, 1f);

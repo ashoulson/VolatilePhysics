@@ -27,11 +27,20 @@ namespace Volatile
 {
   public class World
   {
+    public IEnumerable<Shape> Shapes 
+    { 
+      get { return this.shapes.AsReadOnly(); } 
+    }
+
+    public IEnumerable<Body> Bodies 
+    {
+      get { return this.bodies.AsReadOnly(); } 
+    }
+
     internal float Elasticity { get; private set; }
 
-    // TODO: Make me properties
-    public List<Body> bodies;
-    public List<Shape> shapes;
+    protected List<Body> bodies;
+    protected List<Shape> shapes;
 
     internal Vector2 gravity;
     internal float damping = 0.999f;
@@ -55,7 +64,7 @@ namespace Volatile
       this.manifolds = new List<Manifold>();
     }
 
-    public void AddBody(Body body)
+    public virtual void AddBody(Body body)
     {
       foreach (Shape s in body.Shapes)
         this.shapes.Add(s);
@@ -63,14 +72,18 @@ namespace Volatile
       body.World = this;
     }
 
-    private void BroadPhase(List<Manifold> manifolds)
+    internal virtual void BroadPhase(
+      List<Manifold> manifolds)
     {
       for (int i = 0; i < this.shapes.Count; i++)
         for (int j = i + 1; j < this.shapes.Count; j++)
           this.NarrowPhase(this.shapes[i], this.shapes[j], manifolds);
     }
 
-    private void NarrowPhase(Shape sa, Shape sb, List<Manifold> manifolds)
+    internal virtual void NarrowPhase(
+      Shape sa, 
+      Shape sb, 
+      List<Manifold> manifolds)
     {
       if (sa.Body.CanCollide(sb.Body) == false)
         return;
@@ -88,17 +101,42 @@ namespace Volatile
           yield return shape;
     }
 
-    public void RunPhysics(float dt, int iterations)
+    public virtual void Update()
+    {
+      this.UpdatePhysics();
+    }
+
+    protected void UpdatePhysics()
+    {
+      this.UpdateBodies();
+      this.UpdateCollision();
+      this.CleanupManifolds();
+    }
+
+    protected void UpdateBodies()
     {
       foreach (Body body in this.bodies)
-        body.Update(dt);
+        body.Update();
       this.BroadPhase(this.manifolds);
+    }
 
+    protected void CleanupManifolds()
+    {
+      for (int i = 0; i < this.manifolds.Count; i++)
+      {
+        this.manifolds[i].ReleaseContacts();
+        this.manifoldPool.Release(this.manifolds[i]);
+      }
+      this.manifolds.Clear();
+    }
+
+    protected void UpdateCollision()
+    {
       for (int i = 0; i < this.manifolds.Count; i++)
         this.manifolds[i].Prestep();
 
       this.Elasticity = 1.0f;
-      for (int j = 0; j < iterations * 1 / 3; j++)
+      for (int j = 0; j < Config.NUM_ITERATIONS * 1 / 3; j++)
         for (int i = 0; i < this.manifolds.Count; i++)
           this.manifolds[i].Solve();
 
@@ -106,16 +144,9 @@ namespace Volatile
         this.manifolds[i].SolveCached();
 
       this.Elasticity = 0.0f;
-      for (int j = 0; j < iterations * 2 / 3; j++)
+      for (int j = 0; j < Config.NUM_ITERATIONS * 2 / 3; j++)
         for (int i = 0; i < this.manifolds.Count; i++)
           this.manifolds[i].Solve();
-
-      for (int i = 0; i < this.manifolds.Count; i++)
-      {
-        this.manifolds[i].ReleaseContacts();
-        this.manifoldPool.Release(this.manifolds[i]);
-      }
-      this.manifolds.Clear();
     }
   }
 }

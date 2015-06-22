@@ -38,13 +38,13 @@ namespace Volatile.History
   {
     private struct Record
     {
-      internal uint time;
+      internal int time;
       internal Vector2 position;
       internal Vector2 facing;
       internal ShapeHandle next;
 
       internal void Set(
-        uint time, 
+        int time, 
         Vector2 position, 
         Vector2 facing,
         ShapeHandle next)
@@ -64,11 +64,11 @@ namespace Volatile.History
 
     internal AABB CurrentAABB { get { return this.shape.AABB; } }
 
-    private uint historyLength;
+    private int historyLength;
     private Record[] records;
     private Shape shape;
 
-    internal ShapeHandle(Shape shape, uint historyLength)
+    internal ShapeHandle(Shape shape, int historyLength)
     {
       this.historyLength = historyLength;
       this.shape = shape;
@@ -77,8 +77,9 @@ namespace Volatile.History
         this.records[i].time = Config.INVALID_TIME;
     }
 
-    internal void RecordState(uint time, uint slot)
+    internal void RecordState(int time, int slot)
     {
+      Debug.Log("Saving for: " + time + " in " + slot);
       this.records[slot].Set(
         time, 
         this.shape.Position, 
@@ -86,7 +87,7 @@ namespace Volatile.History
         this.next);
     }
 
-    internal void Rollback(uint time, uint slot)
+    internal void Rollback(int time, int slot)
     {
       Record record = this.records[slot];
       this.shape.SetWorld(record.position, record.facing);
@@ -97,15 +98,16 @@ namespace Volatile.History
       this.shape.ResetFromBody();
     }
 
-    internal ShapeHandle Next(uint time)
+    internal ShapeHandle Next(int time)
     {
-      uint slot = QuadtreeBuffer.SlotForTime(time, this.historyLength);
+      int slot = QuadtreeBuffer.SlotForTime(time, this.historyLength);
+      Debug.Log("Retrieving for " + time + " in slot " + slot);
       Debug.Assert(this.records[slot].time == time);
       return this.records[slot].next;
     }
 
     #region Debug
-    internal void DrawGizmos(uint time)
+    internal void DrawGizmos(int time)
     {
       this.Rollback(
         time,

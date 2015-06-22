@@ -143,9 +143,9 @@ namespace Volatile
     {
     }
 
-    internal void Update(float deltaTime)
+    internal void Update()
     {
-      this.Integrate(deltaTime);
+      this.Integrate();
       this.ApplyPosition();
     }
 
@@ -220,7 +220,7 @@ namespace Volatile
     /// <summary>
     /// Computes forces and dynamics and applies them to position and angle.
     /// </summary>
-    private void Integrate(float deltaTime)
+    private void Integrate()
     {
       // Apply damping
       this.LinearVelocity *= this.World.damping;
@@ -233,9 +233,9 @@ namespace Volatile
       float totalTorque = this.Torque * this.InvInertia;
 
       // See http://www.niksula.hut.fi/~hkankaan/Homepages/gravity.html
-      this.IntegrateForces(totalForce, totalTorque, deltaTime, 0.5f);
-      this.IntegrateVelocity(deltaTime);
-      this.IntegrateForces(totalForce, totalTorque, deltaTime, 0.5f);
+      this.IntegrateForces(totalForce, totalTorque, 0.5f);
+      this.IntegrateVelocity();
+      this.IntegrateForces(totalForce, totalTorque, 0.5f);
 
       this.ClearForces();
     }
@@ -243,17 +243,18 @@ namespace Volatile
     private void IntegrateForces(
       Vector2 force,
       float torque,
-      float deltaTime,
       float mult)
     {
-      this.LinearVelocity += force * deltaTime * mult;
-      this.AngularVelocity -= torque * deltaTime * mult;
+      this.LinearVelocity += Config.DELTA_TIME * force * mult;
+      this.AngularVelocity -= Config.DELTA_TIME * torque * mult;
     }
 
-    private void IntegrateVelocity(float dt)
+    private void IntegrateVelocity()
     {
-      this.Position += dt * this.LinearVelocity + this.BiasVelocity;
-      this.Angle += dt * this.AngularVelocity + this.BiasRotation;
+      this.Position += 
+        Config.DELTA_TIME * this.LinearVelocity + this.BiasVelocity;
+      this.Angle += 
+        Config.DELTA_TIME * this.AngularVelocity + this.BiasRotation;
     }
 
     private void ClearForces()
