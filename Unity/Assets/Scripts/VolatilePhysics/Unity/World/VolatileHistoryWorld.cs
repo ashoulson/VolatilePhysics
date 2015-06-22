@@ -41,16 +41,16 @@ public class VolatileHistoryWorld : VolatileWorld
     }
     if (Input.GetKey(KeyCode.Minus))
     {
-      if (this.timeOffset > -60)
+      if (this.timeOffset > -60 && this.GetOffsetTime() > 0)
         this.timeOffset--;
-      this.currentTree = historyWorld.GetTree(this.GetOffsetTime());
     }
     if (Input.GetKey(KeyCode.Equals))
     {
       if (this.timeOffset < -1)
         this.timeOffset++;
-      this.currentTree = historyWorld.GetTree(this.GetOffsetTime());
     }
+
+    this.currentTree = historyWorld.GetTree(this.GetOffsetTime());
   }
 
   void FixedUpdate()
