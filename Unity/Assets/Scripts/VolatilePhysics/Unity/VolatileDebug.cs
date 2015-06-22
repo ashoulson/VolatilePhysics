@@ -11,12 +11,12 @@ public static class VolatileDebug
   {
     VolatileDebug.DrawBody(
       body,
-      new Color(0.0f, 1.0f, 1.0f),
-      new Color(1.0f, 0.0f, 1.0f),
-      new Color(1.0f, 0.0f, 0.0f),
-      new Color(0.0f, 0.0f, 0.0f),
-      new Color(0.1f, 0.0f, 0.5f),
-      new Color(0.75f, 0.0f, 0.3f, 0.5f),
+      new Color(0.0f, 1.0f, 1.0f, 1.0f), // Edge Color
+      new Color(1.0f, 0.0f, 1.0f, 1.0f), // Normal Color
+      new Color(1.0f, 0.0f, 0.0f, 1.0f), // Body Origin Color
+      new Color(0.0f, 0.0f, 0.0f, 1.0f), // Shape Origin Color
+      new Color(0.1f, 0.0f, 0.5f, 1.0f), // Body AABB Color
+      new Color(0.7f, 0.0f, 0.3f, 0.5f), // Shape AABB Color
       0.25f);
   }
 
@@ -24,10 +24,10 @@ public static class VolatileDebug
   {
     VolatileDebug.DrawShape(
       shape,
-      new Color(0.0f, 1.0f, 1.0f),
-      new Color(1.0f, 0.0f, 1.0f),
-      new Color(0.0f, 0.0f, 0.0f),
-      new Color(0.75f, 0.0f, 0.3f),
+      new Color(0.0f, 1.0f, 1.0f, 1.0f), // Edge Color
+      new Color(1.0f, 0.0f, 1.0f, 1.0f), // Normal Color
+      new Color(0.0f, 0.0f, 0.0f, 1.0f), // Origin Color
+      new Color(0.7f, 0.0f, 0.3f, 1.0f), // AABB Color
       0.25f);
   }
 
@@ -35,7 +35,7 @@ public static class VolatileDebug
   {
     VolatileDebug.DrawAABB(
       aabb,
-      new Color(1.0f, 0.0f, 0.5f));
+      new Color(1.0f, 0.0f, 0.5f, 1.0f)); // Edge Color
   }
 
   public static void DrawShape(

@@ -65,6 +65,14 @@ namespace Volatile.History
           extent);
     }
 
+    /// <summary>
+    /// Call this after adding all bodies.
+    /// </summary>
+    public override void Initialize()
+    {
+      this.buffer.Update(this.time);
+    }
+
     public override void AddBody(Body body)
     {
       base.AddBody(body);
@@ -74,8 +82,9 @@ namespace Volatile.History
 
     public override void Update()
     {
+      this.time++;
       base.Update();
-      this.buffer.Update(this.time++);
+      this.buffer.Update(this.time);
     }
 
     internal Quadtree GetTree(int time)
