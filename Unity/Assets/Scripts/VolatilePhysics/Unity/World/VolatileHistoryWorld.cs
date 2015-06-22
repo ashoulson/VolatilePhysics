@@ -25,6 +25,11 @@ public class VolatileHistoryWorld : VolatileWorld
         new Vector2(0.0f, -9.81f));
   }
 
+  void Start()
+  {
+    this.world.Initialize();
+  }
+
   private int GetOffsetTime()
   {
     HistoryWorld historyWorld = (HistoryWorld)this.world;
@@ -41,12 +46,12 @@ public class VolatileHistoryWorld : VolatileWorld
     }
     if (Input.GetKey(KeyCode.Minus))
     {
-      if (this.timeOffset > -60 && this.GetOffsetTime() > 0)
+      if (this.timeOffset > -59 && this.GetOffsetTime() > 0)
         this.timeOffset--;
     }
     if (Input.GetKey(KeyCode.Equals))
     {
-      if (this.timeOffset < -1)
+      if (this.timeOffset < 0)
         this.timeOffset++;
     }
 
@@ -60,7 +65,7 @@ public class VolatileHistoryWorld : VolatileWorld
   void OnDrawGizmos()
   {
     if (this.currentTree != null)
-      this.currentTree.GizmoDraw(this.GetOffsetTime(), true);
+      this.currentTree.GizmoDraw(this.GetOffsetTime(), false);
   }
 
   public void AddBody(Body body)

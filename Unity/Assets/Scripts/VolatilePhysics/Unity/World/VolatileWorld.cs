@@ -18,6 +18,11 @@ public class VolatileWorld : MonoBehaviour
     this.world = new World(new Vector2(0.0f, -9.81f));
   }
 
+  void Start()
+  {
+    this.world.Initialize();
+  }
+
   void FixedUpdate()
   {
     this.world.Update();

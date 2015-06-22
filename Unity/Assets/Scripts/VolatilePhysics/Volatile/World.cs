@@ -46,7 +46,7 @@ namespace Volatile
     internal float damping = 0.999f;
 
     // Each World instance should own its own object pools, in case
-    // you want to run multiple World instances on different threads.
+    // you want to run multiple World instances simultaneously.
     private Manifold.Pool manifoldPool;
     private Contact.Pool contactPool;
     private List<Manifold> manifolds;
@@ -62,6 +62,13 @@ namespace Volatile
       this.contactPool = new Contact.Pool();
       this.manifoldPool = new Manifold.Pool(this.contactPool);
       this.manifolds = new List<Manifold>();
+    }
+
+    /// <summary>
+    /// Call this after adding all bodies.
+    /// </summary>
+    public virtual void Initialize()
+    {
     }
 
     public virtual void AddBody(Body body)
