@@ -110,7 +110,7 @@ namespace Volatile.History
       this.Rollback(
         time,
         QuadtreeBuffer.SlotForTime(time, this.historyLength));
-      DebugDraw.Draw(this.shape);
+      Util.Draw(this.shape);
       this.ResetShape();
     }
     #endregion

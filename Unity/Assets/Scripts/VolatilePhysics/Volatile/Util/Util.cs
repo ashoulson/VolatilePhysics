@@ -22,6 +22,8 @@ using System;
 
 using UnityEngine;
 
+using Volatile.History;
+
 namespace Volatile
 {
   public static class Util
@@ -72,5 +74,42 @@ namespace Volatile
     {
       return a * a;
     }
+
+    #region Debug
+    public static void Draw(Body body)
+    {
+      body.GizmoDraw(
+        new Color(1.0f, 1.0f, 0.0f, 1.0f), // Edge Color
+        new Color(1.0f, 0.0f, 1.0f, 1.0f), // Normal Color
+        new Color(1.0f, 0.0f, 0.0f, 1.0f), // Body Origin Color
+        new Color(0.0f, 0.0f, 0.0f, 1.0f), // Shape Origin Color
+        new Color(0.1f, 0.0f, 0.5f, 1.0f), // Body AABB Color
+        new Color(0.7f, 0.0f, 0.3f, 0.5f), // Shape AABB Color
+        0.25f);
+    }
+
+    public static void Draw(Shape shape)
+    {
+      shape.GizmoDraw(
+        new Color(1.0f, 1.0f, 0.0f, 1.0f), // Edge Color
+        new Color(1.0f, 0.0f, 1.0f, 1.0f), // Normal Color
+        new Color(0.0f, 0.0f, 0.0f, 1.0f), // Origin Color
+        new Color(0.7f, 0.0f, 0.3f, 1.0f), // AABB Color
+        0.25f);
+    }
+
+    public static void Draw(AABB aabb)
+    {
+      aabb.GizmoDraw(
+        new Color(1.0f, 0.0f, 0.5f, 1.0f)); // AABB Color
+    }
+
+    internal static void Draw(Quadtree tree)
+    {
+      tree.GizmoDraw(
+        new Color(1.0f, 1.0f, 1.0f, 1.0f),
+        new Color(0.0f, 1.0f, 0.0f, 0.3f));
+    }
+    #endregion
   }
 }

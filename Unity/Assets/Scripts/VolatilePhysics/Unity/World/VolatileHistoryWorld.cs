@@ -17,7 +17,7 @@ public class VolatileHistoryWorld : VolatileWorld
     this.world =
       new HistoryWorld(
         0,
-        60,
+        300,
         13,
         5,
         0,
@@ -46,7 +46,7 @@ public class VolatileHistoryWorld : VolatileWorld
     }
     if (Input.GetKey(KeyCode.Minus))
     {
-      if (this.timeOffset > -59 && this.GetOffsetTime() > 0)
+      if (this.timeOffset > -299 && this.GetOffsetTime() > 0)
         this.timeOffset--;
     }
     if (Input.GetKey(KeyCode.Equals))
@@ -65,11 +65,6 @@ public class VolatileHistoryWorld : VolatileWorld
   void OnDrawGizmos()
   {
     if (this.currentTree != null)
-      DebugDraw.Draw(this.currentTree);
-  }
-
-  public void AddBody(Body body)
-  {
-    this.world.AddBody(body);
+      Util.Draw(this.currentTree);
   }
 }

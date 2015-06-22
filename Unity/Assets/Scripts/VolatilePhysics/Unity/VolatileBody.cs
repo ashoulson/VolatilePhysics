@@ -56,7 +56,7 @@ public class VolatileBody : MonoBehaviour
     {
       if (Application.isPlaying)
       {
-        DebugDraw.Draw(this.body);
+        Util.Draw(this.body);
       }
       else
       {
