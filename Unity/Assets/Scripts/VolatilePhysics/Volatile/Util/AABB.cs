@@ -145,5 +145,25 @@ namespace Volatile
         (this.Width * 0.5f) + this.left, 
         (this.Height * 0.5f) + this.bottom);
     }
+
+    #region Debug
+    public void GizmoDraw(Color aabbColor)
+    {
+      Color current = Gizmos.color;
+
+      Vector2 A = new Vector2(this.Left, this.Top);
+      Vector2 B = new Vector2(this.Right, this.Top);
+      Vector2 C = new Vector2(this.Right, this.Bottom);
+      Vector2 D = new Vector2(this.Left, this.Bottom);
+
+      Gizmos.color = aabbColor;
+      Gizmos.DrawLine(A, B);
+      Gizmos.DrawLine(B, C);
+      Gizmos.DrawLine(C, D);
+      Gizmos.DrawLine(D, A);
+
+      Gizmos.color = current;
+    }
+    #endregion
   }
 }

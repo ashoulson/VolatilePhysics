@@ -105,12 +105,12 @@ namespace Volatile.History
     }
 
     #region Debug
-    internal void DrawGizmos(int time)
+    internal void GizmoDraw(int time)
     {
       this.Rollback(
         time,
         QuadtreeBuffer.SlotForTime(time, this.historyLength));
-      VolatileDebug.DrawShape(this.shape);
+      DebugDraw.Draw(this.shape);
       this.ResetShape();
     }
     #endregion

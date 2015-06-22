@@ -17,9 +17,7 @@ public abstract class VolatileShape : MonoBehaviour
   public abstract Shape Shape { get; }
   public abstract void PrepareShape();
 
-  public abstract void DrawShapeInGame();
   public abstract void DrawShapeInEditor();
-
   public abstract Vector2 ComputeTrueCenterOfMass();
 
   void Awake()
@@ -45,7 +43,7 @@ public abstract class VolatileShape : MonoBehaviour
 
       if (this.Shape != null)
       {
-        this.DrawShapeInGame();
+        DebugDraw.Draw(this.Shape);
       }
       else
       {

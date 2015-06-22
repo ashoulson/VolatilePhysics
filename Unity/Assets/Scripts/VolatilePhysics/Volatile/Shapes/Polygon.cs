@@ -297,5 +297,55 @@ namespace Volatile
       }
     }
     #endregion
+
+    #region Debug
+    public override void GizmoDraw(
+      Color edgeColor, 
+      Color normalColor, 
+      Color originColor, 
+      Color aabbColor, 
+      float normalLength)
+    {
+      Color current = Gizmos.color;
+
+      Vector2[] worldNormals = this.WorldNormals;
+      for (int i = 0; i < this.cachedWorldVertices.Length; i++)
+      {
+        Vector2 u = this.cachedWorldVertices[i];
+        Vector2 v = 
+          this.cachedWorldVertices[(i + 1) % this.cachedWorldVertices.Length];
+        Vector2 n = worldNormals[i];
+
+        Vector2 delta = v - u;
+        Vector2 midPoint = u + (delta * 0.5f);
+
+        // Draw edge
+        Gizmos.color = edgeColor;
+        Gizmos.DrawLine(u, v);
+
+        // Draw normal
+        Gizmos.color = normalColor;
+        Gizmos.DrawLine(midPoint, midPoint + (n * normalLength));
+
+        // Draw line to origin
+        Gizmos.color = originColor;
+        Gizmos.DrawLine(u, this.Position);
+      }
+
+      // Draw facing
+      Gizmos.color = normalColor;
+      Gizmos.DrawLine(
+        this.Position,
+        this.Position + this.Facing * normalLength);
+
+      // Draw origin
+      Gizmos.color = originColor;
+      Gizmos.DrawWireSphere(this.Position, 0.05f);
+
+      this.AABB.GizmoDraw(aabbColor);
+
+      Gizmos.color = current;
+    }
+    #endregion
   }
 }
