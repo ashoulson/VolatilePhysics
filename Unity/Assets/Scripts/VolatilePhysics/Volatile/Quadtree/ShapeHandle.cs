@@ -79,7 +79,6 @@ namespace Volatile.History
 
     internal void RecordState(int time, int slot)
     {
-      Debug.Log("Saving for: " + time + " in " + slot);
       this.records[slot].Set(
         time, 
         this.shape.Position, 
@@ -101,7 +100,6 @@ namespace Volatile.History
     internal ShapeHandle Next(int time)
     {
       int slot = QuadtreeBuffer.SlotForTime(time, this.historyLength);
-      Debug.Log("Retrieving for " + time + " in slot " + slot);
       Debug.Assert(this.records[slot].time == time);
       return this.records[slot].next;
     }
