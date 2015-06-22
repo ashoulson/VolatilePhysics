@@ -65,7 +65,7 @@ public class VolatileHistoryWorld : VolatileWorld
   void OnDrawGizmos()
   {
     if (this.currentTree != null)
-      this.currentTree.GizmoDraw(this.GetOffsetTime(), false);
+      DebugDraw.Draw(this.currentTree);
   }
 
   public void AddBody(Body body)

@@ -62,7 +62,6 @@ namespace Volatile.History
     internal Quadtree GetTree(int time)
     {
       int slot = QuadtreeBuffer.SlotForTime(time, this.historyLength);
-      Debug.Log("Getting tree at " + time);
       return this.history[slot];
     }
 

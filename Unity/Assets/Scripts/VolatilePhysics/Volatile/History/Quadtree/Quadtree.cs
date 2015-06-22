@@ -194,55 +194,50 @@ namespace Volatile.History
 
     #region Debug
     public void GizmoDraw(
-      int time, 
-      bool drawGrid)
+      Color gridColor,
+      Color boxColor)
     {
       if (this.nodes.Length > 0)
       {
         int key = this.HashFind(ROOT_KEY);
-        this.GizmoDraw(
-          time, 
-          ref this.nodes[key], 
-          drawGrid,
-          new Color(0f, 1f, 0f, 0.3f));
+        this.DrawRecursive(ref this.nodes[key], gridColor, boxColor);
       }
     }
 
-    private void GizmoDraw(
-      int time,
+    private void DrawRecursive(
       ref Node node,
-      bool drawGrid,
+      Color gridColor,
       Color boxColor)
     {
-      if (drawGrid == true)
-      {
-        this.DrawBox(ref node, time, boxColor);
-      }
+      this.DrawBox(ref node, time, gridColor, boxColor);
 
       if (node.hasChildren == true)
       {
         for (int i = 0; i < 4; i++)
         {
           int key = this.HashFind(node.ChildKey(i));
-          this.GizmoDraw(time, ref this.nodes[key], drawGrid, boxColor);
+          this.DrawRecursive(ref this.nodes[key], gridColor, boxColor);
         }
       }
 
-      this.DrawShapes(time, ref node);
+      this.DrawShapes(ref node);
     }
 
-    private void DrawShapes(int time, ref Node node)
+    private void DrawShapes(ref Node node)
     {
-      for (var iter = node.listFirst; iter != null; iter = iter.Next(time))
-        iter.DrawGizmos(time);
+      ShapeHandle shape = node.listFirst;
+      for (; shape != null; shape = shape.Next(this.time))
+        shape.GizmoDraw(this.time);
     }
 
     private void DrawBox(
       ref Node node,
       int time,
+      Color gridColor,
       Color boxColor)
     {
-      Gizmos.color = new Color(1f, 1f, 1f, 1f);
+      Color current = Gizmos.color;
+      Gizmos.color = gridColor;
 
       Vector2 topLeft = node.aabb.TopLeft;
       Vector2 topRight = node.aabb.TopRight;
@@ -265,6 +260,8 @@ namespace Volatile.History
         Gizmos.color = boxColor;
         Gizmos.DrawCube(node.aabb.Center, node.aabb.Extent * 2.0f);
       }
+
+      Gizmos.color = current;
     }
     #endregion
   }

@@ -96,5 +96,14 @@ namespace Volatile
     }
 
     internal abstract float ComputeInertia(Vector2 offset);
+
+    #region Debug
+    public abstract void GizmoDraw(
+      Color edgeColor,
+      Color normalColor,
+      Color originColor,
+      Color aabbColor,
+      float normalLength);
+    #endregion
   }
 }

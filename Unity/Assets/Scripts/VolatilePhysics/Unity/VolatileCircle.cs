@@ -21,17 +21,6 @@ public class VolatileCircle : VolatileShape
       this.density);
   }
 
-  public override void DrawShapeInGame()
-  {
-    if (this.shape != null)
-    {
-      VolatileDebug.DrawShape(
-        this.shape, 
-        new Color(1.0f, 1.0f, 0.0f),
-        new Color(1.0f, 0.5f, 0.0f, 0.5f));
-    }
-  }
-
   public override void DrawShapeInEditor()
   {
     Color current = Gizmos.color;

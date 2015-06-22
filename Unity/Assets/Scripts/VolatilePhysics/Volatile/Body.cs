@@ -294,5 +294,41 @@ namespace Volatile
       }
     }
     #endregion
+
+    #region Debug
+    public void GizmoDraw(
+      Color edgeColor,
+      Color normalColor,
+      Color bodyOriginColor,
+      Color shapeOriginColor,
+      Color bodyAabbColor,
+      Color shapeAabbColor,
+      float normalLength)
+    {
+      Color current = Gizmos.color;
+
+      // Draw origin
+      Gizmos.color = bodyOriginColor;
+      Gizmos.DrawWireSphere(this.Position, 0.1f);
+
+      // Draw facing
+      Gizmos.color = normalColor;
+      Gizmos.DrawLine(
+        this.Position,
+        this.Position + this.Facing * normalLength);
+
+      this.AABB.GizmoDraw(bodyAabbColor);
+
+      foreach (Shape shape in this.Shapes)
+        shape.GizmoDraw(
+          edgeColor,
+          normalColor,
+          shapeOriginColor,
+          shapeAabbColor,
+          normalLength);
+
+      Gizmos.color = current;
+    }
+    #endregion
   }
 }

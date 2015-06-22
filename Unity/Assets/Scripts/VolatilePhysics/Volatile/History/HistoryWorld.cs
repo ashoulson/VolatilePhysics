@@ -31,6 +31,7 @@ namespace Volatile.History
 
     private QuadtreeBuffer buffer;
     private int time;
+    private int historyLength;
 
     /// <summary>
     /// Instantiates a new world with historical query capabilities.
@@ -55,6 +56,7 @@ namespace Volatile.History
       : base(gravity, damping)
     {
       this.time = startingTime;
+      this.historyLength = historyLength;
       this.buffer =
         new QuadtreeBuffer(
           startingTime,
@@ -89,7 +91,17 @@ namespace Volatile.History
 
     internal Quadtree GetTree(int time)
     {
-      return this.buffer.GetTree(time);
+      if (this.IsTimeInBounds(time) == true)
+        return this.buffer.GetTree(time);
+      return null;
+    }
+
+    private bool IsTimeInBounds(int time)
+    {
+      return
+        time >= 0 &&
+        time <= this.time &&
+        time > (this.time - this.historyLength);
     }
   }
 }

@@ -26,12 +26,6 @@ public class VolatilePolygon : VolatileShape
         this.density);
   }
 
-  public override void DrawShapeInGame()
-  {
-    if (this.shape != null)
-      VolatileDebug.DrawShape(this.shape);
-  }
-
   public override void DrawShapeInEditor()
   {
     Color current = Gizmos.color;

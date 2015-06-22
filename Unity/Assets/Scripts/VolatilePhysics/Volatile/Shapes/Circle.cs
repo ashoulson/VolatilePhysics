@@ -96,5 +96,24 @@ namespace Volatile
       return Circle.ComputeInertia(offset, this.sqrRadius);
     }
     #endregion
+
+    #region Debug
+    public override void GizmoDraw(
+      Color edgeColor, 
+      Color normalColor, 
+      Color originColor, 
+      Color aabbColor, 
+      float normalLength)
+    {
+      Color current = Gizmos.color;
+
+      Gizmos.color = edgeColor;
+      Gizmos.DrawWireSphere(this.Position, this.Radius);
+
+      this.AABB.GizmoDraw(aabbColor);
+
+      Gizmos.color = current;
+    }
+    #endregion
   }
 }
