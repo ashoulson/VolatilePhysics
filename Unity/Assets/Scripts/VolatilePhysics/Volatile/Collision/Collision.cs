@@ -148,7 +148,6 @@ namespace Volatile
       }
 
       // Build the collision Manifold
-      // TODO: POOLING
       Manifold manifold = pool.Acquire().Assign(polyA, polyB);
       Collision.FindVerts(polyA, polyB, a1.Normal, a1.Width, manifold);
       return manifold;
@@ -183,7 +182,6 @@ namespace Volatile
         (0.5f + distInv * (shapeA.Radius - min / 2.0f)) * r;
 
       // Build the collision Manifold
-      // TODO: POOLING
       Manifold manifold = pool.Acquire().Assign(shapeA, shapeB);
       manifold.AddContact(pos, distInv * r, dist - min);
       return manifold;
