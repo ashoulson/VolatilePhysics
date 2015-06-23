@@ -42,11 +42,13 @@ namespace Volatile
     public Vector2 Force { get; private set; }
 
     public float Angle { get; private set; }
-    public float AngularVelocity { get; internal set; } // (TEMP) TODO: Make this private again 
+    public float AngularVelocity { get; private set; }
     public float Torque { get; private set; }
 
     public Vector2 Facing { get; private set; }
     public AABB AABB { get; private set; }
+    public float Mass { get; private set; }
+    public float Inertia { get; private set; }
 
     internal float InvMass { get; private set; }
     internal float InvInertia { get; private set; }
@@ -94,7 +96,7 @@ namespace Volatile
 
     public void AddTorque(float torque)
     {
-      this.Torque = torque;
+      this.Torque += torque;
     }
 
     public void AddImpulse(Vector2 impulse)
@@ -261,7 +263,6 @@ namespace Volatile
     {
       this.Force = Vector2.zero;
       this.Torque = 0.0f;
-
       this.BiasVelocity = Vector2.zero;
       this.BiasRotation = 0.0f;
     }
@@ -280,15 +281,19 @@ namespace Volatile
         inertia += curMass * curInertia;
       }
 
-      if (mass == 0.0f)
+      if (Mathf.Approximately(mass, 0.0f))
       {
         this.IsStatic = true;
+        this.Mass = 0.0f;
+        this.Inertia = 0.0f;
         this.InvMass = 0.0f;
         this.InvInertia = 0.0f;
       }
       else
       {
         this.IsStatic = false;
+        this.Mass = mass;
+        this.Inertia = inertia;
         this.InvMass = 1.0f / mass;
         this.InvInertia = 1.0f / inertia;
       }

@@ -66,8 +66,8 @@ namespace Volatile
     public Shape Shape { get { return this.shape; } }
 
     private Shape shape;
-    internal Vector2 positionOffset; // TODO: MAKE PRIVATE
-    internal Vector2 facingOffset;
+    private Vector2 positionOffset;
+    private Vector2 facingOffset;
 
     private Fixture(Shape shape, Vector2 positionOffset, Vector2 facingOffset)
     {
