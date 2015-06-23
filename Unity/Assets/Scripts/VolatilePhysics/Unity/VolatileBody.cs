@@ -38,12 +38,15 @@ public class VolatileBody : MonoBehaviour
   {
     if (UnityEditor.Selection.activeGameObject == this.gameObject)
     {
-      this.body.SetWorld(transform.position, Mathf.Deg2Rad * transform.rotation.eulerAngles.z);
+      this.body.SetWorld(
+        transform.position, 
+        Mathf.Deg2Rad * transform.rotation.eulerAngles.z);
     }
     else
     {
       transform.position = this.body.Position;
-      transform.rotation = Quaternion.Euler(0.0f, 0.0f, Mathf.Rad2Deg * this.body.Angle);
+      transform.rotation = 
+        Quaternion.Euler(0.0f, 0.0f, Mathf.Rad2Deg * this.body.Angle);
     }
   }
 

@@ -37,8 +37,13 @@ public class SimpleController : MonoBehaviour
       this.body.AddTorque(-turn * 0.03f);
 
       // Stabilize
-      // TEMP - Do this with force application instead
-      this.body.body.AngularVelocity *= 0.79f;
+      float angVel = this.body.body.AngularVelocity;
+      float inertia = this.body.body.Inertia;
+      float correction =
+        (angVel * inertia) / Time.fixedDeltaTime;
+
+      float quotient = Mathf.Approximately(turn, 0.0f) ? 0.6f : 0.2f;
+      this.body.AddTorque(correction * quotient);
     }
   }
 }
