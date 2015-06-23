@@ -168,8 +168,8 @@ namespace Volatile
 
     internal void ApplyBias(Vector2 j, Vector2 r)
     {
-      BiasVelocity += InvMass * j;
-      BiasRotation -= InvInertia * Util.Cross(j, r);
+      this.BiasVelocity += this.InvMass * j;
+      this.BiasRotation -= this.InvInertia * Util.Cross(j, r);
     }
     #endregion
 

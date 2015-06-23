@@ -19,9 +19,9 @@ public class VolatileHistoryWorld : VolatileWorld
         0,
         300,
         13,
+        8,
         5,
-        0,
-        25.0f,
+        100.0f,
         new Vector2(0.0f, -9.81f));
   }
 

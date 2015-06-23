@@ -25,19 +25,19 @@ using UnityEngine;
 
 namespace Volatile.History
 {
-  internal class QuadtreeBuffer
+  internal class Broadphase
   {
     internal static int SlotForTime(int time, int historyLength)
     {
       return time % historyLength;
     }
 
-    private List<ShapeHandle> shapes;
+    private Dictionary<Shape, ShapeHandle> shapes;
     private Quadtree[] history;
     private MutableQuadtree current;
     private int historyLength;
 
-    internal QuadtreeBuffer(
+    internal Broadphase(
       int startingTime, 
       int historyLength,
       int initialCapacity, 
@@ -56,19 +56,19 @@ namespace Volatile.History
       this.history = new Quadtree[historyLength];
       for (int i = 0; i < history.Length; i++)
         this.history[i] = new Quadtree();
-      this.shapes = new List<ShapeHandle>();
+      this.shapes = new Dictionary<Shape, ShapeHandle>();
     }
 
     internal Quadtree GetTree(int time)
     {
-      int slot = QuadtreeBuffer.SlotForTime(time, this.historyLength);
+      int slot = Broadphase.SlotForTime(time, this.historyLength);
       return this.history[slot];
     }
 
     internal void AddShape(Shape shape)
     {
       ShapeHandle entry = new ShapeHandle(shape, this.historyLength);
-      this.shapes.Add(entry);
+      this.shapes.Add(shape, entry);
       this.current.Insert(entry);
     }
 
@@ -76,21 +76,31 @@ namespace Volatile.History
     {
       this.current.Time = time;
       this.UpdateShapes();
-      this.Store(time);
+      if (this.historyLength > 0)
+        this.Store(time);
     }
 
-    private void Store(int time)
+    internal IEnumerable<Shape> GetAdjacentShapes(Shape shape)
     {
-      int slot = QuadtreeBuffer.SlotForTime(time, this.historyLength);
-      foreach (ShapeHandle entry in this.shapes)
-        entry.RecordState(time, slot);
-      this.history[slot].ReceiveBlit(this.current);
+      ShapeHandle entry = this.shapes[shape];
+      IEnumerable<ShapeHandle> adjacentEntries = 
+        this.current.GetShapesInCell(entry.cellKey);
+      foreach (ShapeHandle adjacent in adjacentEntries)
+        yield return adjacent.Shape;
     }
 
     private void UpdateShapes()
     {
-      foreach (ShapeHandle entry in this.shapes)
+      foreach (ShapeHandle entry in this.shapes.Values)
         this.current.Update(entry);
+    }
+
+    private void Store(int time)
+    {
+      int slot = Broadphase.SlotForTime(time, this.historyLength);
+      foreach (ShapeHandle entry in this.shapes.Values)
+        entry.RecordState(time, slot);
+      this.history[slot].ReceiveBlit(this.current);
     }
   }
 }

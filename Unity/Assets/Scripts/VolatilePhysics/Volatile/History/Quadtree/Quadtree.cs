@@ -163,6 +163,26 @@ namespace Volatile.History
       this.time = other.time;
     }
 
+    /// <summary>
+    /// Returns all shapes in a given cell or higher in the hierarchy.
+    /// </summary>
+    internal IEnumerable<ShapeHandle> GetShapesInCell(int cellKey)
+    {
+      int nodeIndex = this.HashFind(cellKey);
+      Debug.Assert(nodeIndex != -1);
+
+      ShapeHandle shape = this.nodes[nodeIndex].listFirst;
+      for (; shape != null; shape = shape.Next(this.time))
+        yield return shape;
+
+      if (cellKey != ROOT_KEY)
+      {
+        int parentKey = this.nodes[nodeIndex].ParentKey;
+        foreach (ShapeHandle parentShape in this.GetShapesInCell(parentKey))
+          yield return parentShape;
+      }
+    }
+
     #region Hashing Functionality
     /// <summary>
     /// Takes in a non-hashed key and returns the hash array index.

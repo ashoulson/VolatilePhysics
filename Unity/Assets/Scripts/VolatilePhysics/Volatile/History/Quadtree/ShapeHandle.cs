@@ -63,6 +63,7 @@ namespace Volatile.History
     #endregion
 
     internal AABB CurrentAABB { get { return this.shape.AABB; } }
+    internal Shape Shape { get { return this.shape; } }
 
     private int historyLength;
     private Record[] records;
@@ -99,7 +100,7 @@ namespace Volatile.History
 
     internal ShapeHandle Next(int time)
     {
-      int slot = QuadtreeBuffer.SlotForTime(time, this.historyLength);
+      int slot = Broadphase.SlotForTime(time, this.historyLength);
       Debug.Assert(this.records[slot].time == time);
       return this.records[slot].next;
     }
@@ -109,7 +110,7 @@ namespace Volatile.History
     {
       this.Rollback(
         time,
-        QuadtreeBuffer.SlotForTime(time, this.historyLength));
+        Broadphase.SlotForTime(time, this.historyLength));
       Util.Draw(this.shape);
       this.ResetShape();
     }
