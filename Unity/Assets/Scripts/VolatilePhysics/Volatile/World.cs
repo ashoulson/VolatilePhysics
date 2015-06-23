@@ -110,11 +110,6 @@ namespace Volatile
 
     public virtual void Update()
     {
-      this.UpdatePhysics();
-    }
-
-    protected void UpdatePhysics()
-    {
       this.UpdateBodies();
       this.UpdateCollision();
       this.CleanupManifolds();

@@ -29,7 +29,7 @@ namespace Volatile.History
   {
     public int CurrentTime { get { return this.time; } }
 
-    private QuadtreeBuffer buffer;
+    private Broadphase buffer;
     private int time;
     private int historyLength;
 
@@ -58,7 +58,7 @@ namespace Volatile.History
       this.time = startingTime;
       this.historyLength = historyLength;
       this.buffer =
-        new QuadtreeBuffer(
+        new Broadphase(
           startingTime,
           historyLength,
           initialCapacity,
@@ -85,14 +85,63 @@ namespace Volatile.History
     public override void Update()
     {
       this.time++;
-      base.Update();
+      this.UpdateBodies();
       this.buffer.Update(this.time);
+      this.UpdateCollision();
+      this.CleanupManifolds();
     }
 
     internal override void BroadPhase(List<Manifold> manifolds)
     {
-      // TODO: Use quadtree for broadphase
+      System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();
+      watch.Start();
+
+      //Dictionary<Shape, HashSet<Shape>> adjacencies =
+      //  this.PopulateAdjacencies();
+      //HashSet<Shape> done = new HashSet<Shape>();
+
+      //foreach (KeyValuePair<Shape, HashSet<Shape>> pair in adjacencies)
+      //{
+      //  foreach (Shape value in pair.Value)
+      //  {
+      //    if (pair.Key != value && done.Contains(value) == false)
+      //      this.NarrowPhase(pair.Key, value, manifolds);
+      //  }
+      //  done.Add(pair.Key);
+      //}
+
       base.BroadPhase(manifolds);
+
+      watch.Stop();
+      Debug.Log(watch.ElapsedMilliseconds);
+    }
+
+    private Dictionary<Shape, HashSet<Shape>> PopulateAdjacencies()
+    {
+      Dictionary<Shape, HashSet<Shape>> adjacencies =
+        new Dictionary<Shape, HashSet<Shape>>();
+
+      for (int i = 0; i < this.shapes.Count; i++)
+      {
+        Shape current = this.shapes[i];
+        foreach (Shape adjacent in this.buffer.GetAdjacentShapes(current))
+        {
+          this.AddEntry(adjacencies, current, adjacent);
+          this.AddEntry(adjacencies, adjacent, current);
+        }
+      }
+
+      return adjacencies;
+    }
+
+    private void AddEntry(
+      Dictionary<Shape, HashSet<Shape>> adjacent, 
+      Shape key,
+      Shape value)
+    {
+      if (adjacent.ContainsKey(key) == false)
+        adjacent[key] = new HashSet<Shape>();
+      adjacent[key].Add(value);
     }
 
     internal Quadtree GetTree(int time)
