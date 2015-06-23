@@ -94,7 +94,8 @@ namespace Volatile
     {
       if (sa.Body.CanCollide(sb.Body) == false)
         return;
-
+      if (sa.AABB.Intersect(sb.AABB) == false)
+        return;
       Shape.OrderShapes(ref sa, ref sb);
       Manifold manifold = Collision.Dispatch(sa, sb, this.manifoldPool);
       if (manifold != null)

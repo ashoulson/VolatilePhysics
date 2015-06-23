@@ -22,8 +22,6 @@ using System;
 
 using UnityEngine;
 
-using Volatile.History;
-
 namespace Volatile
 {
   public static class Util
@@ -102,13 +100,6 @@ namespace Volatile
     {
       aabb.GizmoDraw(
         new Color(1.0f, 0.0f, 0.5f, 1.0f)); // AABB Color
-    }
-
-    internal static void Draw(Quadtree tree)
-    {
-      tree.GizmoDraw(
-        new Color(1.0f, 1.0f, 1.0f, 1.0f),
-        new Color(0.0f, 1.0f, 0.0f, 0.3f));
     }
     #endregion
   }
