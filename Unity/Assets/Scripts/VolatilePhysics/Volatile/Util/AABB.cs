@@ -66,23 +66,34 @@ namespace Volatile
     private readonly float left;
     private readonly float right;
 
-    public AABB(float top, float bottom, float left, float right)
+    #region Tests
+    /// <summary>
+    /// A cheap ray test that requires some precomputed information.
+    /// Adapted from: http://www.cs.utah.edu/~awilliam/box/box.pdf
+    /// </summary>
+    public bool Raycast(ref BatchRay ray, float distance = float.MaxValue)
     {
-      this.top = top;
-      this.bottom = bottom;
-      this.left = left;
-      this.right = right;
-    }
+      float txmin =
+        ((ray.signX ? this.right : this.left) - ray.origin.x) *
+        ray.invDirection.x;
+      float txmax =
+        ((ray.signX ? this.left : this.right) - ray.origin.x) *
+        ray.invDirection.x;
 
-    public AABB(Vector2 center, Vector2 extents)
-    {
-      Vector2 topRight = center + extents;
-      Vector2 bottomLeft = center - extents;
+      float tymin =
+        ((ray.signY ? this.top : this.bottom) - ray.origin.y) *
+        ray.invDirection.y;
+      float tymax =
+        ((ray.signY ? this.bottom : this.top) - ray.origin.y) *
+        ray.invDirection.y;
 
-      this.top = topRight.y;
-      this.right = topRight.x;
-      this.bottom = bottomLeft.y;
-      this.left = bottomLeft.x;
+      if ((txmin > tymax) || (tymin > txmax))
+        return false;
+      if (tymin > txmin)
+        txmin = tymin;
+      if (tymax < txmax)
+        txmax = tymax;
+      return (txmax > 0.0f) && (txmin < distance);
     }
 
     public bool Intersect(AABB other)
@@ -117,6 +128,26 @@ namespace Volatile
       float otherHeight = other.top - other.bottom;
 
       return (thisWidth >= otherWidth && thisHeight >= otherHeight);
+    }
+    #endregion
+
+    public AABB(float top, float bottom, float left, float right)
+    {
+      this.top = top;
+      this.bottom = bottom;
+      this.left = left;
+      this.right = right;
+    }
+
+    public AABB(Vector2 center, Vector2 extents)
+    {
+      Vector2 topRight = center + extents;
+      Vector2 bottomLeft = center - extents;
+
+      this.top = topRight.y;
+      this.right = topRight.x;
+      this.bottom = bottomLeft.y;
+      this.left = bottomLeft.x;
     }
 
     public AABB ComputeTopLeft(Vector2 center)
