@@ -10,7 +10,7 @@ public class VolatileWorld : MonoBehaviour
   public static VolatileWorld Instance { get { return instance; } }
   protected static VolatileWorld instance = null;
 
-  protected World world;
+  public World world;
 
   void Awake()
   {

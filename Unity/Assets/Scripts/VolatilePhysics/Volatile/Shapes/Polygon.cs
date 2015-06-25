@@ -215,13 +215,65 @@ namespace Volatile
     internal Axis[] cachedWorldAxes;
     #endregion
 
-    public override bool ContainsPoint(Vector2 point)
+    #region Tests
+    protected override bool ShapeQuery(Vector2 point)
     {
       foreach (Axis axis in this.cachedWorldAxes)
         if (Vector2.Dot(axis.Normal, point) > axis.Width)
           return false;
       return true;
     }
+
+    protected override bool ShapeRaycast(ref RayCast ray, ref RayResult result)
+    {
+      int foundIndex = -1;
+      float inner = float.MaxValue;
+      float outer = 0;
+
+      for (int i = 0; i < this.cachedWorldVertices.Length; i++)
+      {
+        Axis curAxis = this.cachedWorldAxes[i];
+        float proj = Vector2.Dot(curAxis.Normal, ray.Origin) - curAxis.Width;
+        float slope = Vector2.Dot(-curAxis.Normal, ray.Direction);
+
+        if (slope == 0.0f) 
+          continue;
+        float dist = proj / slope;
+
+        if (slope > 0.0f) 
+        {
+          if (dist > inner)
+          {
+            return false;
+          }
+          if (dist > outer) 
+          { 
+            outer = dist; 
+            foundIndex = i; 
+          } 
+        }
+        else
+        {
+          if (dist < outer)
+          {
+            return false;
+          }
+          if (dist < inner)
+          {
+            inner = dist;
+          }
+        }
+      }
+
+      if (foundIndex >= 0)
+      {
+        result.Set(this, outer, this.cachedWorldAxes[foundIndex].Normal);
+        return true;
+      }
+
+      return false;
+    }
+    #endregion
 
     public override void SetWorld(Vector2 position, Vector2 facing)
     {
@@ -265,6 +317,14 @@ namespace Volatile
     internal override float ComputeInertia(Vector2 offset)
     {
       return Polygon.ComputeInertia(this.vertices, offset, this.facing);
+    }
+
+    /// <summary>
+    /// Used in collision, for consistency.
+    /// </summary>
+    internal bool ContainsPoint(Vector2 point)
+    {
+      return this.ShapeQuery(point);
     }
 
     /// <summary>

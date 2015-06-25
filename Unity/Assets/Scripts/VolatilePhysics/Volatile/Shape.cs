@@ -69,7 +69,40 @@ namespace Volatile
     protected static int nextId = 0;
     internal int id;
 
-    public abstract bool ContainsPoint(Vector2 v);
+    #region Tests
+    /// <summary>
+    /// Checks if a point is contained in this shape. 
+    /// Begins with an AABB check.
+    /// </summary>
+    public bool Query(Vector2 point)
+    {
+      if (this.AABB.Query(point) == true)
+        return this.ShapeQuery(point);
+      return false;
+    }
+
+    /// <summary>
+    /// Performs a raycast check on this shape. 
+    /// Begins with an AABB check.
+    /// </summary>
+    public bool Raycast(ref RayCast ray, ref RayResult result)
+    {
+      // Check to see if start is contained first
+      if (this.Query(ray.Origin) == true)
+      {
+        result.SetContained(this);
+        return true;
+      }
+      if (this.AABB.Raycast(ref ray) == true)
+        return this.ShapeRaycast(ref ray, ref result);
+      return false;
+    }
+
+    protected abstract bool ShapeQuery(Vector2 point);
+    protected abstract bool ShapeRaycast(
+      ref RayCast ray, 
+      ref RayResult result);
+    #endregion
 
     protected Shape(float density)
     {

@@ -69,6 +69,7 @@ namespace Volatile
     /// </summary>
     public virtual void Initialize()
     {
+      // (We could build broadphase here, etc.)
     }
 
     public virtual void AddBody(Body body)
@@ -102,12 +103,50 @@ namespace Volatile
         manifolds.Add(manifold);
     }
 
+    #region Tests
+    /// <summary>
+    /// Returns all shapes whose bounding boxes overlap an area.
+    /// </summary>
     public virtual IEnumerable<Shape> Query(AABB area)
     {
       foreach (Shape shape in this.shapes)
         if (shape.AABB.Intersect(area))
           yield return shape;
     }
+
+    /// <summary>
+    /// Returns all shapes containing a point.
+    /// </summary>
+    public virtual IEnumerable<Shape> Query(Vector2 point)
+    {
+      foreach (Shape shape in this.shapes)
+        if (shape.Query(point) == true)
+          yield return shape;
+    }
+
+    /// <summary>
+    /// Performs a raycast on all bodies contained in the world.
+    /// Filters by body or shape.
+    /// </summary>
+    public bool Raycast(
+      RayCast ray,
+      out RayResult result,
+      Func<Body, bool> bodyFilter = null,
+      Func<Shape, bool> shapeFilter = null)
+    {
+      result = new RayResult();
+      foreach (Body body in this.bodies)
+      {
+        if (bodyFilter == null || bodyFilter(body) == true)
+        {
+          body.Raycast(ref ray, ref result, shapeFilter);
+          if (result.IsContained == true)
+            return true;
+        }
+      }
+      return result.IsValid;
+    }
+    #endregion
 
     public virtual void Update()
     {

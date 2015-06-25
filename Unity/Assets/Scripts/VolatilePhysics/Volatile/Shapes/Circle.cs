@@ -64,10 +64,34 @@ namespace Volatile
 
     internal Vector2 origin;
 
-    public override bool ContainsPoint(Vector2 point)
+    #region Tests
+    protected override bool ShapeQuery(Vector2 point)
     {
       return (point - this.origin).sqrMagnitude < this.sqrRadius;
     }
+
+    protected override bool ShapeRaycast(ref RayCast ray, ref RayResult result)
+    {
+      Vector2 toOrigin = this.origin - ray.Origin;
+
+      float slope = Vector2.Dot(toOrigin, ray.Direction); 
+      if (slope < 0) 
+        return false;
+
+      float sqrSlope = slope * slope;
+      float d = this.sqrRadius + sqrSlope - Vector2.Dot(toOrigin, toOrigin);
+      if (d < 0) 
+        return false;
+
+      float dist = slope - Mathf.Sqrt(d); 
+      if (dist < 0) 
+        return false;
+
+      Vector2 normal = (dist * ray.Direction - toOrigin).normalized;
+      result.Set(this, dist, normal);
+      return true;
+    }
+    #endregion
 
     /// <summary>
     /// Creates a cache of the origin in world space. This should be called

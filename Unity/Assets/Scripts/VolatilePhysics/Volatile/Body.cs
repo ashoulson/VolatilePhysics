@@ -35,7 +35,11 @@ namespace Volatile
     public World World { get; internal set; }
     public bool UseGravity { get; set; }
     public bool IsStatic { get; private set; }
-    public IEnumerable<Shape> Shapes { get { return this.GetShapes(); } }
+
+    public IEnumerable<Shape> Shapes 
+    { 
+      get { return this.shapes.AsReadOnly(); } 
+    }
 
     public Vector2 Position { get; private set; }
     public Vector2 LinearVelocity { get; private set; }
@@ -55,7 +59,9 @@ namespace Volatile
     internal Vector2 BiasVelocity { get; private set; }
     internal float BiasRotation { get; private set; }
 
-    private Dictionary<Shape, Fixture> fixtures;
+    private List<Shape> shapes;
+    private List<Fixture> fixtures;
+    private Dictionary<Shape, Fixture> shapeToFixture;
 
     #region Fixture/Shape Management
     /// <summary>
@@ -65,7 +71,10 @@ namespace Volatile
     /// </summary>
     public void AddShape(Shape shape)
     {
-      this.fixtures.Add(shape, Fixture.FromWorldSpace(this, shape));
+      Fixture fixture = Fixture.FromWorldSpace(this, shape);
+      this.shapes.Add(shape);
+      this.fixtures.Add(fixture);
+      this.shapeToFixture.Add(shape, fixture);
       shape.Body = this;
     }
 
@@ -76,15 +85,6 @@ namespace Volatile
     {
       this.ComputeDynamics();
       this.ApplyPosition();
-    }
-
-    /// <summary>
-    /// Extracts the shape from each fixture.
-    /// </summary>
-    private IEnumerable<Shape> GetShapes()
-    {
-      foreach (Fixture fixture in this.fixtures.Values)
-        yield return fixture.Shape;
     }
     #endregion
 
@@ -131,13 +131,58 @@ namespace Volatile
     }
     #endregion
 
+    #region Tests
+    /// <summary>
+    /// Checks if a point is contained in this body. 
+    /// Begins with AABB checks.
+    /// </summary>
+    public bool Query(Vector2 point)
+    {
+      if (this.AABB.Query(point) == true)
+        foreach (Shape shape in this.shapes)
+          if (shape.Query(point) == true)
+            return true;
+      return false;
+    }
+
+    /// <summary>
+    /// Performs a raycast check on this body. 
+    /// Begins with AABB checks.
+    /// </summary>
+    public bool Raycast(
+      ref RayCast ray, 
+      ref RayResult result, 
+      Func<Shape, bool> filter = null)
+    {
+      bool hit = false;
+      if (this.AABB.Raycast(ref ray) == true)
+      {
+        foreach (Shape shape in this.shapes)
+        {
+          if (filter == null || filter(shape) == true)
+          {
+            if (shape.Raycast(ref ray, ref result) == true)
+            {
+              if (result.IsContained == true)
+                return true;
+              hit = true;
+            }
+          }
+        }
+      }
+      return hit;
+    }
+    #endregion
+
     public Body(Vector2 position, float radians, bool useGravity = true)
     {
       this.Position = position;
       this.Angle = radians;
       this.Facing = Util.Polar(radians);
       this.UseGravity = useGravity;
-      this.fixtures = new Dictionary<Shape, Fixture>();
+      this.shapes = new List<Shape>();
+      this.fixtures = new List<Fixture>();
+      this.shapeToFixture = new Dictionary<Shape, Fixture>();
     }
 
     public Body(Vector2 position, bool useGravity = true)
@@ -183,7 +228,7 @@ namespace Volatile
     internal void ApplyPosition()
     {
       this.Facing = Util.Polar(this.Angle);
-      foreach (Fixture fixture in this.fixtures.Values)
+      foreach (Fixture fixture in this.fixtures)
         fixture.Apply(this.Position, this.Facing);
       this.UpdateAABB();
     }
@@ -194,7 +239,7 @@ namespace Volatile
     /// </summary>
     internal void ResetShape(Shape shape)
     {
-      this.fixtures[shape].Apply(this.Position, this.Facing);
+      this.shapeToFixture[shape].Apply(this.Position, this.Facing);
     }
 
     /// <summary>
@@ -207,7 +252,7 @@ namespace Volatile
       float bottom = Mathf.Infinity;
       float left = Mathf.Infinity;
 
-      foreach (Fixture fixture in this.fixtures.Values)
+      foreach (Fixture fixture in this.fixtures)
       {
         AABB aabb = fixture.Shape.AABB;
         top = Mathf.Max(top, aabb.Top);
@@ -272,7 +317,7 @@ namespace Volatile
       float mass = 0.0f;
       float inertia = 0.0f;
 
-      foreach (Fixture fixture in this.fixtures.Values)
+      foreach (Fixture fixture in this.fixtures)
       {
         float curMass = fixture.ComputeMass();
         float curInertia = fixture.ComputeInertia(this.Facing);

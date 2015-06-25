@@ -25,27 +25,37 @@ using UnityEngine;
 
 namespace Volatile
 {
-  /// <summary>
-  /// A semi-precomputed ray optimized for many tests
-  /// </summary>
-  public struct BatchRay
+  public struct RayResult
   {
-    public Vector2 origin;
-    public Vector2 direction;
-    public Vector2 invDirection;
-    public bool signX;
-    public bool signY;
+    public bool IsValid { get { return this.shape != null; } }
+    public bool IsContained 
+    { 
+      get { return this.IsValid && this.distance == 0.0f; } 
+    }
 
-    public BatchRay(Vector2 origin, Vector2 direction)
+    public Shape Shape { get { return this.shape; } }
+    public float Distance { get { return this.distance; } }
+    public Vector2 Normal { get { return this.normal; } }
+
+    private Shape shape;
+    private float distance;
+    private Vector2 normal;
+
+    internal void Set(Shape shape, float distance, Vector2 normal)
     {
-      this.origin = origin;
-      this.direction = direction;
-      this.invDirection =
-        new Vector2(
-          1.0f / direction.x,
-          1.0f / direction.y);
-      this.signX = invDirection.x < 0.0f;
-      this.signY = invDirection.y < 0.0f;
+      if (this.IsValid == false || distance < this.distance)
+      {
+        this.shape = shape;
+        this.distance = distance;
+        this.normal = normal;
+      }
+    }
+
+    internal void SetContained(Shape shape)
+    {
+      this.shape = shape;
+      this.distance = 0.0f;
+      this.normal = Vector2.zero;
     }
   }
 }
