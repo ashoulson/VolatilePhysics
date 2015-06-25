@@ -67,25 +67,34 @@ namespace Volatile
     private readonly float right;
 
     #region Tests
+    public bool Query(Vector2 point)
+    {
+      return 
+        this.left <= point.x && 
+        this.right >= point.x &&
+        this.bottom <= point.y &&
+        this.top >= point.y;
+    }
+
     /// <summary>
     /// A cheap ray test that requires some precomputed information.
     /// Adapted from: http://www.cs.utah.edu/~awilliam/box/box.pdf
     /// </summary>
-    public bool Raycast(ref BatchRay ray, float distance = float.MaxValue)
+    public bool Raycast(ref RayCast ray)
     {
       float txmin =
-        ((ray.signX ? this.right : this.left) - ray.origin.x) *
-        ray.invDirection.x;
+        ((ray.SignX ? this.right : this.left) - ray.Origin.x) *
+        ray.InvDirection.x;
       float txmax =
-        ((ray.signX ? this.left : this.right) - ray.origin.x) *
-        ray.invDirection.x;
+        ((ray.SignX ? this.left : this.right) - ray.Origin.x) *
+        ray.InvDirection.x;
 
       float tymin =
-        ((ray.signY ? this.top : this.bottom) - ray.origin.y) *
-        ray.invDirection.y;
+        ((ray.SignY ? this.top : this.bottom) - ray.Origin.y) *
+        ray.InvDirection.y;
       float tymax =
-        ((ray.signY ? this.bottom : this.top) - ray.origin.y) *
-        ray.invDirection.y;
+        ((ray.SignY ? this.bottom : this.top) - ray.Origin.y) *
+        ray.InvDirection.y;
 
       if ((txmin > tymax) || (tymin > txmax))
         return false;
@@ -93,7 +102,7 @@ namespace Volatile
         txmin = tymin;
       if (tymax < txmax)
         txmax = tymax;
-      return (txmax > 0.0f) && (txmin < distance);
+      return (txmax > 0.0f) && (txmin < ray.Distance);
     }
 
     public bool Intersect(AABB other)
