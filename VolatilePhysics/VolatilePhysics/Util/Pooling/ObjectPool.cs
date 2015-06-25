@@ -33,13 +33,13 @@ namespace Volatile
 
     protected abstract T Create();
 
-    public ObjectPool()
+    internal ObjectPool()
     {
       this.first = null;
       this.last = null;
     }
 
-    public void Release(T value)
+    internal void Release(T value)
     {
       if (this.first == null)
       {
@@ -55,7 +55,7 @@ namespace Volatile
       value.IsValid = false;
     }
 
-    public T Acquire()
+    internal T Acquire()
     {
       if (this.first == null)
         return this.Create();

@@ -34,7 +34,19 @@ namespace Volatile
 
     public World World { get; internal set; }
     public bool UseGravity { get; set; }
-    public bool IsStatic { get; private set; }
+
+    public bool IsStatic 
+    { 
+      get
+      {
+        return this.isStatic;
+      }
+      set 
+      {
+        if (Mathf.Approximately(this.mass, 0.0f) == false)
+          this.isStatic = value;
+      }
+    }
 
     public IEnumerable<Shape> Shapes 
     { 
@@ -51,42 +63,39 @@ namespace Volatile
 
     public Vector2 Facing { get; private set; }
     public AABB AABB { get; private set; }
-    public float Mass { get; private set; }
-    public float Inertia { get; private set; }
 
-    internal float InvMass { get; private set; }
-    internal float InvInertia { get; private set; }
+    public float Mass 
+    {
+      get { return this.IsStatic ? 0.0f : this.mass; } 
+    }
+
+    public float Inertia 
+    {
+      get { return this.IsStatic ? 0.0f : this.inertia; } 
+    }
+
+    public float InvMass 
+    {
+      get { return this.IsStatic ? 0.0f : this.invMass; } 
+    }
+
+    public float InvInertia 
+    {
+      get { return this.IsStatic ? 0.0f : this.invInertia; } 
+    }
+
     internal Vector2 BiasVelocity { get; private set; }
     internal float BiasRotation { get; private set; }
+
+    private bool isStatic = false;
+    private float mass;
+    private float inertia;
+    private float invMass;
+    private float invInertia;
 
     private List<Shape> shapes;
     private List<Fixture> fixtures;
     private Dictionary<Shape, Fixture> shapeToFixture;
-
-    #region Fixture/Shape Management
-    /// <summary>
-    /// Adds a shape, using a fixture to "pin" that shape to the body
-    /// relative to its current position and rotation offset from the body.
-    /// Any subsequent movement of the body will also move the shape.
-    /// </summary>
-    public void AddShape(Shape shape)
-    {
-      Fixture fixture = Fixture.FromWorldSpace(this, shape);
-      this.shapes.Add(shape);
-      this.fixtures.Add(fixture);
-      this.shapeToFixture.Add(shape, fixture);
-      shape.Body = this;
-    }
-
-    /// <summary>
-    /// This function should be called after all shapes have been added.
-    /// </summary>
-    public void Initialize()
-    {
-      this.ComputeDynamics();
-      this.ApplyPosition();
-    }
-    #endregion
 
     #region Force and Impulse Application
     public void AddForce(Vector2 force)
@@ -174,20 +183,34 @@ namespace Volatile
     }
     #endregion
 
-    public Body(Vector2 position, float radians, bool useGravity = true)
+    public Body(Vector2 position, IEnumerable<Shape> shapesToAdd)
+      : this(position, 0.0f, shapesToAdd) { }
+
+    public Body(Vector2 position, params Shape[] shapesToAdd)
+      : this(position, 0.0f, shapesToAdd) { }
+
+    public Body(Vector2 position, float radians, params Shape[] shapesToAdd)
+      : this(position, radians, (IEnumerable<Shape>)shapesToAdd) { }
+
+    public Body(
+      Vector2 position, 
+      float radians, 
+      IEnumerable<Shape> shapesToAdd)
     {
       this.Position = position;
       this.Angle = radians;
-      this.Facing = Util.Polar(radians);
-      this.UseGravity = useGravity;
+      this.Facing = VolatileUtil.Polar(radians);
+
+      this.UseGravity = false;
+
+      this.isStatic = false;
       this.shapes = new List<Shape>();
       this.fixtures = new List<Fixture>();
       this.shapeToFixture = new Dictionary<Shape, Fixture>();
-    }
 
-    public Body(Vector2 position, bool useGravity = true)
-      : this(position, 0.0f, useGravity)
-    {
+      foreach (Shape shape in shapesToAdd)
+        this.AddShape(shape);
+      this.FinalizeShapes();
     }
 
     internal void Update()
@@ -195,6 +218,31 @@ namespace Volatile
       this.Integrate();
       this.ApplyPosition();
     }
+
+    #region Fixture/Shape Management
+    /// <summary>
+    /// Adds a shape, using a fixture to "pin" that shape to the body
+    /// relative to its current position and rotation offset from the body.
+    /// Any subsequent movement of the body will also move the shape.
+    /// </summary>
+    private void AddShape(Shape shape)
+    {
+      Fixture fixture = Fixture.FromWorldSpace(this, shape);
+      this.shapes.Add(shape);
+      this.fixtures.Add(fixture);
+      this.shapeToFixture.Add(shape, fixture);
+      shape.Body = this;
+    }
+
+    /// <summary>
+    /// This function should be called after all shapes have been added.
+    /// </summary>
+    private void FinalizeShapes()
+    {
+      this.ComputeDynamics();
+      this.ApplyPosition();
+    }
+    #endregion
 
     #region Collision
     internal bool CanCollide(Body other)
@@ -210,13 +258,13 @@ namespace Volatile
     internal void ApplyImpulse(Vector2 j, Vector2 r)
     {
       this.LinearVelocity += this.InvMass * j;
-      this.AngularVelocity -= this.InvInertia * Util.Cross(j, r);
+      this.AngularVelocity -= this.InvInertia * VolatileUtil.Cross(j, r);
     }
 
     internal void ApplyBias(Vector2 j, Vector2 r)
     {
       this.BiasVelocity += this.InvMass * j;
-      this.BiasRotation -= this.InvInertia * Util.Cross(j, r);
+      this.BiasRotation -= this.InvInertia * VolatileUtil.Cross(j, r);
     }
     #endregion
 
@@ -227,7 +275,7 @@ namespace Volatile
     /// </summary>
     internal void ApplyPosition()
     {
-      this.Facing = Util.Polar(this.Angle);
+      this.Facing = VolatileUtil.Polar(this.Angle);
       foreach (Fixture fixture in this.fixtures)
         fixture.Apply(this.Position, this.Facing);
       this.UpdateAABB();
@@ -319,6 +367,8 @@ namespace Volatile
 
       foreach (Fixture fixture in this.fixtures)
       {
+        if (fixture.Shape.Density == 0.0f)
+          continue;
         float curMass = fixture.ComputeMass();
         float curInertia = fixture.ComputeInertia(this.Facing);
 
@@ -326,21 +376,21 @@ namespace Volatile
         inertia += curMass * curInertia;
       }
 
-      if (Mathf.Approximately(mass, 0.0f))
+      if (Mathf.Approximately(mass, 0.0f) == true)
       {
-        this.IsStatic = true;
-        this.Mass = 0.0f;
-        this.Inertia = 0.0f;
-        this.InvMass = 0.0f;
-        this.InvInertia = 0.0f;
+        this.isStatic = true;
+        this.mass = 0.0f;
+        this.inertia = 0.0f;
+        this.invMass = 0.0f;
+        this.invInertia = 0.0f;
       }
       else
       {
-        this.IsStatic = false;
-        this.Mass = mass;
-        this.Inertia = inertia;
-        this.InvMass = 1.0f / mass;
-        this.InvInertia = 1.0f / inertia;
+        this.isStatic = false;
+        this.mass = mass;
+        this.inertia = inertia;
+        this.invMass = 1.0f / mass;
+        this.invInertia = 1.0f / inertia;
       }
     }
     #endregion

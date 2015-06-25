@@ -13,20 +13,26 @@ public class VolatileBody : MonoBehaviour
   [SerializeField]
   private bool useGravity = false;
 
+  [SerializeField]
+  private bool isStatic = false;
+
   public Body body;
 
   void Awake()
   {
+    List<Shape> shapes = new List<Shape>();
+    foreach (VolatileShape shape in this.shapes)
+    {
+      shapes.Add(shape.Shape);
+      shape.isStandalone = false;
+    }
+
     this.body = new Body(
       transform.position, 
       Mathf.Deg2Rad * transform.eulerAngles.z, 
-      this.useGravity);
-    foreach (VolatileShape shape in this.shapes)
-    {
-      this.body.AddShape(shape.Shape);
-      shape.isStandalone = false;
-    }
-    this.body.Initialize();
+      shapes);
+    this.body.UseGravity = this.useGravity;
+    this.body.IsStatic = this.isStatic;
   }
 
   void Start()
@@ -59,7 +65,7 @@ public class VolatileBody : MonoBehaviour
     {
       if (Application.isPlaying)
       {
-        Util.Draw(this.body);
+        VolatileUtil.Draw(this.body);
       }
       else
       {

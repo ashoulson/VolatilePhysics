@@ -59,14 +59,13 @@ namespace Volatile
     public AABB AABB { get; protected set; }
 
     public float Area { get; protected set; }
+
     public float Density { get; private set; }
+    public float Friction { get; private set; }
+    public float Restitution { get; private set; }
 
-    // TODO: Clean these values up and make them accessible
-    internal float friction = Config.DEFAULT_FRICTION;
-    internal float restitution = Config.DEFAULT_RESTITUTION;
-
-    // TODO: Remove static here
-    protected static int nextId = 0;
+    // TODO: Remove static here (for threading)
+    internal static int nextId = 0;
     internal int id;
 
     #region Tests
@@ -97,22 +96,19 @@ namespace Volatile
         return this.ShapeRaycast(ref ray, ref result);
       return false;
     }
-
-    protected abstract bool ShapeQuery(Vector2 point);
-    protected abstract bool ShapeRaycast(
-      ref RayCast ray, 
-      ref RayResult result);
     #endregion
 
-    protected Shape(float density)
+    internal Shape(float density, float friction, float restitution)
     {
       this.id = nextId++;
       this.Density = density;
+      this.Friction = friction;
+      this.Restitution = restitution;
     }
 
     public void SetWorld(Vector2 position, float radians)
     {
-      this.SetWorld(position, Util.Polar(radians));
+      this.SetWorld(position, VolatileUtil.Polar(radians));
     }
 
     public abstract void SetWorld(Vector2 position, Vector2 facing);
@@ -123,12 +119,18 @@ namespace Volatile
         this.Body.ResetShape(this);
     }
 
+    #region Internals
     internal float ComputeMass()
     {
       return this.Area * this.Density * Config.AREA_MASS_RATIO;
     }
 
     internal abstract float ComputeInertia(Vector2 offset);
+    internal abstract bool ShapeQuery(Vector2 point);
+    internal abstract bool ShapeRaycast(
+      ref RayCast ray,
+      ref RayResult result);
+    #endregion
 
     #region Debug
     public abstract void GizmoDraw(

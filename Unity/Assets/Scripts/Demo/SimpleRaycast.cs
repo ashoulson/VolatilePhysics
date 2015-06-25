@@ -29,8 +29,9 @@ public class SimpleRaycast : MonoBehaviour
 
       if (result.IsValid == true)
       {
+        Gizmos.color = Color.green;
         Gizmos.DrawLine(transform.position, transform.position + (transform.up * 100.0f));
-        Gizmos.DrawSphere(transform.position + (transform.up * result.Distance), 0.2f);
+        Gizmos.DrawWireSphere(transform.position + (transform.up * result.Distance), 0.2f);
       }
     }
   }

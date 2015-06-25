@@ -31,23 +31,35 @@ namespace Volatile
     public static Polygon FromWorldVertices(
       Vector2 origin,
       Vector2 facing, 
-      Vector2[] vertices, 
-      float density = 1.0f)
+      Vector2[] vertices,
+      float density = 1.0f,
+      float friction = Config.DEFAULT_FRICTION,
+      float restitution = Config.DEFAULT_RESTITUTION)
     {
       return new Polygon(
         origin,
         facing,
         Polygon.ComputeOffsetVertices(origin, facing, vertices),
-        density);
+        density,
+        friction,
+        restitution);
     }
 
     public static Polygon FromLocalVertices(
       Vector2 origin,
       Vector2 facing, 
       Vector2[] vertices,
-      float density = 1.0f)
+      float density = 1.0f,
+      float friction = Config.DEFAULT_FRICTION,
+      float restitution = Config.DEFAULT_RESTITUTION)
     {
-      return new Polygon(origin, facing, vertices, density);
+      return new Polygon(
+        origin, 
+        facing, 
+        vertices, 
+        density, 
+        friction, 
+        restitution);
     }
     #endregion
 
@@ -129,7 +141,7 @@ namespace Volatile
       {
         Vector2 v = vertexOffsets[i];
         Vector2 u = vertexOffsets[(i + 1) % vertexOffsets.Length];
-        float a = Util.Cross(u, v);
+        float a = VolatileUtil.Cross(u, v);
         float b = v.sqrMagnitude + u.sqrMagnitude + Vector2.Dot(v, u);
         s1 += a * b;
         s2 += a;
@@ -217,7 +229,7 @@ namespace Volatile
     #endregion
 
     #region Tests
-    protected override bool ShapeQuery(Vector2 point)
+    internal override bool ShapeQuery(Vector2 point)
     {
       foreach (Axis axis in this.cachedWorldAxes)
         if (Vector2.Dot(axis.Normal, point) > axis.Width)
@@ -225,7 +237,7 @@ namespace Volatile
       return true;
     }
 
-    protected override bool ShapeRaycast(ref RayCast ray, ref RayResult result)
+    internal override bool ShapeRaycast(ref RayCast ray, ref RayResult result)
     {
       int foundIndex = -1;
       float inner = float.MaxValue;
@@ -292,12 +304,16 @@ namespace Volatile
     /// <param name="facing">World space orientation of shape.</param>
     /// <param name="vertices">Vertex positions relative to the origin.</param>
     /// <param name="density">Shape density.</param>
+    /// <param name="friction">Shape friction.</param>
+    /// <param name="restitution">Shape restitution.</param>
     private Polygon(
       Vector2 origin,
       Vector2 facing,
       Vector2[] vertices,
-      float density = 1.0f)
-      : base(density)
+      float density,
+      float friction,
+      float restitution)
+      : base(density, friction, restitution)
     {
       this.origin = origin;
       this.facing = facing;

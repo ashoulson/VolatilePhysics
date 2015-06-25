@@ -20,7 +20,6 @@ public class VolatileWorld : MonoBehaviour
 
   void Start()
   {
-    this.world.Initialize();
   }
 
   void FixedUpdate()
