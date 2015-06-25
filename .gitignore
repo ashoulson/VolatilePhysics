@@ -30,7 +30,7 @@ Unity/Assets/Resources/*
 Unity/Assets/Resources.meta
 
 # Build Files
-VolatilePhysics/VolatilePhysics/bin/*
-VolatilePhysics/VolatilePhysics/obj/*
+VolatilePhysics/bin/*
+VolatilePhysics/obj/*
 
 
