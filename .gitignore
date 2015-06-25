@@ -4,9 +4,7 @@
 [Bb]uild/
 
 # Auto-generated VS/MD solution and project files
-*.csproj
 *.unityproj
-*.sln
 *.suo
 *.tmp
 *.user
@@ -25,6 +23,7 @@ sysinfo.txt
 # UnityVS files
 Unity/Assets/UnityVS.meta
 Unity/Assets/UnityVS/*
+Unity/UnityVS.*
 
 # Resources
 Unity/Assets/Resources/*
