@@ -18,6 +18,12 @@ public class VolatileBody : MonoBehaviour
 
   public Body body;
 
+  private Vector2 lastPosition;
+  private Vector2 nextPosition;
+
+  private float lastAngle;
+  private float nextAngle;
+
   void Awake()
   {
     List<Shape> shapes = new List<Shape>();
@@ -33,6 +39,9 @@ public class VolatileBody : MonoBehaviour
       shapes);
     this.body.UseGravity = this.useGravity;
     this.body.IsStatic = this.isStatic;
+
+    this.lastPosition = this.nextPosition = transform.position;
+    this.lastAngle = this.nextAngle = transform.eulerAngles.z;
   }
 
   void Start()
@@ -42,18 +51,19 @@ public class VolatileBody : MonoBehaviour
 
   void Update()
   {
-    if (UnityEditor.Selection.activeGameObject == this.gameObject)
-    {
-      this.body.SetWorld(
-        transform.position, 
-        Mathf.Deg2Rad * transform.rotation.eulerAngles.z);
-    }
-    else
-    {
-      transform.position = this.body.Position;
-      transform.rotation = 
-        Quaternion.Euler(0.0f, 0.0f, Mathf.Rad2Deg * this.body.Angle);
-    }
+    float t = (Time.time - Time.fixedTime) / Time.deltaTime;
+
+    transform.position = Vector2.Lerp(this.lastPosition, this.nextPosition, t);
+    float angle = Mathf.LerpAngle(this.lastAngle, this.nextAngle, t);
+    transform.rotation = Quaternion.Euler(0.0f, 0.0f, Mathf.Rad2Deg * angle);
+  }
+
+  void FixedUpdate()
+  {
+    this.lastPosition = this.nextPosition;
+    this.lastAngle = this.nextAngle;
+    this.nextPosition = this.body.Position;
+    this.nextAngle = this.body.Angle;
   }
 
   void OnDrawGizmos()
