@@ -35,7 +35,7 @@ namespace Volatile
     /// Creates a new fixture taking a body and a shape independent from
     /// one another in world space, and computing their offsets.
     /// </summary>
-    public static Fixture FromWorldSpace(Body body, Shape shape)
+    internal static Fixture FromWorldSpace(Body body, Shape shape)
     {
       return new Fixture(
         shape,

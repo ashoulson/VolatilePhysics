@@ -91,7 +91,7 @@ namespace Volatile
         TestCircles(
           circA, 
           circB, 
-          circB.origin, 
+          circB.Position, 
           circB.Radius, 
           pool);
     }
@@ -115,16 +115,16 @@ namespace Volatile
 
       // If the circle is past one of the two vertices, check it like
       // a circle-circle intersection where the vertex has radius 0
-      float d = Util.Cross(a.Normal, circ.origin);
-      if (d > Util.Cross(a.Normal, v))
+      float d = VolatileUtil.Cross(a.Normal, circ.Position);
+      if (d > VolatileUtil.Cross(a.Normal, v))
         return Collision.TestCircles(circ, poly, v, 0.0f, pool);
-      if (d < Util.Cross(a.Normal, u))
+      if (d < VolatileUtil.Cross(a.Normal, u))
         return Collision.TestCircles(circ, poly, u, 0.0f, pool);
 
       // Build the collision Manifold
       Manifold manifold = pool.Acquire().Assign(circ, poly);
       Vector2 pos =
-        circ.origin - (circ.Radius + penetration / 2) * a.Normal;
+        circ.Position - (circ.Radius + penetration / 2) * a.Normal;
       manifold.AddContact(pos, -a.Normal, penetration);
       return manifold;
     }
@@ -143,8 +143,8 @@ namespace Volatile
       // We will use poly1's axis, so we may need to swap
       if (a2.Width > a1.Width)
       {
-        Util.Swap(ref polyA, ref polyB);
-        Util.Swap(ref a1, ref a2);
+        VolatileUtil.Swap(ref polyA, ref polyB);
+        VolatileUtil.Swap(ref a1, ref a2);
       }
 
       // Build the collision Manifold
@@ -167,7 +167,7 @@ namespace Volatile
       float overrideBRadius,
       ObjectPool<Manifold> pool)
     {
-      Vector2 r = overrideBCenter - shapeA.origin;
+      Vector2 r = overrideBCenter - shapeA.Position;
       float min = shapeA.Radius + overrideBRadius;
       float distSq = r.sqrMagnitude;
 
@@ -178,7 +178,7 @@ namespace Volatile
       float distInv = 1.0f / dist;
 
       Vector2 pos =
-        shapeA.origin +
+        shapeA.Position +
         (0.5f + distInv * (shapeA.Radius - min / 2.0f)) * r;
 
       // Build the collision Manifold
@@ -203,7 +203,7 @@ namespace Volatile
         float dot =
           Vector2.Dot(
             poly.cachedWorldAxes[i].Normal,
-            circ.origin);
+            circ.Position);
         float dist = dot - poly.cachedWorldAxes[i].Width - circ.Radius;
 
         if (dist > 0)

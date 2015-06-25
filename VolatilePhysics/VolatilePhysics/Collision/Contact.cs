@@ -74,7 +74,7 @@ namespace Volatile
     private float cachedNormalImpulse;
     private float cachedTangentImpulse;
 
-    public Contact()
+    internal Contact()
     {
       this.position = Vector2.zero;
       this.normal = Vector2.zero;
@@ -198,8 +198,10 @@ namespace Volatile
       Vector2 normal)
     {
       float massSum = bodyA.InvMass + bodyB.InvMass;
-      float r1cnSqr = Util.Square(Util.Cross(this.toA, normal));
-      float r2cnSqr = Util.Square(Util.Cross(this.toB, normal));
+      float r1cnSqr = 
+        VolatileUtil.Square(VolatileUtil.Cross(this.toA, normal));
+      float r2cnSqr = 
+        VolatileUtil.Square(VolatileUtil.Cross(this.toB, normal));
       return 
         massSum + 
         bodyA.InvInertia * r1cnSqr + 

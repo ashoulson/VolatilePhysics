@@ -25,7 +25,7 @@ using UnityEngine;
 
 namespace Volatile
 {
-  public class World
+  public sealed class World
   {
     public IEnumerable<Shape> Shapes 
     { 
@@ -39,8 +39,8 @@ namespace Volatile
 
     internal float Elasticity { get; private set; }
 
-    protected List<Body> bodies;
-    protected List<Shape> shapes;
+    private List<Body> bodies;
+    private List<Shape> shapes;
 
     internal Vector2 gravity;
     internal float damping = 0.999f;
@@ -64,15 +64,7 @@ namespace Volatile
       this.manifolds = new List<Manifold>();
     }
 
-    /// <summary>
-    /// Call this after adding all bodies.
-    /// </summary>
-    public virtual void Initialize()
-    {
-      // (We could build broadphase here, etc.)
-    }
-
-    public virtual void AddBody(Body body)
+    public void AddBody(Body body)
     {
       foreach (Shape s in body.Shapes)
         this.shapes.Add(s);
@@ -80,34 +72,27 @@ namespace Volatile
       body.World = this;
     }
 
-    internal virtual void BroadPhase(
-      List<Manifold> manifolds)
+    public void RemoveBody(Body body)
     {
-      for (int i = 0; i < this.shapes.Count; i++)
-        for (int j = i + 1; j < this.shapes.Count; j++)
-          this.NarrowPhase(this.shapes[i], this.shapes[j], manifolds);
+      // TODO: Ouch, this is costly.
+      foreach (Shape s in body.Shapes)
+        this.shapes.Remove(s);
+      this.bodies.Remove(body);
+      body.World = null;
     }
 
-    internal virtual void NarrowPhase(
-      Shape sa, 
-      Shape sb, 
-      List<Manifold> manifolds)
+    public void Update()
     {
-      if (sa.Body.CanCollide(sb.Body) == false)
-        return;
-      if (sa.AABB.Intersect(sb.AABB) == false)
-        return;
-      Shape.OrderShapes(ref sa, ref sb);
-      Manifold manifold = Collision.Dispatch(sa, sb, this.manifoldPool);
-      if (manifold != null)
-        manifolds.Add(manifold);
+      this.UpdateBodies();
+      this.UpdateCollision();
+      this.CleanupManifolds();
     }
 
     #region Tests
     /// <summary>
     /// Returns all shapes whose bounding boxes overlap an area.
     /// </summary>
-    public virtual IEnumerable<Shape> Query(AABB area)
+    public IEnumerable<Shape> Query(AABB area)
     {
       foreach (Shape shape in this.shapes)
         if (shape.AABB.Intersect(area))
@@ -117,7 +102,7 @@ namespace Volatile
     /// <summary>
     /// Returns all shapes containing a point.
     /// </summary>
-    public virtual IEnumerable<Shape> Query(Vector2 point)
+    public IEnumerable<Shape> Query(Vector2 point)
     {
       foreach (Shape shape in this.shapes)
         if (shape.Query(point) == true)
@@ -148,21 +133,40 @@ namespace Volatile
     }
     #endregion
 
-    public virtual void Update()
-    {
-      this.UpdateBodies();
-      this.UpdateCollision();
-      this.CleanupManifolds();
-    }
-
-    protected void UpdateBodies()
+    #region Internals
+    private void UpdateBodies()
     {
       foreach (Body body in this.bodies)
         body.Update();
       this.BroadPhase(this.manifolds);
     }
 
-    protected void CleanupManifolds()
+
+    private void BroadPhase(List<Manifold> manifolds)
+    {
+      // TODO: Extensible Broadphase
+      for (int i = 0; i < this.shapes.Count; i++)
+        for (int j = i + 1; j < this.shapes.Count; j++)
+          this.NarrowPhase(this.shapes[i], this.shapes[j], manifolds);
+    }
+
+    private void NarrowPhase(
+      Shape sa,
+      Shape sb,
+      List<Manifold> manifolds)
+    {
+      if (sa.Body.CanCollide(sb.Body) == false)
+        return;
+      if (sa.AABB.Intersect(sb.AABB) == false)
+        return;
+
+      Shape.OrderShapes(ref sa, ref sb);
+      Manifold manifold = Collision.Dispatch(sa, sb, this.manifoldPool);
+      if (manifold != null)
+        manifolds.Add(manifold);
+    }
+
+    private void CleanupManifolds()
     {
       for (int i = 0; i < this.manifolds.Count; i++)
       {
@@ -172,7 +176,7 @@ namespace Volatile
       this.manifolds.Clear();
     }
 
-    protected void UpdateCollision()
+    private void UpdateCollision()
     {
       for (int i = 0; i < this.manifolds.Count; i++)
         this.manifolds[i].Prestep();
@@ -190,5 +194,6 @@ namespace Volatile
         for (int i = 0; i < this.manifolds.Count; i++)
           this.manifolds[i].Solve();
     }
+    #endregion
   }
 }

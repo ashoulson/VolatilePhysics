@@ -25,7 +25,7 @@ using UnityEngine;
 
 namespace Volatile
 {
-  public static class Util
+  public static class VolatileUtil
   {
     public static void Swap<T>(ref T a, ref T b)
     {

@@ -30,9 +30,11 @@ namespace Volatile
     public static Circle FromWorldPosition(
       Vector2 origin, 
       float radius, 
-      float density = 1.0f)
+      float density = 1.0f,
+      float friction = Config.DEFAULT_FRICTION,
+      float restitution = Config.DEFAULT_RESTITUTION)
     {
-      return new Circle(origin, radius, density);
+      return new Circle(origin, radius, density, friction, restitution);
     }
 
     #region Static Methods
@@ -61,16 +63,15 @@ namespace Volatile
 
     private float radius;
     private float sqrRadius;
-
-    internal Vector2 origin;
+    private Vector2 origin;
 
     #region Tests
-    protected override bool ShapeQuery(Vector2 point)
+    internal override bool ShapeQuery(Vector2 point)
     {
       return (point - this.origin).sqrMagnitude < this.sqrRadius;
     }
 
-    protected override bool ShapeRaycast(ref RayCast ray, ref RayResult result)
+    internal override bool ShapeRaycast(ref RayCast ray, ref RayResult result)
     {
       Vector2 toOrigin = this.origin - ray.Origin;
 
@@ -103,8 +104,15 @@ namespace Volatile
       this.AABB = Circle.ComputeBounds(this.origin, this.radius);
     }
 
-    private Circle(Vector2 origin, float radius, float density = 1.0f)
-      : base(density)
+
+    #region Internals
+    private Circle(
+      Vector2 origin,
+      float radius,
+      float density,
+      float friction,
+      float restitution)
+      : base(density, friction, restitution)
     {
       this.origin = origin;
       this.radius = radius;
@@ -114,7 +122,6 @@ namespace Volatile
       this.Area = Circle.ComputeArea(this.sqrRadius);
     }
 
-    #region Internals
     internal override float ComputeInertia(Vector2 offset)
     {
       return Circle.ComputeInertia(offset, this.sqrRadius);

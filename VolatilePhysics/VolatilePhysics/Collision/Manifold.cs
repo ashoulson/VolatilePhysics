@@ -65,7 +65,7 @@ namespace Volatile
     private Contact[] contacts;
     private ObjectPool<Contact> contactPool;
 
-    public Manifold(ObjectPool<Contact> contactPool)
+    internal Manifold(ObjectPool<Contact> contactPool)
     {
       this.contactPool = contactPool;
 
@@ -85,8 +85,8 @@ namespace Volatile
     {
       this.ShapeA = shapeA;
       this.ShapeB = shapeB;
-      this.Restitution = Mathf.Sqrt(shapeA.restitution * shapeB.restitution);
-      this.Friction = Mathf.Sqrt(shapeA.friction * shapeB.friction);
+      this.Restitution = Mathf.Sqrt(shapeA.Restitution * shapeB.Restitution);
+      this.Friction = Mathf.Sqrt(shapeA.Friction * shapeB.Friction);
       this.used = 0;
 
       this.isValid = true;

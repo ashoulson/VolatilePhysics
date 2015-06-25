@@ -48,15 +48,15 @@ namespace Volatile
   ///             |
   ///             
   /// </summary>
-  public struct Axis
+  internal struct Axis
   {
-    public Vector2 Normal { get { return this.normal; } }
-    public float Width { get { return this.width; } }
+    internal Vector2 Normal { get { return this.normal; } }
+    internal float Width { get { return this.width; } }
 
     private readonly Vector2 normal;
     private readonly float width;
 
-    public Axis(Vector2 normal, float value)
+    internal Axis(Vector2 normal, float value)
     {
       this.normal = normal;
       this.width = value;
