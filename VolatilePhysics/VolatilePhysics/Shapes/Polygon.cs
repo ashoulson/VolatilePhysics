@@ -56,6 +56,7 @@ namespace Volatile
     /// Converts world space vertices to offsets.
     /// </summary>
     /// <param name="origin">Shape origin point in world space.</param>
+    /// <param name="facing">World space orientation of shape.</param>
     /// <param name="vertices">Vertex positions in world space.</param>
     /// <returns></returns>
     private static Vector2[] ComputeOffsetVertices(
@@ -288,6 +289,7 @@ namespace Volatile
     /// Creates a new polygon from an origin and local-space vertices.
     /// </summary>
     /// <param name="origin">Shape origin point in world space.</param>
+    /// <param name="facing">World space orientation of shape.</param>
     /// <param name="vertices">Vertex positions relative to the origin.</param>
     /// <param name="density">Shape density.</param>
     private Polygon(

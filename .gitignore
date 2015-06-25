@@ -13,6 +13,8 @@
 *.userprefs
 *.pidb
 *.booproj
+*.suo
+*.dll
 
 # Unity3D generated meta files
 *.pidb.meta
@@ -23,3 +25,13 @@ sysinfo.txt
 # UnityVS files
 Unity/Assets/UnityVS.meta
 Unity/Assets/UnityVS/*
+
+# Resources
+Unity/Assets/Resources/*
+Unity/Assets/Resources.meta
+
+# Build Files
+VolatilePhysics/VolatilePhysics/bin/*
+VolatilePhysics/VolatilePhysics/obj/*
+
+
