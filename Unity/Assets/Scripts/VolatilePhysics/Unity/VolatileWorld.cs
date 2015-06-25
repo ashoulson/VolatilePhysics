@@ -11,6 +11,7 @@ public class VolatileWorld : MonoBehaviour
   protected static VolatileWorld instance = null;
 
   public World world;
+  public bool doFixedUpdate;
 
   void Awake()
   {
@@ -23,6 +24,12 @@ public class VolatileWorld : MonoBehaviour
   }
 
   void FixedUpdate()
+  {
+    if (this.doFixedUpdate == true)
+      this.world.Update();
+  }
+
+  public void WorldUpdate()
   {
     this.world.Update();
   }

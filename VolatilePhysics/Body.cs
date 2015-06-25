@@ -53,12 +53,13 @@ namespace Volatile
       get { return this.shapes.AsReadOnly(); } 
     }
 
+    public Vector2 LinearVelocity { get; set; }
+    public float AngularVelocity { get; set; }
+
     public Vector2 Position { get; private set; }
-    public Vector2 LinearVelocity { get; private set; }
     public Vector2 Force { get; private set; }
 
     public float Angle { get; private set; }
-    public float AngularVelocity { get; private set; }
     public float Torque { get; private set; }
 
     public Vector2 Facing { get; private set; }
