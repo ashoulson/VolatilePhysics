@@ -31,9 +31,9 @@ Not Supported:
 
 Overarching Design Goals of Volatile:
 - **Safe Repositioning.** Bodies and individual shapes can be moved to arbitrary positions by an external process without compromising the integrity of the physics simulation. Volatile is largely stateless -- very little data is preserved between frames aside from the position, orientation, and angular/linear velocity of each body.
-- **Individual Object Ticking.** Objects should be able to be rolled back and ticked individually without forcing a tick on the entire physics world. *(Status: Not started.)*
+- **Individual Object Ticking.** Objects can be ticked individually without forcing a tick on the entire physics world. This is useful for client-side prediction in networked games.
 - **Simplicity.** Volatile is designed to be simple to read and debug. Making a networked game is hard enough without worrying about how to diagnose physics issues.
 
 Caveats:
-- Volatile is designed primarily for *dynamic-static* object collisions. *Dynamic-dynamic* object collisions are difficult to synchronize over any network simulation, and while Volatile inherently supports them, no explicit support is given for synchronizing these collisions between peers.
-- Volatile has low frame coherence compared to most physics engines because of potential network rollbacks and corrections. Because of this, efficient spatial decomposition techniques are non-trivial, and the engine would benefit less from caching techniques like warm starting. In complex systems, Volatile's convergence will be outperformed by more advanced physics solvers, but Volatile should still be sufficient for many game applications.
+- Volatile is designed primarily for *dynamic-static* object collisions. *Dynamic-dynamic* object collisions are difficult to synchronize over any network simulation, and while Volatile inherently supports them, no explicit support is given for synchronizing these collisions between peers. Individual object ticking does not support dynamic-dynamic collisions.
+- Volatile has low frame coherence compared to most physics engines due to potential network rollbacks and corrections. Because of this, efficient spatial decomposition techniques are non-trivial, and the engine would benefit less from caching techniques like warm starting. In complex systems, Volatile's convergence will be outperformed by more sophisticated physics solvers, but Volatile should still be sufficient for many game applications.
