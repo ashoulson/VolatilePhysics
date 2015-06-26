@@ -246,13 +246,16 @@ namespace Volatile
     #endregion
 
     #region Collision
-    internal bool CanCollide(Body other)
+    internal bool CanCollide(Body other, bool allowDynamic)
     {
       // TODO: Layers, flags, etc.
       if (this == other)
         return false;
       if (this.IsStatic && other.IsStatic)
         return false;
+      if (allowDynamic == false)
+        if (this.IsStatic == false && other.IsStatic == false)
+          return false;
       return true;
     }
 
