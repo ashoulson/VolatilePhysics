@@ -81,9 +81,28 @@ namespace Volatile
       body.World = null;
     }
 
-    public void Update()
+    /// <summary>
+    /// Ticks the world, updating all bodies and resolving collisions.
+    /// </summary>
+    /// <param name="allowDynamic">Allow dynamic-dynamic collisions.</param>
+    public void Update(bool allowDynamic = true)
     {
-      this.UpdateBodies();
+      foreach (Body body in this.bodies)
+        body.Update();
+
+      this.BroadPhase(allowDynamic);
+      this.UpdateCollision();
+      this.CleanupManifolds();
+    }
+
+    /// <summary>
+    /// Updates a single body. Does not allow dynamic-dynamic collisions.
+    /// </summary>
+    public void Update(Body body)
+    {
+      body.Update();
+
+      this.BroadPhase(body, false);
       this.UpdateCollision();
       this.CleanupManifolds();
     }
@@ -134,28 +153,38 @@ namespace Volatile
     #endregion
 
     #region Internals
-    private void UpdateBodies()
-    {
-      foreach (Body body in this.bodies)
-        body.Update();
-      this.BroadPhase(this.manifolds);
-    }
-
-
-    private void BroadPhase(List<Manifold> manifolds)
+    private void BroadPhase(bool allowDynamic)
     {
       // TODO: Extensible Broadphase
       for (int i = 0; i < this.shapes.Count; i++)
         for (int j = i + 1; j < this.shapes.Count; j++)
-          this.NarrowPhase(this.shapes[i], this.shapes[j], manifolds);
+          this.NarrowPhase(
+            this.shapes[i], 
+            this.shapes[j], 
+            this.manifolds,
+            allowDynamic);
+    }
+
+    private void BroadPhase(Body body, bool allowDynamic)
+    {
+      // TODO: Extensible Broadphase
+      foreach (Shape shape in body.Shapes)
+        for (int i = 0; i < this.shapes.Count; i++)
+          if (this.shapes[i].Body != body)
+            this.NarrowPhase(
+              shape, 
+              this.shapes[i], 
+              this.manifolds,
+              allowDynamic);
     }
 
     private void NarrowPhase(
       Shape sa,
       Shape sb,
-      List<Manifold> manifolds)
+      List<Manifold> manifolds,
+      bool allowDynamic)
     {
-      if (sa.Body.CanCollide(sb.Body) == false)
+      if (sa.Body.CanCollide(sb.Body, allowDynamic) == false)
         return;
       if (sa.AABB.Intersect(sb.AABB) == false)
         return;

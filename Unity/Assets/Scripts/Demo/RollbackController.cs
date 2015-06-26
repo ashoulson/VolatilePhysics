@@ -104,7 +104,6 @@ public class RollbackController : MonoBehaviour
   {
     if (this.body != null && this.pause == false)
     {
-      Debug.Log("Starting");
       Command first = this.commands[0];
       this.body.body.SetWorld(first.position, first.angle);
       this.body.body.LinearVelocity = first.velocity;
@@ -126,7 +125,6 @@ public class RollbackController : MonoBehaviour
 
         if (cmd.hasBeenExecuted == false)
         {
-          Debug.Log("Storing");
           cmd.position = this.body.body.Position;
           cmd.angle = this.body.body.Angle;
           cmd.velocity = this.body.body.LinearVelocity;
