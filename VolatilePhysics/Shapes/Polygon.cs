@@ -280,7 +280,12 @@ namespace Volatile
 
       if (foundIndex >= 0)
       {
-        result.Set(this, outer, this.cachedWorldAxes[foundIndex].Normal);
+        Vector2 point = ray.Origin + (ray.Direction * outer);
+        result.Set(
+          this, 
+          outer, 
+          this.cachedWorldAxes[foundIndex].Normal, 
+          point);
         return true;
       }
 

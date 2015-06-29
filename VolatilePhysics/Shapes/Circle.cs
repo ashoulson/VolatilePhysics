@@ -89,7 +89,8 @@ namespace Volatile
         return false;
 
       Vector2 normal = (dist * ray.Direction - toOrigin).normalized;
-      result.Set(this, dist, normal);
+      Vector2 point = ray.Origin + (ray.Direction * dist);
+      result.Set(this, dist, normal, point);
       return true;
     }
     #endregion
