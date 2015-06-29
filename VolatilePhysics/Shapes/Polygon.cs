@@ -278,7 +278,7 @@ namespace Volatile
         }
       }
 
-      if (foundIndex >= 0)
+      if (foundIndex >= 0 && outer <= ray.Distance)
       {
         Vector2 point = ray.Origin + (ray.Direction * outer);
         result.Set(
