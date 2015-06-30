@@ -93,7 +93,10 @@ namespace Volatile
       this.isValid = false;
     }
 
-    internal Contact Assign(Vector2 position, Vector2 normal, float penetration)
+    internal Contact Assign(
+      Vector2 position, 
+      Vector2 normal, 
+      float penetration)
     {
       this.position = position;
       this.normal = normal;
