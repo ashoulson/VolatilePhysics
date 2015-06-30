@@ -243,8 +243,7 @@ namespace Volatile
     /// <summary>
     /// Add contacts for penetrating vertices. Note that this does not handle
     /// cases where an overlap was detected, but no vertices fall inside the
-    /// opposing polygon (like a Star of David). See Chipmunk's cpCollision.c
-    /// for more details on how this could be resolved (we don't bother).
+    /// opposing polygon (like a Star of David). For this we have a fallback.
     /// 
     /// See http://chipmunk-physics.googlecode.com/svn/trunk/src/cpCollision.c
     /// </summary>
@@ -277,7 +276,7 @@ namespace Volatile
         }
       }
 
-      // Fallback to check the degenerate case
+      // Fallback to check the degenerate "Star of David" case
       if (found == false)
         FindVertsFallback(poly1, poly2, normal, penetration, manifold);
     }
