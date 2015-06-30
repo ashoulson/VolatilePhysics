@@ -25,8 +25,6 @@ using UnityEngine;
 
 namespace Volatile
 {
-  // This a mutable struct, for the sake of GC management. Be careful when
-  // passing any contacts around as a parameter (which you shouldn't do.)
   internal sealed class Contact : IPoolable<Contact>
   {
     #region Pool Class
