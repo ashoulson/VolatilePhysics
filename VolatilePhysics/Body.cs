@@ -184,6 +184,12 @@ namespace Volatile
     }
     #endregion
 
+    public Body(IEnumerable<Shape> shapesToAdd)
+      : this(Vector2.zero, 0.0f, shapesToAdd) { }
+
+    public Body(params Shape[] shapesToAdd)
+      : this(Vector2.zero, 0.0f, shapesToAdd) { }
+
     public Body(Vector2 position, IEnumerable<Shape> shapesToAdd)
       : this(position, 0.0f, shapesToAdd) { }
 
