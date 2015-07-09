@@ -18,7 +18,7 @@ With influences from:
 Supported Physics Tasks:
 - Convex Polygon and Circle Shapes
 - Multiple Shapes per Body
-- Raycasts
+- Raycasts and Circle Sweep Tests
 - Collision Detection and Resolution
 - Force/Torque Application and Integration
 
