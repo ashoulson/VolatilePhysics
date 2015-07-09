@@ -81,10 +81,22 @@ namespace Volatile
     }
 
     /// <summary>
+    /// Checks if a circle overlaps with this shape. 
+    /// Begins with an AABB check.
+    /// </summary>
+    public bool Query(Vector2 point, float radius)
+    {
+      if (this.AABB.Query(point, radius) == true)
+        return this.ShapeQuery(point, radius);
+      return false;
+    }
+
+
+    /// <summary>
     /// Performs a raycast check on this shape. 
     /// Begins with an AABB check.
     /// </summary>
-    public bool Raycast(ref RayCast ray, ref RayResult result)
+    public bool RayCast(ref RayCast ray, ref RayResult result)
     {
       // Check to see if start is contained first
       if (this.Query(ray.Origin) == true)
@@ -92,8 +104,27 @@ namespace Volatile
         result.SetContained(this);
         return true;
       }
-      if (this.AABB.Raycast(ref ray) == true)
-        return this.ShapeRaycast(ref ray, ref result);
+
+      if (this.AABB.RayCast(ref ray) == true)
+        return this.ShapeRayCast(ref ray, ref result);
+      return false;
+    }
+
+    /// <summary>
+    /// Performs a circlecast check on this shape. 
+    /// Begins with an AABB check.
+    /// </summary>
+    public bool CircleCast(ref RayCast ray, ref RayResult result, float radius)
+    {
+      // Check to see if start is contained first
+      if (this.Query(ray.Origin, radius) == true)
+      {
+        result.SetContained(this);
+        return true;
+      }
+
+      if (this.AABB.CircleCast(ref ray, radius) == true)
+        return this.ShapeCircleCast(ref ray, ref result, radius);
       return false;
     }
     #endregion
@@ -126,10 +157,17 @@ namespace Volatile
     }
 
     internal abstract float ComputeInertia(Vector2 offset);
+
     internal abstract bool ShapeQuery(Vector2 point);
-    internal abstract bool ShapeRaycast(
+    internal abstract bool ShapeQuery(Vector2 point, float radius);
+
+    internal abstract bool ShapeRayCast(
       ref RayCast ray,
       ref RayResult result);
+    internal abstract bool ShapeCircleCast(
+      ref RayCast ray,
+      ref RayResult result,
+      float radius);
     #endregion
 
     #region Debug

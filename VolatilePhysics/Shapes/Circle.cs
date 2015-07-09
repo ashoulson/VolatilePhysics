@@ -27,6 +27,37 @@ namespace Volatile
 {
   public sealed class Circle : Shape
   {
+    /// <summary>
+    /// Used during polygon circle casts as well.
+    /// </summary>
+    internal static bool CircleRayCast(
+      Shape shape,
+      Vector2 origin, 
+      float sqrRadius, 
+      ref RayCast ray, 
+      ref RayResult result)
+    {
+      Vector2 toOrigin = origin - ray.Origin;
+
+      float slope = Vector2.Dot(toOrigin, ray.Direction); 
+      if (slope < 0) 
+        return false;
+
+      float sqrSlope = slope * slope;
+      float d = sqrRadius + sqrSlope - Vector2.Dot(toOrigin, toOrigin);
+      if (d < 0) 
+        return false;
+
+      float dist = slope - Mathf.Sqrt(d); 
+      if (dist < 0) 
+        return false;
+
+      Vector2 normal = (dist * ray.Direction - toOrigin).normalized;
+      Vector2 point = ray.Origin + (ray.Direction * dist);
+      result.Set(shape, dist, normal);
+      return true;
+    }
+
     public static Circle FromWorldPosition(
       Vector2 origin, 
       float radius, 
@@ -68,30 +99,45 @@ namespace Volatile
     #region Tests
     internal override bool ShapeQuery(Vector2 point)
     {
-      return (point - this.origin).sqrMagnitude < this.sqrRadius;
+      return 
+        Collision.TestCirclesSimple(
+          this.Position, 
+          point, 
+          this.radius);
     }
 
-    internal override bool ShapeRaycast(ref RayCast ray, ref RayResult result)
+    internal override bool ShapeQuery(Vector2 point, float radius)
     {
-      Vector2 toOrigin = this.origin - ray.Origin;
+      return 
+        Collision.TestCirclesSimple(
+          this.Position, 
+          point, 
+          this.radius, 
+          radius);
+    }
 
-      float slope = Vector2.Dot(toOrigin, ray.Direction); 
-      if (slope < 0) 
-        return false;
+    internal override bool ShapeRayCast(ref RayCast ray, ref RayResult result)
+    {
+      return CircleRayCast(
+        this, 
+        this.origin, 
+        this.sqrRadius, 
+        ref ray, 
+        ref result);
+    }
 
-      float sqrSlope = slope * slope;
-      float d = this.sqrRadius + sqrSlope - Vector2.Dot(toOrigin, toOrigin);
-      if (d < 0) 
-        return false;
-
-      float dist = slope - Mathf.Sqrt(d); 
-      if (dist < 0) 
-        return false;
-
-      Vector2 normal = (dist * ray.Direction - toOrigin).normalized;
-      Vector2 point = ray.Origin + (ray.Direction * dist);
-      result.Set(this, dist, normal, point);
-      return true;
+    internal override bool ShapeCircleCast(
+      ref RayCast ray, 
+      ref RayResult result, 
+      float radius)
+    {
+      float totalRadius = this.radius + radius;
+      return CircleRayCast(
+        this,
+        this.origin,
+        totalRadius * totalRadius,
+        ref ray,
+        ref result);
     }
     #endregion
 
@@ -104,7 +150,6 @@ namespace Volatile
       this.origin = position;
       this.AABB = Circle.ComputeBounds(this.origin, this.radius);
     }
-
 
     #region Internals
     private Circle(

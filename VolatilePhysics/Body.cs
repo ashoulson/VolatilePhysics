@@ -159,19 +159,19 @@ namespace Volatile
     /// Performs a raycast check on this body. 
     /// Begins with AABB checks.
     /// </summary>
-    public bool Raycast(
+    public bool RayCast(
       ref RayCast ray, 
       ref RayResult result, 
       Func<Shape, bool> filter = null)
     {
       bool hit = false;
-      if (this.AABB.Raycast(ref ray) == true)
+      if (this.AABB.RayCast(ref ray) == true)
       {
         foreach (Shape shape in this.shapes)
         {
           if (filter == null || filter(shape) == true)
           {
-            if (shape.Raycast(ref ray, ref result) == true)
+            if (shape.RayCast(ref ray, ref result) == true)
             {
               if (result.IsContained == true)
                 return true;
