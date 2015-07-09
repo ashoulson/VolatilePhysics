@@ -27,8 +27,21 @@ namespace Volatile
 {
   public sealed class Circle : Shape
   {
+    #region Factory Functions
+    public static Circle FromWorldPosition(
+      Vector2 origin, 
+      float radius, 
+      float density = 1.0f,
+      float friction = Config.DEFAULT_FRICTION,
+      float restitution = Config.DEFAULT_RESTITUTION)
+    {
+      return new Circle(origin, radius, density, friction, restitution);
+    }
+    #endregion
+
+    #region Static Methods
     /// <summary>
-    /// Used during polygon circle casts as well.
+    /// Workhorse for circle ray checks, also used for Polygon circlecasts.
     /// </summary>
     internal static bool CircleRayCast(
       Shape shape,
@@ -53,22 +66,10 @@ namespace Volatile
         return false;
 
       Vector2 normal = (dist * ray.Direction - toOrigin).normalized;
-      Vector2 point = ray.Origin + (ray.Direction * dist);
       result.Set(shape, dist, normal);
       return true;
     }
-
-    public static Circle FromWorldPosition(
-      Vector2 origin, 
-      float radius, 
-      float density = 1.0f,
-      float friction = Config.DEFAULT_FRICTION,
-      float restitution = Config.DEFAULT_RESTITUTION)
-    {
-      return new Circle(origin, radius, density, friction, restitution);
-    }
-
-    #region Static Methods
+    
     private static float ComputeArea(float sqrRadius)
     {
       return sqrRadius * Mathf.PI;
@@ -100,7 +101,7 @@ namespace Volatile
     internal override bool ShapeQuery(Vector2 point)
     {
       return 
-        Collision.TestCirclesSimple(
+        Collision.TestCirclePointSimple(
           this.Position, 
           point, 
           this.radius);
@@ -109,7 +110,7 @@ namespace Volatile
     internal override bool ShapeQuery(Vector2 point, float radius)
     {
       return 
-        Collision.TestCirclesSimple(
+        Collision.TestCircleCircleSimple(
           this.Position, 
           point, 
           this.radius, 
@@ -128,8 +129,8 @@ namespace Volatile
 
     internal override bool ShapeCircleCast(
       ref RayCast ray, 
-      ref RayResult result, 
-      float radius)
+      float radius,
+      ref RayResult result)
     {
       float totalRadius = this.radius + radius;
       return CircleRayCast(

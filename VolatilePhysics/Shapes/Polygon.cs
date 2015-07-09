@@ -256,9 +256,9 @@ namespace Volatile
       // a circle-circle intersection where the vertex has radius 0
       float d = VolatileUtil.Cross(axis.Normal, point);
       if (d > VolatileUtil.Cross(axis.Normal, a))
-        return Collision.TestCirclesSimple(point, a, radius);
+        return Collision.TestCirclePointSimple(point, a, radius);
       if (d < VolatileUtil.Cross(axis.Normal, b))
-        return Collision.TestCirclesSimple(point, b, radius);
+        return Collision.TestCirclePointSimple(point, b, radius);
       return true;
     }
 
@@ -325,18 +325,18 @@ namespace Volatile
 
     internal override bool ShapeCircleCast(
       ref RayCast ray, 
-      ref RayResult result, 
-      float radius)
+      float radius,
+      ref RayResult result)
     {
-      bool edges = this.CircleCastEdges(ref ray, ref result, radius);
-      bool vertices = this.CircleCastVertices(ref ray, ref result, radius);
-      return edges | vertices;
+      bool edges = this.CircleCastEdges(ref ray, radius, ref result);
+      bool vertices = this.CircleCastVertices(ref ray, radius, ref result);
+      return edges || vertices;
     }
 
     private bool CircleCastEdges(
       ref RayCast ray, 
-      ref RayResult result, 
-      float radius)
+      float radius,
+      ref RayResult result)
     {
       int foundIndex = -1;
       int length = this.cachedWorldVertices.Length;
@@ -352,7 +352,7 @@ namespace Volatile
         Axis curAxis = this.cachedWorldAxes[i];
 
         // Only consider rays pointing towards the edge
-        if (Vector2.Dot(curAxis.Normal, ray.Direction) > 0.0f)
+        if (Vector2.Dot(curAxis.Normal, ray.Direction) >= 0.0f)
           continue;
 
         // Push the edges out by the radius
@@ -390,8 +390,8 @@ namespace Volatile
 
     private bool CircleCastVertices(
       ref RayCast ray,
-      ref RayResult result,
-      float radius)
+      float radius,
+      ref RayResult result)
     {
       float sqrRadius = radius * radius;
       bool castHit = false;
