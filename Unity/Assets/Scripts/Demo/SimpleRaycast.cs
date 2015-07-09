@@ -5,7 +5,7 @@ using UnityEngine;
 
 using Volatile;
 
-public class SimpleRaycast : MonoBehaviour 
+public class SimpleRayCast : MonoBehaviour 
 {
   public VolatileBody ignoreBody;
 
