@@ -91,7 +91,6 @@ namespace Volatile
       return false;
     }
 
-
     /// <summary>
     /// Performs a raycast check on this shape. 
     /// Begins with an AABB check.
@@ -114,7 +113,10 @@ namespace Volatile
     /// Performs a circlecast check on this shape. 
     /// Begins with an AABB check.
     /// </summary>
-    public bool CircleCast(ref RayCast ray, ref RayResult result, float radius)
+    public bool CircleCast(
+      ref RayCast ray, 
+      float radius,
+      ref RayResult result)
     {
       // Check to see if start is contained first
       if (this.Query(ray.Origin, radius) == true)
@@ -124,7 +126,7 @@ namespace Volatile
       }
 
       if (this.AABB.CircleCast(ref ray, radius) == true)
-        return this.ShapeCircleCast(ref ray, ref result, radius);
+        return this.ShapeCircleCast(ref ray, radius, ref result);
       return false;
     }
     #endregion
@@ -153,7 +155,7 @@ namespace Volatile
     #region Internals
     internal float ComputeMass()
     {
-      return this.Area * this.Density * Config.AREA_MASS_RATIO;
+      return this.Area * this.Density * Config.AreaMassRatio;
     }
 
     internal abstract float ComputeInertia(Vector2 offset);
@@ -166,8 +168,8 @@ namespace Volatile
       ref RayResult result);
     internal abstract bool ShapeCircleCast(
       ref RayCast ray,
-      ref RayResult result,
-      float radius);
+      float radius,
+      ref RayResult result);
     #endregion
 
     #region Debug

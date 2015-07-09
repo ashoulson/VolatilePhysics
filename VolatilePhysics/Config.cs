@@ -25,40 +25,21 @@ using UnityEngine;
 
 namespace Volatile
 {
-  internal static class Config
+  public static class Config
   {
-    internal const float AREA_MASS_RATIO = 0.01f;
+    public static float ResolveSlop = 0.01f;
+    public static float ResolveRate = 0.1f;
+    public static float AreaMassRatio = 0.01f;
 
-    internal const float RESOLVE_SLOP = 0.01f;
-    internal const float RESOLVE_RATE = 0.1f;
-
+    // Defaults
     internal const float DEFAULT_RESTITUTION = 0.5f;
     internal const float DEFAULT_FRICTION = 0.8f;
+    internal const int DEFAULT_ITERATION_COUNT = 20;
 
-    /// <summary>
-    /// Fixed update delta time for body integration. Should be set to
-    /// Unity's Time.fixedDeltaTime.
-    /// </summary>
-    internal const float DELTA_TIME = 0.02f;
-
-    /// <summary>
-    /// Number of iterations when updating the world.
-    /// </summary>
-    internal const int NUM_ITERATIONS = 20;
-
-    /// <summary>
-    /// Maximum contacts for collision resolution.
-    /// </summary>
+    // Maximum contacts for collision resolution.
     internal const int MAX_CONTACTS = 3;
 
-    /// <summary>
-    /// Maximum history records stored by the rolling buffer.
-    /// </summary>
-    internal const int MAX_HISTORY = 64;
-
-    /// <summary>
-    /// Invalid time for initialization purposes.
-    /// </summary>
+    // Used for initializing timesteps
     internal const int INVALID_TIME = -1;
   }
 }

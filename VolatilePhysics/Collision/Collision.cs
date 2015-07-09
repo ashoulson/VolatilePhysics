@@ -283,9 +283,21 @@ namespace Volatile
 
     #region Simple Tests and Helper Functions
     /// <summary>
+    /// Simple check for point-circle containment.
+    /// </summary>
+    internal static bool TestCirclePointSimple(
+      Vector2 originA,
+      Vector2 originB,
+      float radiusA)
+    {
+      Vector2 delta = originA - originB;
+      return delta.sqrMagnitude <= (radiusA * radiusA);
+    }
+
+    /// <summary>
     /// Simple check for two overlapping circles.
     /// </summary>
-    internal static bool TestCirclesSimple(
+    internal static bool TestCircleCircleSimple(
       Vector2 originA,
       Vector2 originB,
       float radiusA,
@@ -296,20 +308,7 @@ namespace Volatile
     }
 
     /// <summary>
-    /// Simple check for point-circle containment.
-    /// </summary>
-    // TODO: Rename me
-    internal static bool TestCirclesSimple(
-      Vector2 originA,
-      Vector2 originB,
-      float radiusA)
-    {
-      Vector2 delta = originA - originB;
-      return delta.sqrMagnitude <= (radiusA * radiusA);
-    }
-
-    /// <summary>
-    /// Returns the index of the nearest axis on the poly to the circle.
+    /// Returns the index of the nearest axis on the poly to a circle.
     /// </summary>
     internal static int FindNearestAxis(
       Vector2 origin,
