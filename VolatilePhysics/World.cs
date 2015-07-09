@@ -132,7 +132,7 @@ namespace Volatile
     /// Performs a raycast on all bodies contained in the world.
     /// Filters by body or shape.
     /// </summary>
-    public bool Raycast(
+    public bool RayCast(
       RayCast ray,
       out RayResult result,
       Func<Body, bool> bodyFilter = null,
@@ -143,7 +143,7 @@ namespace Volatile
       {
         if (bodyFilter == null || bodyFilter(body) == true)
         {
-          body.Raycast(ref ray, ref result, shapeFilter);
+          body.RayCast(ref ray, ref result, shapeFilter);
           if (result.IsContained == true)
             return true;
         }

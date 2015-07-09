@@ -11,7 +11,9 @@ public class SimpleRaycast : MonoBehaviour
 
   private bool Filter(Body body)
   {
-    return body != this.ignoreBody.body;
+    if (this.ignoreBody != null)
+      return body != this.ignoreBody.body;
+    return true;
   }
 
   void OnDrawGizmos()
@@ -20,19 +22,17 @@ public class SimpleRaycast : MonoBehaviour
     if (Application.isPlaying == true)
     {
       RayResult result;
-      world.world.Raycast(
+      world.world.RayCast(
         new RayCast(
           transform.position,
           transform.position + (transform.up * 100.0f)),
         out result,
         bodyFilter: this.Filter);
 
+      Gizmos.color = Color.green;
+      Gizmos.DrawLine(transform.position, transform.position + (transform.up * 100.0f));
       if (result.IsValid == true)
-      {
-        Gizmos.color = Color.green;
-        Gizmos.DrawLine(transform.position, transform.position + (transform.up * 100.0f));
         Gizmos.DrawWireSphere(transform.position + (transform.up * result.Distance), 0.2f);
-      }
     }
   }
 }

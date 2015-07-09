@@ -27,6 +27,42 @@ namespace Volatile
 {
   public struct AABB
   {
+    #region Static Methods
+    /// <summary>
+    /// A cheap ray test that requires some precomputed information.
+    /// Adapted from: http://www.cs.utah.edu/~awilliam/box/box.pdf
+    /// </summary>
+    private static bool RayCast(
+      ref RayCast ray,
+      float top,
+      float bottom,
+      float left,
+      float right)
+    {
+      float txmin =
+        ((ray.SignX ? right : left) - ray.Origin.x) *
+        ray.InvDirection.x;
+      float txmax =
+        ((ray.SignX ? left : right) - ray.Origin.x) *
+        ray.InvDirection.x;
+
+      float tymin =
+        ((ray.SignY ? top : bottom) - ray.Origin.y) *
+        ray.InvDirection.y;
+      float tymax =
+        ((ray.SignY ? bottom : top) - ray.Origin.y) *
+        ray.InvDirection.y;
+
+      if ((txmin > tymax) || (tymin > txmax))
+        return false;
+      if (tymin > txmin)
+        txmin = tymin;
+      if (tymax < txmax)
+        txmax = tymax;
+      return (txmax > 0.0f) && (txmin < ray.Distance);
+    }
+    #endregion
+
     public Vector2 TopLeft 
     { 
       get { return new Vector2(this.left, this.top); } 
@@ -67,6 +103,9 @@ namespace Volatile
     private readonly float right;
 
     #region Tests
+    /// <summary>
+    /// Performs a point test on the AABB.
+    /// </summary>
     public bool Query(Vector2 point)
     {
       return 
@@ -77,32 +116,38 @@ namespace Volatile
     }
 
     /// <summary>
-    /// A cheap ray test that requires some precomputed information.
-    /// Adapted from: http://www.cs.utah.edu/~awilliam/box/box.pdf
+    /// Performs a point test, expanding the AABB in all directions by a value.
     /// </summary>
-    public bool Raycast(ref RayCast ray)
+    public bool Query(Vector2 point, float expand)
     {
-      float txmin =
-        ((ray.SignX ? this.right : this.left) - ray.Origin.x) *
-        ray.InvDirection.x;
-      float txmax =
-        ((ray.SignX ? this.left : this.right) - ray.Origin.x) *
-        ray.InvDirection.x;
+      return
+        (this.left - expand) <= point.x &&
+        (this.right + expand) >= point.x &&
+        (this.bottom - expand) <= point.y &&
+        (this.top + expand) >= point.y;
+    }
 
-      float tymin =
-        ((ray.SignY ? this.top : this.bottom) - ray.Origin.y) *
-        ray.InvDirection.y;
-      float tymax =
-        ((ray.SignY ? this.bottom : this.top) - ray.Origin.y) *
-        ray.InvDirection.y;
+    public bool RayCast(ref RayCast ray)
+    {
+      return AABB.RayCast(
+        ref ray, 
+        this.top, 
+        this.bottom, 
+        this.left, 
+        this.right);
+    }
 
-      if ((txmin > tymax) || (tymin > txmax))
-        return false;
-      if (tymin > txmin)
-        txmin = tymin;
-      if (tymax < txmax)
-        txmax = tymax;
-      return (txmax > 0.0f) && (txmin < ray.Distance);
+    /// <summary>
+    /// Note, this doesn't take rounded edges into account.
+    /// </summary>
+    public bool CircleCast(ref RayCast ray, float radius)
+    {
+      return AABB.RayCast(
+        ref ray,
+        this.top + radius,
+        this.bottom - radius,
+        this.left - radius,
+        this.right + radius);
     }
 
     public bool Intersect(AABB other)

@@ -36,25 +36,21 @@ namespace Volatile
     public Shape Shape { get { return this.shape; } }
     public float Distance { get { return this.distance; } }
     public Vector2 Normal { get { return this.normal; } }
-    public Vector2 Point { get { return this.point; } }
 
     private Shape shape;
     private float distance;
     private Vector2 normal;
-    private Vector2 point;
 
     internal void Set(
       Shape shape, 
       float distance, 
-      Vector2 normal,
-      Vector2 point)
+      Vector2 normal)
     {
       if (this.IsValid == false || distance < this.distance)
       {
         this.shape = shape;
         this.distance = distance;
         this.normal = normal;
-        this.point = point;
       }
     }
 
@@ -63,6 +59,11 @@ namespace Volatile
       this.shape = shape;
       this.distance = 0.0f;
       this.normal = Vector2.zero;
+    }
+
+    public Vector2 GetPoint(ref RayCast cast)
+    {
+      return cast.Origin + (cast.Direction * this.distance);
     }
   }
 }

@@ -103,29 +103,34 @@ namespace Volatile
     {
       // Get the axis on the polygon closest to the circle's origin
       float penetration;
-      int ix = FindNearestAxis(circ, poly, out penetration);
+      int ix = 
+        Collision.FindNearestAxis(
+          circ.Position, 
+          circ.Radius, 
+          poly, 
+          out penetration);
+
       if (ix < 0)
         return null;
 
-      Vector2 v =
-        poly.cachedWorldVertices[ix];
-      Vector2 u =
-        poly.cachedWorldVertices[(ix + 1) % poly.cachedWorldAxes.Length];
-      Axis a = poly.cachedWorldAxes[ix];
+      int length = poly.cachedWorldAxes.Length;
+      Vector2 a = poly.cachedWorldVertices[ix];
+      Vector2 b = poly.cachedWorldVertices[(ix + 1) % length];
+      Axis axis = poly.cachedWorldAxes[ix];
 
       // If the circle is past one of the two vertices, check it like
       // a circle-circle intersection where the vertex has radius 0
-      float d = VolatileUtil.Cross(a.Normal, circ.Position);
-      if (d > VolatileUtil.Cross(a.Normal, v))
-        return Collision.TestCircles(circ, poly, v, 0.0f, pool);
-      if (d < VolatileUtil.Cross(a.Normal, u))
-        return Collision.TestCircles(circ, poly, u, 0.0f, pool);
+      float d = VolatileUtil.Cross(axis.Normal, circ.Position);
+      if (d > VolatileUtil.Cross(axis.Normal, a))
+        return Collision.TestCircles(circ, poly, a, 0.0f, pool);
+      if (d < VolatileUtil.Cross(axis.Normal, b))
+        return Collision.TestCircles(circ, poly, b, 0.0f, pool);
 
       // Build the collision Manifold
       Manifold manifold = pool.Acquire().Assign(circ, poly);
       Vector2 pos =
-        circ.Position - (circ.Radius + penetration / 2) * a.Normal;
-      manifold.AddContact(pos, -a.Normal, penetration);
+        circ.Position - (circ.Radius + penetration / 2) * axis.Normal;
+      manifold.AddContact(pos, -axis.Normal, penetration);
       return manifold;
     }
 
@@ -185,37 +190,6 @@ namespace Volatile
       Manifold manifold = pool.Acquire().Assign(shapeA, shapeB);
       manifold.AddContact(pos, distInv * r, dist - min);
       return manifold;
-    }
-
-    /// <summary>
-    /// Returns the index of the nearest axis on the poly to the circle.
-    /// </summary>
-    private static int FindNearestAxis(
-      Circle circ,
-      Polygon poly,
-      out float penetration)
-    {
-      int ix = 0;
-      penetration = float.NegativeInfinity;
-
-      for (int i = 0; i < poly.cachedWorldAxes.Length; i++)
-      {
-        float dot =
-          Vector2.Dot(
-            poly.cachedWorldAxes[i].Normal,
-            circ.Position);
-        float dist = dot - poly.cachedWorldAxes[i].Width - circ.Radius;
-
-        if (dist > 0)
-          return -1;
-        if (dist > penetration)
-        {
-          penetration = dist;
-          ix = i;
-        }
-      }
-
-      return ix;
     }
 
     private static bool FindMinSepAxis(
@@ -304,6 +278,63 @@ namespace Volatile
           if (manifold.AddContact(vertex, normal, penetration) == false)
             return;
       }
+    }
+    #endregion
+
+    #region Simple Tests and Helper Functions
+    /// <summary>
+    /// Simple check for two overlapping circles.
+    /// </summary>
+    internal static bool TestCirclesSimple(
+      Vector2 originA,
+      Vector2 originB,
+      float radiusA,
+      float radiusB)
+    {
+      float radiusTotal = radiusA + radiusB;
+      return (originA - originB).sqrMagnitude <= (radiusTotal * radiusTotal);
+    }
+
+    /// <summary>
+    /// Simple check for point-circle containment.
+    /// </summary>
+    internal static bool TestCirclesSimple(
+      Vector2 originA,
+      Vector2 originB,
+      float radiusA)
+    {
+      Vector2 delta = originA - originB;
+      return delta.sqrMagnitude <= (radiusA * radiusA);
+    }
+
+    /// <summary>
+    /// Returns the index of the nearest axis on the poly to the circle.
+    /// </summary>
+    internal static int FindNearestAxis(
+      Vector2 origin,
+      float radius,
+      Polygon poly,
+      out float penetration)
+    {
+      int ix = 0;
+      penetration = float.NegativeInfinity;
+
+      for (int i = 0; i < poly.cachedWorldAxes.Length; i++)
+      {
+        float dot = Vector2.Dot(poly.cachedWorldAxes[i].Normal, origin);
+        float dist = dot - poly.cachedWorldAxes[i].Width - radius;
+
+        if (dist > 0)
+          return -1;
+
+        if (dist > penetration)
+        {
+          penetration = dist;
+          ix = i;
+        }
+      }
+
+      return ix;
     }
     #endregion
   }

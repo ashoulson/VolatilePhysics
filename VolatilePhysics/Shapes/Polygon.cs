@@ -237,7 +237,32 @@ namespace Volatile
       return true;
     }
 
-    internal override bool ShapeRaycast(ref RayCast ray, ref RayResult result)
+    internal override bool ShapeQuery(Vector2 point, float radius)
+    {
+      // Get the axis on the polygon closest to the circle's origin
+      float penetration;
+      int ix =
+        Collision.FindNearestAxis(point, radius, this, out penetration);
+
+      if (ix < 0)
+        return false;
+
+      int length = this.cachedWorldAxes.Length;
+      Vector2 a = this.cachedWorldVertices[ix];
+      Vector2 b = this.cachedWorldVertices[(ix + 1) % length];
+      Axis axis = this.cachedWorldAxes[ix];
+
+      // If the circle is past one of the two vertices, check it like
+      // a circle-circle intersection where the vertex has radius 0
+      float d = VolatileUtil.Cross(axis.Normal, point);
+      if (d > VolatileUtil.Cross(axis.Normal, a))
+        return Collision.TestCirclesSimple(point, a, radius);
+      if (d < VolatileUtil.Cross(axis.Normal, b))
+        return Collision.TestCirclesSimple(point, b, radius);
+      return true;
+    }
+
+    internal override bool ShapeRayCast(ref RayCast ray, ref RayResult result)
     {
       int foundIndex = -1;
       float inner = float.MaxValue;
@@ -246,13 +271,20 @@ namespace Volatile
       for (int i = 0; i < this.cachedWorldVertices.Length; i++)
       {
         Axis curAxis = this.cachedWorldAxes[i];
+
+        // Distance between the ray origin and the axis/edge along the normal
+        // (i.e., shortest distance between ray origin and the edge).
         float proj = Vector2.Dot(curAxis.Normal, ray.Origin) - curAxis.Width;
+
+        // Projection of the ray direction onto the axis normal (use negative
+        // normal because we want to get the penetration length).
         float slope = Vector2.Dot(-curAxis.Normal, ray.Direction);
 
         if (slope == 0.0f) 
           continue;
         float dist = proj / slope;
 
+        // The ray is pointing opposite the edge normal (towards the edge)
         if (slope > 0.0f) 
         {
           if (dist > inner)
@@ -265,6 +297,7 @@ namespace Volatile
             foundIndex = i; 
           } 
         }
+        // The ray is pointing along the edge normal (away from the edge)
         else
         {
           if (dist < outer)
@@ -280,16 +313,101 @@ namespace Volatile
 
       if (foundIndex >= 0 && outer <= ray.Distance)
       {
-        Vector2 point = ray.Origin + (ray.Direction * outer);
         result.Set(
           this, 
           outer, 
-          this.cachedWorldAxes[foundIndex].Normal, 
-          point);
+          this.cachedWorldAxes[foundIndex].Normal);
         return true;
       }
 
       return false;
+    }
+
+    internal override bool ShapeCircleCast(
+      ref RayCast ray, 
+      ref RayResult result, 
+      float radius)
+    {
+      bool edges = this.CircleCastEdges(ref ray, ref result, radius);
+      bool vertices = this.CircleCastVertices(ref ray, ref result, radius);
+      return edges | vertices;
+    }
+
+    private bool CircleCastEdges(
+      ref RayCast ray, 
+      ref RayResult result, 
+      float radius)
+    {
+      int foundIndex = -1;
+      int length = this.cachedWorldVertices.Length;
+
+      // Pre-compute and initialize values
+      float shortestDist = float.MaxValue;
+      Vector2 v3 = ray.Direction.Left();
+
+      // Check the edges -- this will be different from the raycast because
+      // we care about staying within the ends of the segment this time
+      for (int i = 0; i < this.cachedWorldVertices.Length; i++)
+      {
+        Axis curAxis = this.cachedWorldAxes[i];
+
+        // Only consider rays pointing towards the edge
+        if (Vector2.Dot(curAxis.Normal, ray.Direction) > 0.0f)
+          continue;
+
+        // Push the edges out by the radius
+        Vector2 extension = curAxis.Normal * radius;
+        Vector2 a = this.cachedWorldVertices[i] + extension;
+        Vector2 b = this.cachedWorldVertices[(i + 1) % length] + extension;
+
+        // See: 
+        // https://rootllama.wordpress.com/2014/06/20/ray-line-segment-intersection-test-in-2d/
+        Vector2 v1 = ray.Origin - a;
+        Vector2 v2 = b - a;
+
+        float denominator = Vector2.Dot(v2, v3);
+        float t1 = VolatileUtil.Cross(v2, v1) / denominator;
+        float t2 = Vector2.Dot(v1, v3) / denominator;
+
+        if (t2 >= 0.0f && t2 <= 1.0f && t1 > 0.0f && t1 < shortestDist)
+        {
+          shortestDist = t1;
+          foundIndex = i;
+        }
+      }
+
+      // Report results
+      if (foundIndex >= 0 && shortestDist <= ray.Distance)
+      {
+        result.Set(
+          this,
+          shortestDist,
+          this.cachedWorldAxes[foundIndex].Normal);
+        return true;
+      }
+      return false;
+    }
+
+    private bool CircleCastVertices(
+      ref RayCast ray,
+      ref RayResult result,
+      float radius)
+    {
+      float sqrRadius = radius * radius;
+      bool castHit = false;
+
+      for (int i = 0; i < this.cachedWorldVertices.Length; i++)
+      {
+        castHit |= 
+          Circle.CircleRayCast(
+            this,
+            this.cachedWorldVertices[i],
+            sqrRadius,
+            ref ray,
+            ref result);
+      }
+
+      return castHit;
     }
     #endregion
 
