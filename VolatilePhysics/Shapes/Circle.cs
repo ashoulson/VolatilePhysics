@@ -27,8 +27,19 @@ namespace Volatile
 {
   public sealed class Circle : Shape
   {
+    public static Circle FromWorldPosition(
+      Vector2 origin, 
+      float radius, 
+      float density = 1.0f,
+      float friction = Config.DEFAULT_FRICTION,
+      float restitution = Config.DEFAULT_RESTITUTION)
+    {
+      return new Circle(origin, radius, density, friction, restitution);
+    }
+
+    #region Static Methods
     /// <summary>
-    /// Used during polygon circle casts as well.
+    /// Workhorse for circle ray checks, also used for Polygon circlecasts.
     /// </summary>
     internal static bool CircleRayCast(
       Shape shape,
@@ -53,22 +64,10 @@ namespace Volatile
         return false;
 
       Vector2 normal = (dist * ray.Direction - toOrigin).normalized;
-      Vector2 point = ray.Origin + (ray.Direction * dist);
       result.Set(shape, dist, normal);
       return true;
     }
-
-    public static Circle FromWorldPosition(
-      Vector2 origin, 
-      float radius, 
-      float density = 1.0f,
-      float friction = Config.DEFAULT_FRICTION,
-      float restitution = Config.DEFAULT_RESTITUTION)
-    {
-      return new Circle(origin, radius, density, friction, restitution);
-    }
-
-    #region Static Methods
+    
     private static float ComputeArea(float sqrRadius)
     {
       return sqrRadius * Mathf.PI;
