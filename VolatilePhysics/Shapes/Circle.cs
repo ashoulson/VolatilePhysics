@@ -27,6 +27,7 @@ namespace Volatile
 {
   public sealed class Circle : Shape
   {
+    #region Factory Functions
     public static Circle FromWorldPosition(
       Vector2 origin, 
       float radius, 
@@ -36,6 +37,7 @@ namespace Volatile
     {
       return new Circle(origin, radius, density, friction, restitution);
     }
+    #endregion
 
     #region Static Methods
     /// <summary>
