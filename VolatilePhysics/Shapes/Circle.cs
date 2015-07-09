@@ -101,7 +101,7 @@ namespace Volatile
     internal override bool ShapeQuery(Vector2 point)
     {
       return 
-        Collision.TestCirclesSimple(
+        Collision.TestCirclePointSimple(
           this.Position, 
           point, 
           this.radius);
@@ -110,7 +110,7 @@ namespace Volatile
     internal override bool ShapeQuery(Vector2 point, float radius)
     {
       return 
-        Collision.TestCirclesSimple(
+        Collision.TestCircleCircleSimple(
           this.Position, 
           point, 
           this.radius, 
@@ -129,8 +129,8 @@ namespace Volatile
 
     internal override bool ShapeCircleCast(
       ref RayCast ray, 
-      ref RayResult result, 
-      float radius)
+      float radius,
+      ref RayResult result)
     {
       float totalRadius = this.radius + radius;
       return CircleRayCast(

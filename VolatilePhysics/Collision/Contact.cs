@@ -52,7 +52,7 @@ namespace Volatile
     #region Static Methods
     private static float BiasDist(float dist)
     {
-      return Config.RESOLVE_RATE * Mathf.Min(0, dist + Config.RESOLVE_SLOP);
+      return Config.ResolveRate * Mathf.Min(0, dist + Config.ResolveSlop);
     }
     #endregion
 

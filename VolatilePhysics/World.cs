@@ -37,6 +37,18 @@ namespace Volatile
       get { return this.bodies.AsReadOnly(); } 
     }
 
+    /// <summary>
+    /// Fixed update delta time for body integration. 
+    /// Defaults to Time.fixedDeltaTime.
+    /// </summary>
+    public float DeltaTime { get; set; }
+
+    /// <summary>
+    /// Number of iterations when updating the world.
+    /// Defaults to Config.DEFAULT_ITERATION_COUNT.
+    /// </summary>
+    public int IterationCount { get; set; }
+
     internal float Elasticity { get; private set; }
 
     private List<Body> bodies;
@@ -53,6 +65,9 @@ namespace Volatile
 
     public World(Vector2 gravity, float damping = 0.999f)
     {
+      this.DeltaTime = Time.fixedDeltaTime;
+      this.IterationCount = Config.DEFAULT_ITERATION_COUNT;
+
       this.bodies = new List<Body>();
       this.shapes = new List<Shape>();
 
@@ -129,6 +144,16 @@ namespace Volatile
     }
 
     /// <summary>
+    /// Returns all shapes overlapping with a circle.
+    /// </summary>
+    public IEnumerable<Shape> Query(Vector2 point, float radius)
+    {
+      foreach (Shape shape in this.shapes)
+        if (shape.Query(point, radius) == true)
+          yield return shape;
+    }
+
+    /// <summary>
     /// Performs a raycast on all bodies contained in the world.
     /// Filters by body or shape.
     /// </summary>
@@ -144,6 +169,30 @@ namespace Volatile
         if (bodyFilter == null || bodyFilter(body) == true)
         {
           body.RayCast(ref ray, ref result, shapeFilter);
+          if (result.IsContained == true)
+            return true;
+        }
+      }
+      return result.IsValid;
+    }
+
+    /// <summary>
+    /// Performs a swept circle cast on all bodies contained in the world.
+    /// Filters by body or shape.
+    /// </summary>
+    public bool CircleCast(
+      RayCast ray,
+      float radius,
+      out RayResult result,
+      Func<Body, bool> bodyFilter = null,
+      Func<Shape, bool> shapeFilter = null)
+    {
+      result = new RayResult();
+      foreach (Body body in this.bodies)
+      {
+        if (bodyFilter == null || bodyFilter(body) == true)
+        {
+          body.CircleCast(ref ray, radius, ref result, shapeFilter);
           if (result.IsContained == true)
             return true;
         }
@@ -211,7 +260,7 @@ namespace Volatile
         this.manifolds[i].Prestep();
 
       this.Elasticity = 1.0f;
-      for (int j = 0; j < Config.NUM_ITERATIONS * 1 / 3; j++)
+      for (int j = 0; j < this.IterationCount * 1 / 3; j++)
         for (int i = 0; i < this.manifolds.Count; i++)
           this.manifolds[i].Solve();
 
@@ -219,7 +268,7 @@ namespace Volatile
         this.manifolds[i].SolveCached();
 
       this.Elasticity = 0.0f;
-      for (int j = 0; j < Config.NUM_ITERATIONS * 2 / 3; j++)
+      for (int j = 0; j < this.IterationCount * 2 / 3; j++)
         for (int i = 0; i < this.manifolds.Count; i++)
           this.manifolds[i].Solve();
     }

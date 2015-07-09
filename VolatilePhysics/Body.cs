@@ -156,7 +156,7 @@ namespace Volatile
     }
 
     /// <summary>
-    /// Performs a raycast check on this body. 
+    /// Performs a ray cast check on this body. 
     /// Begins with AABB checks.
     /// </summary>
     public bool RayCast(
@@ -172,6 +172,35 @@ namespace Volatile
           if (filter == null || filter(shape) == true)
           {
             if (shape.RayCast(ref ray, ref result) == true)
+            {
+              if (result.IsContained == true)
+                return true;
+              hit = true;
+            }
+          }
+        }
+      }
+      return hit;
+    }
+
+    /// <summary>
+    /// Performs a circle cast check on this body. 
+    /// Begins with AABB checks.
+    /// </summary>
+    public bool CircleCast(
+      ref RayCast ray,
+      float radius,
+      ref RayResult result,
+      Func<Shape, bool> filter = null)
+    {
+      bool hit = false;
+      if (this.AABB.CircleCast(ref ray, radius) == true)
+      {
+        foreach (Shape shape in this.shapes)
+        {
+          if (filter == null || filter(shape) == true)
+          {
+            if (shape.CircleCast(ref ray, radius, ref result) == true)
             {
               if (result.IsContained == true)
                 return true;
@@ -350,16 +379,16 @@ namespace Volatile
       float torque,
       float mult)
     {
-      this.LinearVelocity += Config.DELTA_TIME * force * mult;
-      this.AngularVelocity -= Config.DELTA_TIME * torque * mult;
+      this.LinearVelocity += this.World.DeltaTime * force * mult;
+      this.AngularVelocity -= this.World.DeltaTime * torque * mult;
     }
 
     private void IntegrateVelocity()
     {
-      this.Position += 
-        Config.DELTA_TIME * this.LinearVelocity + this.BiasVelocity;
-      this.Angle += 
-        Config.DELTA_TIME * this.AngularVelocity + this.BiasRotation;
+      this.Position +=
+        this.World.DeltaTime * this.LinearVelocity + this.BiasVelocity;
+      this.Angle +=
+        this.World.DeltaTime * this.AngularVelocity + this.BiasRotation;
     }
 
     private void ClearForces()
