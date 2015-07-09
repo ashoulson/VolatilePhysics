@@ -298,6 +298,7 @@ namespace Volatile
     /// <summary>
     /// Simple check for point-circle containment.
     /// </summary>
+    // TODO: Rename me
     internal static bool TestCirclesSimple(
       Vector2 originA,
       Vector2 originB,
