@@ -330,7 +330,7 @@ namespace Volatile
     {
       bool edges = this.CircleCastEdges(ref ray, ref result, radius);
       bool vertices = this.CircleCastVertices(ref ray, ref result, radius);
-      return edges | vertices;
+      return edges || vertices;
     }
 
     private bool CircleCastEdges(
