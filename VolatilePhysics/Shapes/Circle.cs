@@ -98,21 +98,30 @@ namespace Volatile
     private Vector2 origin;
 
     #region Tests
+    internal override float ShapeMinDistance(Vector2 point)
+    {
+      float distance = 
+        Collision.PointCircleDistance(point, this.origin, this.radius);
+      if (distance < 0.0f)
+        distance = 0.0f;
+      return distance;
+    }
+
     internal override bool ShapeQuery(Vector2 point)
     {
       return 
-        Collision.TestCirclePointSimple(
+        Collision.TestPointCircleSimple(
           this.Position, 
           point, 
           this.radius);
     }
 
-    internal override bool ShapeQuery(Vector2 point, float radius)
+    internal override bool ShapeQuery(Vector2 origin, float radius)
     {
       return 
         Collision.TestCircleCircleSimple(
           this.Position, 
-          point, 
+          origin, 
           this.radius, 
           radius);
     }
