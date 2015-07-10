@@ -62,7 +62,7 @@ namespace Volatile
         return false;
 
       float dist = slope - Mathf.Sqrt(d); 
-      if (dist < 0) 
+      if (dist < 0 || dist > ray.Distance) 
         return false;
 
       Vector2 normal = (dist * ray.Direction - toOrigin).normalized;
