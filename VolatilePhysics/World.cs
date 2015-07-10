@@ -154,6 +154,20 @@ namespace Volatile
     }
 
     /// <summary>
+    /// Returns all shapes overlapping with a circle, with distance.
+    /// More expensive than a simple circle overlap query.
+    /// </summary>
+    public IEnumerable<KeyValuePair<Shape, float>> QueryDistance(
+      Vector2 point, 
+      float radius)
+    {
+      float dist;
+      foreach (Shape shape in this.shapes)
+        if (shape.Query(point, radius, out dist) == true)
+          yield return new KeyValuePair<Shape, float>(shape, dist);
+    }
+
+    /// <summary>
     /// Performs a raycast on all bodies contained in the world.
     /// Filters by body or shape.
     /// </summary>

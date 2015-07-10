@@ -229,6 +229,30 @@ namespace Volatile
     #endregion
 
     #region Tests
+    internal override float ShapeMinDistance(Vector2 point)
+    {
+      // Get the axis on the polygon closest to the circle's origin
+      float dist;
+      int ix = Collision.FindAxisShortestDistance(point, this, out dist);
+
+      if (ix == -1)
+        return dist;
+
+      int length = this.cachedWorldAxes.Length;
+      Vector2 a = this.cachedWorldVertices[ix];
+      Vector2 b = this.cachedWorldVertices[(ix + 1) % length];
+      Axis axis = this.cachedWorldAxes[ix];
+
+      // If the point is past one of the two vertices, check it like
+      // a point-circle intersection where the vertex has radius 0
+      float d = VolatileUtil.Cross(axis.Normal, point);
+      if (d > VolatileUtil.Cross(axis.Normal, a))
+        return (point - a).magnitude;
+      if (d < VolatileUtil.Cross(axis.Normal, b))
+        return (point - b).magnitude;
+      return Mathf.Abs(dist);
+    }
+
     internal override bool ShapeQuery(Vector2 point)
     {
       foreach (Axis axis in this.cachedWorldAxes)
@@ -237,12 +261,12 @@ namespace Volatile
       return true;
     }
 
-    internal override bool ShapeQuery(Vector2 point, float radius)
+    internal override bool ShapeQuery(Vector2 origin, float radius)
     {
       // Get the axis on the polygon closest to the circle's origin
       float penetration;
       int ix =
-        Collision.FindNearestAxis(point, radius, this, out penetration);
+        Collision.FindAxisMaxPenetration(origin, radius, this, out penetration);
 
       if (ix < 0)
         return false;
@@ -254,11 +278,11 @@ namespace Volatile
 
       // If the circle is past one of the two vertices, check it like
       // a circle-circle intersection where the vertex has radius 0
-      float d = VolatileUtil.Cross(axis.Normal, point);
+      float d = VolatileUtil.Cross(axis.Normal, origin);
       if (d > VolatileUtil.Cross(axis.Normal, a))
-        return Collision.TestCirclePointSimple(point, a, radius);
+        return Collision.TestPointCircleSimple(a, origin, radius);
       if (d < VolatileUtil.Cross(axis.Normal, b))
-        return Collision.TestCirclePointSimple(point, b, radius);
+        return Collision.TestPointCircleSimple(b, origin, radius);
       return true;
     }
 

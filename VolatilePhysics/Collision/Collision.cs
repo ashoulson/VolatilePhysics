@@ -104,7 +104,7 @@ namespace Volatile
       // Get the axis on the polygon closest to the circle's origin
       float penetration;
       int ix = 
-        Collision.FindNearestAxis(
+        Collision.FindAxisMaxPenetration(
           circ.Position, 
           circ.Radius, 
           poly, 
@@ -285,13 +285,13 @@ namespace Volatile
     /// <summary>
     /// Simple check for point-circle containment.
     /// </summary>
-    internal static bool TestCirclePointSimple(
-      Vector2 originA,
-      Vector2 originB,
-      float radiusA)
+    internal static bool TestPointCircleSimple(
+      Vector2 point,
+      Vector2 origin,
+      float radius)
     {
-      Vector2 delta = originA - originB;
-      return delta.sqrMagnitude <= (radiusA * radiusA);
+      Vector2 delta = origin - point;
+      return delta.sqrMagnitude <= (radius * radius);
     }
 
     /// <summary>
@@ -308,9 +308,59 @@ namespace Volatile
     }
 
     /// <summary>
-    /// Returns the index of the nearest axis on the poly to a circle.
+    /// Distance between a point and the surface of a circle.
     /// </summary>
-    internal static int FindNearestAxis(
+    internal static float PointCircleDistance(
+      Vector2 point,
+      Vector2 origin,
+      float radius)
+    {
+      return (point - origin).magnitude - radius;
+    }
+
+    /// <summary>
+    /// Returns the index of the nearest axis on the poly to a point.
+    /// Outputs the minimum distance between the axis and the point.
+    /// </summary>
+    internal static int FindAxisShortestDistance(
+      Vector2 point,
+      Polygon poly,
+      out float minDistance)
+    {
+      int ix = 0;
+      minDistance = float.PositiveInfinity;
+      bool inside = true;
+
+      for (int i = 0; i < poly.cachedWorldAxes.Length; i++)
+      {
+        float dot = Vector2.Dot(poly.cachedWorldAxes[i].Normal, point);
+        float dist = poly.cachedWorldAxes[i].Width - dot;
+
+        if (dist < 0.0f)
+          inside = false;
+
+        if (dist < minDistance)
+        {
+          minDistance = dist;
+          ix = i;
+        }
+      }
+
+      if (inside == true)
+      {
+        minDistance = 0.0f;
+        ix = -1;
+      }
+
+      return ix;
+    }
+
+    /// <summary>
+    /// Returns the index of the axis with the max circle penetration depth.
+    /// Breaks out if a separating axis is found between the two shapes.
+    /// Outputs the penetration depth of the circle in the axis (if any).
+    /// </summary>
+    internal static int FindAxisMaxPenetration(
       Vector2 origin,
       float radius,
       Polygon poly,

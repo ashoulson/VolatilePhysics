@@ -84,10 +84,28 @@ namespace Volatile
     /// Checks if a circle overlaps with this shape. 
     /// Begins with an AABB check.
     /// </summary>
-    public bool Query(Vector2 point, float radius)
+    public bool Query(Vector2 origin, float radius)
     {
-      if (this.AABB.Query(point, radius) == true)
-        return this.ShapeQuery(point, radius);
+      if (this.AABB.Query(origin, radius) == true)
+        return this.ShapeQuery(origin, radius);
+      return false;
+    }
+
+    /// <summary>
+    /// Checks if a circle overlaps with this shape.
+    /// Begins with an AABB check.
+    /// Outputs the minimum surface distance from the shape to the origin.
+    /// More expensive than a normal query.
+    /// </summary>
+    public bool Query(Vector2 origin, float radius, out float minDistance)
+    {
+      minDistance = float.NaN;
+      if (this.AABB.Query(origin, radius) == true)
+      {
+        minDistance = this.ShapeMinDistance(origin);
+        if (minDistance < radius)
+          return true;
+      }
       return false;
     }
 
@@ -159,9 +177,13 @@ namespace Volatile
     }
 
     internal abstract float ComputeInertia(Vector2 offset);
+    #endregion
+
+    #region Test Overrides
+    internal abstract float ShapeMinDistance(Vector2 point);
 
     internal abstract bool ShapeQuery(Vector2 point);
-    internal abstract bool ShapeQuery(Vector2 point, float radius);
+    internal abstract bool ShapeQuery(Vector2 origin, float radius);
 
     internal abstract bool ShapeRayCast(
       ref RayCast ray,
