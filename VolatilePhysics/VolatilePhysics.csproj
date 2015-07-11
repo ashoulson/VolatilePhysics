@@ -54,6 +54,7 @@
     <Compile Include="Shapes\Polygon.cs" />
     <Compile Include="Util\AABB.cs" />
     <Compile Include="Util\Axis.cs" />
+    <Compile Include="Util\Offset.cs" />
     <Compile Include="Util\Pooling\IPoolable.cs" />
     <Compile Include="Util\Pooling\ObjectPool.cs" />
     <Compile Include="Util\RayCast.cs" />
