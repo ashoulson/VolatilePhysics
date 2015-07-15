@@ -74,6 +74,43 @@ namespace Volatile
       return a * a;
     }
 
+    public static void Transform(
+      ref RayCast cast, 
+      Vector2 localOrigin,
+      Vector2 localFacing,
+      out Vector2 origin, 
+      out Vector2 direction)
+    {
+      Vector2 rayOrigin = cast.Origin;
+      Vector2 rayDirection = cast.Direction;
+
+      float sin = localFacing.y;
+      float cos = localFacing.x;
+
+      // Our shape's transform matrix (counter-clockwise rotation)
+      //  ⌈  cos Θ     sin Θ     t_x  ⌉ ⌈ x ⌉ 
+      //  | -sin Θ     cos Θ     t_y  | | y |
+      //  ⌊    0         0        1   ⌋ ⌊ 1 ⌋ 
+      //
+      //  When inverting, we reverse the matrix order (TR -> R^{-1} T^{-1})
+
+      // First invert the transposition
+      Vector2 newOrigin = rayOrigin - localOrigin;
+
+      // Now invert the rotations, where R^{-1} =
+      //  ⌈  cos Θ    -sin Θ      0   ⌉ ⌈ x ⌉ 
+      //  |  sin Θ     cos Θ      0   | | y |
+      //  ⌊    0         0        1   ⌋ ⌊ 1 ⌋ 
+
+      origin = new Vector2(
+        cos * newOrigin.x + sin * newOrigin.y,
+        -sin * newOrigin.x + cos * newOrigin.y);
+
+      direction = new Vector2(
+        cos * rayDirection.x + sin * rayDirection.y,
+        -sin * rayDirection.x + cos * rayDirection.y);
+    }
+
     #region Debug
     public static void Draw(Body body)
     {
