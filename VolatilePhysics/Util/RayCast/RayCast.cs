@@ -26,17 +26,60 @@ using UnityEngine;
 namespace Volatile
 {
   /// <summary>
-  /// A semi-precomputed ray optimized for many tests
+  /// A semi-precomputed ray optimized for many tests. Supports the application
+  /// of a temporary "local mask" for transforming the ray into a shape's local
+  /// space on a short-term basis.
   /// </summary>
   public struct RayCast
   {
-    public Vector2 Origin { get { return this.origin; } }
-    public Vector2 Destination { get { return this.destination; } }
-    public Vector2 Direction { get { return this.direction; } }
-    public Vector2 InvDirection { get { return this.invDirection; } }
-    public float Distance { get { return this.distance; } }
-    public bool SignX { get { return this.signX; } }
-    public bool SignY { get { return this.signY; } }
+    internal bool HasLocalMask { get { return this.hasLocalMask; } }
+    internal float Distance { get { return this.distance; } }
+
+    internal Vector2 Origin 
+    {
+      get { return this.hasLocalMask ? this.localOrigin : this.origin; }
+    }
+
+    internal Vector2 Direction 
+    {
+      get { return this.hasLocalMask ? this.localDirection : this.direction; }
+    }
+
+    internal Vector2 Destination 
+    { 
+      get 
+      {
+        this.CheckForMask();
+        return this.destination; 
+      } 
+    }
+
+    internal Vector2 InvDirection 
+    {
+      get 
+      {
+        this.CheckForMask();
+        return this.invDirection; 
+      } 
+    }
+
+    internal bool SignX 
+    { 
+      get 
+      {
+        this.CheckForMask();
+        return this.signX; 
+      } 
+    }
+
+    internal bool SignY 
+    { 
+      get 
+      {
+        this.CheckForMask();
+        return this.signY; 
+      } 
+    }
 
     private readonly Vector2 origin;
     private readonly Vector2 destination;
@@ -45,6 +88,14 @@ namespace Volatile
     private readonly float distance;
     private readonly bool signX;
     private readonly bool signY;
+
+    // When performing historical raycasts, we create a "local mask" on the
+    // ray. When the ray is masked, it temporarily reports a different origin
+    // and direction -- that of the ray when transformed into the local space
+    // of the current shape.
+    private bool hasLocalMask;
+    private Vector2 localOrigin;
+    private Vector2 localDirection;
 
     public RayCast(Vector2 origin, Vector2 destination)
     {
@@ -57,6 +108,10 @@ namespace Volatile
       this.invDirection = new Vector2(1.0f / direction.x, 1.0f / direction.y);
       this.signX = invDirection.x < 0.0f;
       this.signY = invDirection.y < 0.0f;
+
+      this.hasLocalMask = false;
+      this.localOrigin = Vector2.zero;
+      this.localDirection = Vector2.zero;
     }
 
     public RayCast(Vector2 origin, Vector2 direction, float distance)
@@ -70,6 +125,16 @@ namespace Volatile
       this.invDirection = new Vector2(1.0f / direction.x, 1.0f / direction.y);
       this.signX = invDirection.x < 0.0f;
       this.signY = invDirection.y < 0.0f;
+
+      this.hasLocalMask = false;
+      this.localOrigin = Vector2.zero;
+      this.localDirection = Vector2.zero;
+    }
+
+    private void CheckForMask()
+    {
+      if (this.hasLocalMask == true)
+        throw new InvalidOperationException("Invalid when ray has local mask");
     }
   }
 }

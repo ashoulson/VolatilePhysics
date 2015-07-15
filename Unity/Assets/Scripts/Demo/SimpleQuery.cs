@@ -21,8 +21,6 @@ public class SimpleQuery : MonoBehaviour
       Gizmos.color = Color.cyan;
       if (radius < float.PositiveInfinity)
         Gizmos.DrawWireSphere(transform.position, radius);
-
-      Debug.Log(radius);
     }
   }
 }
