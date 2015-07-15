@@ -45,12 +45,12 @@ namespace Volatile
     /// </summary>
     internal static bool CircleRayCast(
       Shape shape,
-      Vector2 origin, 
+      Vector2 shapeOrigin, 
       float sqrRadius, 
       ref RayCast ray, 
       ref RayResult result)
     {
-      Vector2 toOrigin = origin - ray.Origin;
+      Vector2 toOrigin = shapeOrigin - ray.Origin;
 
       float slope = Vector2.Dot(toOrigin, ray.Direction); 
       if (slope < 0) 
@@ -128,7 +128,7 @@ namespace Volatile
 
     internal override bool ShapeRayCast(ref RayCast ray, ref RayResult result)
     {
-      return CircleRayCast(
+      return Circle.CircleRayCast(
         this, 
         this.origin, 
         this.sqrRadius, 
@@ -142,9 +142,45 @@ namespace Volatile
       ref RayResult result)
     {
       float totalRadius = this.radius + radius;
-      return CircleRayCast(
+      return Circle.CircleRayCast(
         this,
         this.origin,
+        totalRadius * totalRadius,
+        ref ray,
+        ref result);
+    }
+
+
+    internal override bool ShapeRayCastLocal(
+      Vector2 position,
+      Vector2 facing,
+      ref RayCast ray,
+      ref RayResult result)
+    {
+      // For circles, there's no savings in actually converting to local
+      // space, so we perform the cast in world space with the given position.
+      return Circle.CircleRayCast(
+        this,
+        position,
+        this.sqrRadius,
+        ref ray,
+        ref result);
+    }
+
+    internal override bool ShapeCircleCastLocal(
+      Vector2 position,
+      Vector2 facing,
+      ref RayCast ray,
+      float radius,
+      ref RayResult result)
+    {
+      float totalRadius = this.radius + radius;
+
+      // For circles, there's no savings in actually converting to local
+      // space, so we perform the cast in world space with the given position.
+      return Circle.CircleRayCast(
+        this,
+        position,
         totalRadius * totalRadius,
         ref ray,
         ref result);

@@ -195,37 +195,38 @@ namespace Volatile
 
     public Vector2[] LocalVertices 
     { 
-      get { return Polygon.CloneVertices(this.vertices); } 
+      get { return Polygon.CloneVertices(this.localVertices); } 
     }
 
     public Vector2[] WorldVertices
     {
-      get { return Polygon.CloneVertices(this.cachedWorldVertices); }
+      get { return Polygon.CloneVertices(this.worldVertices); }
     }
 
     public Vector2[] LocalNormals
     {
-      get { return Polygon.CloneNormals(this.axes); }
+      get { return Polygon.CloneNormals(this.localAxes); }
     }
 
     public Vector2[] WorldNormals
     {
-      get { return Polygon.CloneNormals(this.cachedWorldAxes); }
+      get { return Polygon.CloneNormals(this.worldAxes); }
     }
     #endregion
 
     #region Fields
     // Local space values
-    private Vector2[] vertices;
-    private Axis[] axes;
+    private Vector2[] localVertices;
+    private Axis[] localAxes;
 
     // World space values
     private Vector2 origin;
     private Vector2 facing;
 
-    // Cached world space computation results
-    internal Vector2[] cachedWorldVertices;
-    internal Axis[] cachedWorldAxes;
+    // Cached world space computation results -- these are cached and updated
+    // every time the shape is moved (expensive, avoid doing this if you can)
+    internal Vector2[] worldVertices;
+    internal Axis[] worldAxes;
     #endregion
 
     #region Tests
@@ -238,10 +239,10 @@ namespace Volatile
       if (ix == -1)
         return dist;
 
-      int length = this.cachedWorldAxes.Length;
-      Vector2 a = this.cachedWorldVertices[ix];
-      Vector2 b = this.cachedWorldVertices[(ix + 1) % length];
-      Axis axis = this.cachedWorldAxes[ix];
+      int length = this.worldAxes.Length;
+      Vector2 a = this.worldVertices[ix];
+      Vector2 b = this.worldVertices[(ix + 1) % length];
+      Axis axis = this.worldAxes[ix];
 
       // If the point is past one of the two vertices, check it like
       // a point-circle intersection where the vertex has radius 0
@@ -255,7 +256,7 @@ namespace Volatile
 
     internal override bool ShapeQuery(Vector2 point)
     {
-      foreach (Axis axis in this.cachedWorldAxes)
+      foreach (Axis axis in this.worldAxes)
         if (Vector2.Dot(axis.Normal, point) > axis.Width)
           return false;
       return true;
@@ -275,10 +276,10 @@ namespace Volatile
       if (ix < 0)
         return false;
 
-      int length = this.cachedWorldAxes.Length;
-      Vector2 a = this.cachedWorldVertices[ix];
-      Vector2 b = this.cachedWorldVertices[(ix + 1) % length];
-      Axis axis = this.cachedWorldAxes[ix];
+      int length = this.worldAxes.Length;
+      Vector2 a = this.worldVertices[ix];
+      Vector2 b = this.worldVertices[(ix + 1) % length];
+      Axis axis = this.worldAxes[ix];
 
       // If the circle is past one of the two vertices, check it like
       // a circle-circle intersection where the vertex has radius 0
@@ -294,13 +295,17 @@ namespace Volatile
       ref RayCast ray, 
       ref RayResult result)
     {
+      Axis[] axes = (ray.IsLocal ? this.localAxes : this.worldAxes);
+      Vector2[] vertices = 
+        (ray.IsLocal ? this.localVertices : this.worldVertices);
+
       int foundIndex = -1;
       float inner = float.MaxValue;
       float outer = 0;
 
-      for (int i = 0; i < this.cachedWorldVertices.Length; i++)
+      for (int i = 0; i < vertices.Length; i++)
       {
-        Axis curAxis = this.cachedWorldAxes[i];
+        Axis curAxis = axes[i];
 
         // Distance between the ray origin and the axis/edge along the normal
         // (i.e., shortest distance between ray origin and the edge).
@@ -345,8 +350,11 @@ namespace Volatile
       {
         result.Set(
           this, 
-          outer, 
-          this.cachedWorldAxes[foundIndex].Normal);
+          outer,
+          // N.B.: For historical raycasts this normal will be wrong!
+          // We will invalidate the value later. It just isn't worth
+          // transforming the normal back to world space for reporting.
+          axes[foundIndex].Normal);
         return true;
       }
 
@@ -358,18 +366,37 @@ namespace Volatile
       float radius,
       ref RayResult result)
     {
-      bool edges = this.CircleCastEdges(ref ray, radius, ref result);
-      bool vertices = this.CircleCastVertices(ref ray, radius, ref result);
-      return edges || vertices;
+      Axis[] axes = (ray.IsLocal ? this.localAxes : this.worldAxes);
+      Vector2[] vertices = 
+        (ray.IsLocal ? this.localVertices : this.worldVertices);
+
+      bool checkEdges = 
+        this.CircleCastEdges(
+          ref ray, 
+          radius, 
+          ref result, 
+          axes, 
+          vertices);
+
+      bool checkVertices = 
+        this.CircleCastVertices(
+          ref ray, 
+          radius, 
+          ref result,
+          vertices);
+
+      return checkEdges || checkVertices;
     }
 
     private bool CircleCastEdges(
       ref RayCast ray, 
       float radius,
-      ref RayResult result)
+      ref RayResult result,
+      Axis[] axes,
+      Vector2[] vertices)
     {
       int foundIndex = -1;
-      int length = this.cachedWorldVertices.Length;
+      int length = vertices.Length;
 
       // Pre-compute and initialize values
       float shortestDist = float.MaxValue;
@@ -377,9 +404,9 @@ namespace Volatile
 
       // Check the edges -- this will be different from the raycast because
       // we care about staying within the ends of the segment this time
-      for (int i = 0; i < this.cachedWorldVertices.Length; i++)
+      for (int i = 0; i < vertices.Length; i++)
       {
-        Axis curAxis = this.cachedWorldAxes[i];
+        Axis curAxis = axes[i];
 
         // Only consider rays pointing towards the edge
         if (Vector2.Dot(curAxis.Normal, ray.Direction) >= 0.0f)
@@ -387,8 +414,8 @@ namespace Volatile
 
         // Push the edges out by the radius
         Vector2 extension = curAxis.Normal * radius;
-        Vector2 a = this.cachedWorldVertices[i] + extension;
-        Vector2 b = this.cachedWorldVertices[(i + 1) % length] + extension;
+        Vector2 a = vertices[i] + extension;
+        Vector2 b = vertices[(i + 1) % length] + extension;
 
         // See: 
         // https://rootllama.wordpress.com/2014/06/20/ray-line-segment-intersection-test-in-2d/
@@ -415,7 +442,7 @@ namespace Volatile
           // N.B.: For historical raycasts this normal will be wrong!
           // We will invalidate the value later. It just isn't worth
           // transforming the normal back to world space for reporting.
-          this.cachedWorldAxes[foundIndex].Normal);
+          this.worldAxes[foundIndex].Normal);
         return true;
       }
       return false;
@@ -424,23 +451,49 @@ namespace Volatile
     private bool CircleCastVertices(
       ref RayCast ray,
       float radius,
-      ref RayResult result)
+      ref RayResult result,
+      Vector2[] vertices)
     {
       float sqrRadius = radius * radius;
       bool castHit = false;
 
-      for (int i = 0; i < this.cachedWorldVertices.Length; i++)
+      for (int i = 0; i < vertices.Length; i++)
       {
         castHit |= 
           Circle.CircleRayCast(
             this,
-            this.cachedWorldVertices[i],
+            vertices[i],
             sqrRadius,
             ref ray,
             ref result);
       }
 
       return castHit;
+    }
+
+    internal override bool ShapeRayCastLocal(
+      Vector2 position,
+      Vector2 facing,
+      ref RayCast ray, 
+      ref RayResult result)
+    {
+      ray.CreateMask(position, facing);
+      bool hit = this.ShapeRayCast(ref ray, ref result);
+      ray.ClearMask();
+      return hit;
+    }
+
+    internal override bool ShapeCircleCastLocal(
+      Vector2 position,
+      Vector2 facing,
+      ref RayCast ray, 
+      float radius,
+      ref RayResult result)
+    {
+      ray.CreateMask(position, facing);
+      bool hit = this.ShapeCircleCast(ref ray, radius, ref result);
+      ray.ClearMask();
+      return hit;
     }
     #endregion
 
@@ -449,7 +502,7 @@ namespace Volatile
       this.origin = position;
       this.facing = facing;
       this.ComputeWorldVertices();
-      this.AABB = Polygon.ComputeBounds(this.cachedWorldVertices);
+      this.AABB = Polygon.ComputeBounds(this.worldVertices);
     }
 
     #region Internals
@@ -473,11 +526,11 @@ namespace Volatile
     {
       this.origin = origin;
       this.facing = facing;
-      this.vertices = vertices;
+      this.localVertices = vertices;
 
-      this.axes = Polygon.ComputeAxes(this.vertices);
-      this.cachedWorldVertices = new Vector2[this.vertices.Length];
-      this.cachedWorldAxes = new Axis[this.vertices.Length];
+      this.localAxes = Polygon.ComputeAxes(this.localVertices);
+      this.worldVertices = new Vector2[this.localVertices.Length];
+      this.worldAxes = new Axis[this.localVertices.Length];
 
       // Defined in Shape class
       this.Area = Polygon.ComputeArea(vertices);
@@ -490,7 +543,7 @@ namespace Volatile
     /// </summary>
     internal override float ComputeInertia(Vector2 offset)
     {
-      return Polygon.ComputeInertia(this.vertices, offset, this.facing);
+      return Polygon.ComputeInertia(this.localVertices, offset, this.facing);
     }
 
     /// <summary>
@@ -506,7 +559,7 @@ namespace Volatile
     /// </summary>
     internal bool ContainsPointPartial(Vector2 point, Vector2 normal)
     {
-      foreach (Axis axis in this.cachedWorldAxes)
+      foreach (Axis axis in this.worldAxes)
         if (Vector2.Dot(axis.Normal, normal) >= 0.0f &&
             Vector2.Dot(axis.Normal, point) > axis.Width)
           return false;
@@ -518,16 +571,16 @@ namespace Volatile
     /// </summary>
     private void ComputeWorldVertices()
     {
-      for (int i = 0; i < this.vertices.Length; i++)
+      for (int i = 0; i < this.localVertices.Length; i++)
       {
-        this.cachedWorldVertices[i] =
-          this.origin + this.vertices[i].Rotate(this.facing);
+        this.worldVertices[i] =
+          this.origin + this.localVertices[i].Rotate(this.facing);
 
-        Vector2 normal = this.axes[i].Normal.Rotate(this.facing);
+        Vector2 normal = this.localAxes[i].Normal.Rotate(this.facing);
         float dot =
           Vector2.Dot(normal, this.origin) +
-          this.axes[i].Width;
-        this.cachedWorldAxes[i] = new Axis(normal, dot);
+          this.localAxes[i].Width;
+        this.worldAxes[i] = new Axis(normal, dot);
       }
     }
     #endregion
@@ -543,11 +596,11 @@ namespace Volatile
       Color current = Gizmos.color;
 
       Vector2[] worldNormals = this.WorldNormals;
-      for (int i = 0; i < this.cachedWorldVertices.Length; i++)
+      for (int i = 0; i < this.worldVertices.Length; i++)
       {
-        Vector2 u = this.cachedWorldVertices[i];
+        Vector2 u = this.worldVertices[i];
         Vector2 v = 
-          this.cachedWorldVertices[(i + 1) % this.cachedWorldVertices.Length];
+          this.worldVertices[(i + 1) % this.worldVertices.Length];
         Vector2 n = worldNormals[i];
 
         Vector2 delta = v - u;
