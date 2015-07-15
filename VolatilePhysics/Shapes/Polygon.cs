@@ -266,7 +266,11 @@ namespace Volatile
       // Get the axis on the polygon closest to the circle's origin
       float penetration;
       int ix =
-        Collision.FindAxisMaxPenetration(origin, radius, this, out penetration);
+        Collision.FindAxisMaxPenetration(
+          origin, 
+          radius, 
+          this, 
+          out penetration);
 
       if (ix < 0)
         return false;
@@ -286,7 +290,9 @@ namespace Volatile
       return true;
     }
 
-    internal override bool ShapeRayCast(ref RayCast ray, ref RayResult result)
+    internal override bool ShapeRayCast(
+      ref RayCast ray, 
+      ref RayResult result)
     {
       int foundIndex = -1;
       float inner = float.MaxValue;
@@ -406,6 +412,9 @@ namespace Volatile
         result.Set(
           this,
           shortestDist,
+          // N.B.: For historical raycasts this normal will be wrong!
+          // We will invalidate the value later. It just isn't worth
+          // transforming the normal back to world space for reporting.
           this.cachedWorldAxes[foundIndex].Normal);
         return true;
       }

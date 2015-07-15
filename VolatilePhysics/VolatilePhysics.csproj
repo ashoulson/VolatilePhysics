@@ -57,8 +57,8 @@
     <Compile Include="Util\Offset.cs" />
     <Compile Include="Util\Pooling\IPoolable.cs" />
     <Compile Include="Util\Pooling\ObjectPool.cs" />
-    <Compile Include="Util\RayCast.cs" />
-    <Compile Include="Util\RayResult.cs" />
+    <Compile Include="Util\RayCast\RayCast.cs" />
+    <Compile Include="Util\RayCast\RayResult.cs" />
     <Compile Include="Util\VolatileUtil.cs" />
     <Compile Include="World.cs" />
   </ItemGroup>
