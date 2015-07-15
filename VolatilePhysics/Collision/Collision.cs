@@ -113,10 +113,10 @@ namespace Volatile
       if (ix < 0)
         return null;
 
-      int length = poly.cachedWorldAxes.Length;
-      Vector2 a = poly.cachedWorldVertices[ix];
-      Vector2 b = poly.cachedWorldVertices[(ix + 1) % length];
-      Axis axis = poly.cachedWorldAxes[ix];
+      int length = poly.worldAxes.Length;
+      Vector2 a = poly.worldVertices[ix];
+      Vector2 b = poly.worldVertices[(ix + 1) % length];
+      Axis axis = poly.worldAxes[ix];
 
       // If the circle is past one of the two vertices, check it like
       // a circle-circle intersection where the vertex has radius 0
@@ -198,10 +198,10 @@ namespace Volatile
       out Axis axis)
     {
       axis = new Axis(Vector2.zero, float.NegativeInfinity);
-      foreach (Axis a in poly1.cachedWorldAxes)
+      foreach (Axis a in poly1.worldAxes)
       {
         float min = float.PositiveInfinity;
-        foreach (Vector2 v in poly2.cachedWorldVertices)
+        foreach (Vector2 v in poly2.worldVertices)
           min = Mathf.Min(min, Vector2.Dot(a.Normal, v));
         min -= a.Width;
 
@@ -230,7 +230,7 @@ namespace Volatile
     {
       bool found = false;
 
-      foreach (Vector2 vertex in poly1.cachedWorldVertices)
+      foreach (Vector2 vertex in poly1.worldVertices)
       {
         if (poly2.ContainsPoint(vertex) == true)
         {
@@ -240,7 +240,7 @@ namespace Volatile
         }
       }
 
-      foreach (Vector2 vertex in poly2.cachedWorldVertices)
+      foreach (Vector2 vertex in poly2.worldVertices)
       {
         if (poly1.ContainsPoint(vertex) == true)
         {
@@ -265,14 +265,14 @@ namespace Volatile
       float penetration,
       Manifold manifold)
     {
-      foreach (Vector2 vertex in poly1.cachedWorldVertices)
+      foreach (Vector2 vertex in poly1.worldVertices)
       {
         if (poly2.ContainsPointPartial(vertex, normal) == true)
           if (manifold.AddContact(vertex, normal, penetration) == false)
             return;
       }
 
-      foreach (Vector2 vertex in poly2.cachedWorldVertices)
+      foreach (Vector2 vertex in poly2.worldVertices)
       {
         if (poly1.ContainsPointPartial(vertex, -normal) == true)
           if (manifold.AddContact(vertex, normal, penetration) == false)
@@ -331,10 +331,10 @@ namespace Volatile
       minDistance = float.PositiveInfinity;
       bool inside = true;
 
-      for (int i = 0; i < poly.cachedWorldAxes.Length; i++)
+      for (int i = 0; i < poly.worldAxes.Length; i++)
       {
-        float dot = Vector2.Dot(poly.cachedWorldAxes[i].Normal, point);
-        float dist = poly.cachedWorldAxes[i].Width - dot;
+        float dot = Vector2.Dot(poly.worldAxes[i].Normal, point);
+        float dist = poly.worldAxes[i].Width - dot;
 
         if (dist < 0.0f)
           inside = false;
@@ -369,10 +369,10 @@ namespace Volatile
       int ix = 0;
       penetration = float.NegativeInfinity;
 
-      for (int i = 0; i < poly.cachedWorldAxes.Length; i++)
+      for (int i = 0; i < poly.worldAxes.Length; i++)
       {
-        float dot = Vector2.Dot(poly.cachedWorldAxes[i].Normal, origin);
-        float dist = dot - poly.cachedWorldAxes[i].Width - radius;
+        float dot = Vector2.Dot(poly.worldAxes[i].Normal, origin);
+        float dist = dot - poly.worldAxes[i].Width - radius;
 
         if (dist > 0)
           return -1;

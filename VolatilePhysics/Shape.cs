@@ -192,6 +192,21 @@ namespace Volatile
       ref RayCast ray,
       float radius,
       ref RayResult result);
+
+    // Local-space, for historical casts
+    internal abstract bool ShapeRayCastLocal(
+      Vector2 position,
+      Vector2 facing,
+      ref RayCast ray,
+      ref RayResult result);
+
+    // Local-space, for historical casts
+    internal abstract bool ShapeCircleCastLocal(
+      Vector2 position,
+      Vector2 facing,
+      ref RayCast ray,
+      float radius,
+      ref RayResult result);
     #endregion
 
     #region Debug

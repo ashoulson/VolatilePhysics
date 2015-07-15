@@ -26,13 +26,13 @@ using UnityEngine;
 namespace Volatile
 {
   /// <summary>
-  /// A semi-precomputed ray optimized for many tests. Supports the application
-  /// of a temporary "local mask" for transforming the ray into a shape's local
-  /// space on a short-term basis.
+  /// A semi-precomputed ray optimized for fast AABB tests. Supports the
+  /// application of a temporary "local mask" for transforming the ray into 
+  /// a shape's local space on a short-term basis.
   /// </summary>
   public struct RayCast
   {
-    internal bool HasLocalMask { get { return this.hasLocalMask; } }
+    internal bool IsLocal { get { return this.hasLocalMask; } }
     internal float Distance { get { return this.distance; } }
 
     internal Vector2 Origin 
@@ -49,7 +49,7 @@ namespace Volatile
     { 
       get 
       {
-        this.CheckForMask();
+        this.FailIfMasked();
         return this.destination; 
       } 
     }
@@ -58,7 +58,7 @@ namespace Volatile
     {
       get 
       {
-        this.CheckForMask();
+        this.FailIfMasked();
         return this.invDirection; 
       } 
     }
@@ -67,7 +67,7 @@ namespace Volatile
     { 
       get 
       {
-        this.CheckForMask();
+        this.FailIfMasked();
         return this.signX; 
       } 
     }
@@ -76,7 +76,7 @@ namespace Volatile
     { 
       get 
       {
-        this.CheckForMask();
+        this.FailIfMasked();
         return this.signY; 
       } 
     }
@@ -131,7 +131,23 @@ namespace Volatile
       this.localDirection = Vector2.zero;
     }
 
-    private void CheckForMask()
+    public void CreateMask(Vector2 shapeOrigin, Vector2 shapeFacing)
+    {
+      VolatileUtil.Transform(
+        ref this, 
+        shapeOrigin, 
+        shapeFacing, 
+        out this.localOrigin, 
+        out this.localDirection);
+      this.hasLocalMask = true;
+    }
+
+    public void ClearMask()
+    {
+      this.hasLocalMask = false;
+    }
+
+    private void FailIfMasked()
     {
       if (this.hasLocalMask == true)
         throw new InvalidOperationException("Invalid when ray has local mask");
