@@ -88,8 +88,8 @@ namespace Volatile
       float cos = localFacing.x;
 
       // Our shape's transform matrix (counter-clockwise rotation)
-      //  ⌈  cos Θ     sin Θ     t_x  ⌉ ⌈ x ⌉ 
-      //  | -sin Θ     cos Θ     t_y  | | y |
+      //  ⌈  cos Θ    -sin Θ     t_x  ⌉ ⌈ x ⌉ 
+      //  |  sin Θ     cos Θ     t_y  | | y |
       //  ⌊    0         0        1   ⌋ ⌊ 1 ⌋ 
       //
       //  When inverting, we reverse the matrix order (TR -> R^{-1} T^{-1})
@@ -98,8 +98,8 @@ namespace Volatile
       Vector2 newOrigin = rayOrigin - localOrigin;
 
       // Now invert the rotations, where R^{-1} =
-      //  ⌈  cos Θ    -sin Θ      0   ⌉ ⌈ x ⌉ 
-      //  |  sin Θ     cos Θ      0   | | y |
+      //  ⌈  cos Θ     sin Θ      0   ⌉ ⌈ x ⌉ 
+      //  | -sin Θ     cos Θ      0   | | y |
       //  ⌊    0         0        1   ⌋ ⌊ 1 ⌋ 
 
       origin = new Vector2(

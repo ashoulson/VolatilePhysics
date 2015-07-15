@@ -35,11 +35,11 @@ namespace Volatile
 
     public Shape Shape { get { return this.shape; } }
     public float Distance { get { return this.distance; } }
-    public Vector2 Normal { get { return this.normal; } }
+    public Vector2? Normal { get { return this.normal; } }
 
     private Shape shape;
     private float distance;
-    private Vector2 normal;
+    private Vector2? normal;
 
     internal void Set(
       Shape shape, 
@@ -54,11 +54,19 @@ namespace Volatile
       }
     }
 
+    // We can't accurately report normal information for historical
+    // raycasts (it isn't worth transforming the normal back to world
+    // space), so we need to be able to clear it out.
+    internal void InvalidateNormal()
+    {
+      this.normal = null;
+    }
+
     internal void SetContained(Shape shape)
     {
       this.shape = shape;
       this.distance = 0.0f;
-      this.normal = Vector2.zero;
+      this.normal = null;
     }
 
     public Vector2 GetPoint(ref RayCast cast)
