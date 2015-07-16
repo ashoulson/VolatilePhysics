@@ -103,6 +103,8 @@ namespace Volatile
     private List<Fixture> fixtures;
     private Dictionary<Shape, Fixture> shapeToFixture;
 
+    internal Volatile.History.BodyLogger logger = null;
+
     #region Force and Impulse Application
     public void AddForce(Vector2 force)
     {
