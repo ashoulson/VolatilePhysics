@@ -19,6 +19,7 @@ Supported Physics Tasks:
 - Convex Polygon and Circle Shapes
 - Multiple Shapes per Body
 - Raycasts and Circle Sweep Tests
+- Historical Ray/Circle Tests on Past World State
 - Collision Detection and Resolution
 - Force/Torque Application and Integration
 
