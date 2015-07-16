@@ -65,6 +65,8 @@ namespace Volatile
       if (dist < 0 || dist > ray.Distance) 
         return false;
 
+      // N.B.: For historical raycasts this normal will be wrong!
+      // Must be either transformed back to world or invalidated later.
       Vector2 normal = (dist * ray.Direction - toOrigin).normalized;
       result.Set(shape, dist, normal);
       return true;
