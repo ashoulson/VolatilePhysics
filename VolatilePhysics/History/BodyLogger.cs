@@ -159,5 +159,18 @@ namespace Volatile.History
     {
       return frame % this.records.Length;
     }
+
+    #region Debug
+    public void GizmoDraw(
+      Color aabbColorBody,
+      Color aabbColorShape)
+    {
+      for (int i = 0; i < this.records.Length; i++)
+        if (this.records[i].IsValid == true)
+          this.records[i].AABB.GizmoDraw(aabbColorBody);
+      foreach (ShapeLogger shape in this.shapes)
+        shape.GizmoDraw(aabbColorShape);
+    }
+    #endregion
   }
 }

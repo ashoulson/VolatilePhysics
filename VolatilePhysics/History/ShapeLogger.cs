@@ -125,7 +125,7 @@ namespace Volatile.History
         {
           // Perform shape raycast in local space
           ray.EnableMask();
-          if (this.shape.RayCast(ref ray, ref result) == true)
+          if (this.shape.ShapeRayCast(ref ray, ref result) == true)
           {
             // Invalidate the normal since it isn't worth transforming it back
             result.InvalidateNormal();
@@ -180,7 +180,7 @@ namespace Volatile.History
         {
           // Perform shape circlecast in local space
           ray.EnableMask();
-          if (this.shape.CircleCast(ref ray, radius, ref result) == true)
+          if (this.shape.ShapeCircleCast(ref ray, radius, ref result) == true)
           {
             // Invalidate the normal since it isn't worth transforming it back
             result.InvalidateNormal();
@@ -209,5 +209,14 @@ namespace Volatile.History
     {
       return frame % this.records.Length;
     }
+
+    #region Debug
+    public void GizmoDraw(Color aabbColorShape)
+    {
+      for (int i = 0; i < this.records.Length; i++)
+        if (this.records[i].IsValid == true)
+          this.records[i].AABB.GizmoDraw(aabbColorShape);
+    }
+    #endregion
   }
 }

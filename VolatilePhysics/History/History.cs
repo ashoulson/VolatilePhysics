@@ -121,5 +121,13 @@ namespace Volatile.History
       }
       return result.IsValid;
     }
+
+    public static void GizmoDrawHistory(
+      this Body body,
+      Color aabbColorBody,
+      Color aabbColorShape)
+    {
+      body.logger.GizmoDraw(aabbColorBody, aabbColorShape);
+    }
   }
 }

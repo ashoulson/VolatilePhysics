@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 
 using UnityEngine;
+using UnityEditor;
 
 using Volatile;
 
@@ -51,11 +52,20 @@ public class VolatileBody : MonoBehaviour
 
   void Update()
   {
-    float t = (Time.time - Time.fixedTime) / Time.deltaTime;
+    if (Selection.activeGameObject != this.gameObject)
+    {
+      float t = (Time.time - Time.fixedTime) / Time.deltaTime;
 
-    transform.position = Vector2.Lerp(this.lastPosition, this.nextPosition, t);
-    float angle = Mathf.LerpAngle(this.lastAngle, this.nextAngle, t);
-    transform.rotation = Quaternion.Euler(0.0f, 0.0f, Mathf.Rad2Deg * angle);
+      transform.position = Vector2.Lerp(this.lastPosition, this.nextPosition, t);
+      float angle = Mathf.LerpAngle(this.lastAngle, this.nextAngle, t);
+      transform.rotation = Quaternion.Euler(0.0f, 0.0f, Mathf.Rad2Deg * angle);
+    }
+    else
+    {
+      this.body.SetWorld(
+        this.transform.position, 
+        Mathf.Deg2Rad * this.transform.rotation.eulerAngles.z);
+    }
   }
 
   void FixedUpdate()

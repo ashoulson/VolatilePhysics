@@ -4,11 +4,14 @@ using System.Collections.Generic;
 using UnityEngine;
 
 using Volatile;
+using Volatile.History;
 
 public class SimpleCircleCast : MonoBehaviour
 {
   public VolatileBody ignoreBody;
   public float radius = 1.0f;
+
+  public int frame = -1;
 
   private bool Filter(Body body)
   {
@@ -23,13 +26,15 @@ public class SimpleCircleCast : MonoBehaviour
     if (Application.isPlaying == true)
     {
       RayResult result;
-      world.world.CircleCast(
+      RayCast cast =
         new RayCast(
           transform.position,
-          transform.position + (transform.up * 100.0f)),
-        this.radius,
-        out result,
-        bodyFilter: this.Filter);
+          transform.position + (transform.up * 100.0f));
+
+      if (this.frame >= 0)
+        world.world.CircleCast(this.frame, cast, this.radius, out result, this.Filter);
+      else
+        world.world.CircleCast(cast, this.radius, out result, this.Filter);
 
       Gizmos.color = Color.red;
       Gizmos.DrawLine(
