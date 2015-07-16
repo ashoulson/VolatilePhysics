@@ -189,7 +189,13 @@ namespace Volatile
 
     #region Properties
     public override Shape.ShapeType Type { get { return ShapeType.Polygon; } }
-    public override Vector2 Position { get { return this.origin; } }
+
+    public override Vector2 Position 
+    { 
+      get { return this.origin; }
+      internal set { this.origin = value; }
+    }
+
     public override Vector2 Facing { get { return this.facing; } }
     public override float Angle { get { return this.facing.Angle(); } }
 
@@ -254,32 +260,41 @@ namespace Volatile
       return Mathf.Abs(dist);
     }
 
-    internal override bool ShapeQuery(Vector2 point)
+    internal override bool ShapeQuery(
+      Vector2 point, 
+      bool useLocalSpace = false)
     {
-      foreach (Axis axis in this.worldAxes)
+      Axis[] axes = this.GetAxes(useLocalSpace);
+
+      foreach (Axis axis in axes)
         if (Vector2.Dot(axis.Normal, point) > axis.Width)
           return false;
       return true;
     }
 
-    internal override bool ShapeQuery(Vector2 origin, float radius)
+    internal override bool ShapeQuery(
+      Vector2 origin,
+      float radius,
+      bool useLocalSpace = false)
     {
+      Axis[] axes = this.GetAxes(useLocalSpace);
+      Vector2[] vertices = this.GetVertices(useLocalSpace);
+
       // Get the axis on the polygon closest to the circle's origin
       float penetration;
-      int ix =
+      int foundIndex =
         Collision.FindAxisMaxPenetration(
           origin, 
-          radius, 
-          this, 
+          radius,
+          axes, 
           out penetration);
 
-      if (ix < 0)
+      if (foundIndex < 0)
         return false;
 
-      int length = this.worldAxes.Length;
-      Vector2 a = this.worldVertices[ix];
-      Vector2 b = this.worldVertices[(ix + 1) % length];
-      Axis axis = this.worldAxes[ix];
+      Vector2 a = vertices[foundIndex];
+      Vector2 b = vertices[(foundIndex + 1) % vertices.Length];
+      Axis axis = axes[foundIndex];
 
       // If the circle is past one of the two vertices, check it like
       // a circle-circle intersection where the vertex has radius 0
@@ -295,9 +310,8 @@ namespace Volatile
       ref RayCast ray, 
       ref RayResult result)
     {
-      Axis[] axes = (ray.IsLocal ? this.localAxes : this.worldAxes);
-      Vector2[] vertices = 
-        (ray.IsLocal ? this.localVertices : this.worldVertices);
+      Axis[] axes = this.GetAxes(ref ray);
+      Vector2[] vertices = this.GetVertices(ref ray);
 
       int foundIndex = -1;
       float inner = float.MaxValue;
@@ -366,9 +380,8 @@ namespace Volatile
       float radius,
       ref RayResult result)
     {
-      Axis[] axes = (ray.IsLocal ? this.localAxes : this.worldAxes);
-      Vector2[] vertices = 
-        (ray.IsLocal ? this.localVertices : this.worldVertices);
+      Axis[] axes = this.GetAxes(ref ray);
+      Vector2[] vertices = this.GetVertices(ref ray);
 
       bool checkEdges = 
         this.CircleCastEdges(
@@ -386,114 +399,6 @@ namespace Volatile
           vertices);
 
       return checkEdges || checkVertices;
-    }
-
-    private bool CircleCastEdges(
-      ref RayCast ray, 
-      float radius,
-      ref RayResult result,
-      Axis[] axes,
-      Vector2[] vertices)
-    {
-      int foundIndex = -1;
-      int length = vertices.Length;
-
-      // Pre-compute and initialize values
-      float shortestDist = float.MaxValue;
-      Vector2 v3 = ray.Direction.Left();
-
-      // Check the edges -- this will be different from the raycast because
-      // we care about staying within the ends of the segment this time
-      for (int i = 0; i < vertices.Length; i++)
-      {
-        Axis curAxis = axes[i];
-
-        // Only consider rays pointing towards the edge
-        if (Vector2.Dot(curAxis.Normal, ray.Direction) >= 0.0f)
-          continue;
-
-        // Push the edges out by the radius
-        Vector2 extension = curAxis.Normal * radius;
-        Vector2 a = vertices[i] + extension;
-        Vector2 b = vertices[(i + 1) % length] + extension;
-
-        // See: 
-        // https://rootllama.wordpress.com/2014/06/20/ray-line-segment-intersection-test-in-2d/
-        Vector2 v1 = ray.Origin - a;
-        Vector2 v2 = b - a;
-
-        float denominator = Vector2.Dot(v2, v3);
-        float t1 = VolatileUtil.Cross(v2, v1) / denominator;
-        float t2 = Vector2.Dot(v1, v3) / denominator;
-
-        if (t2 >= 0.0f && t2 <= 1.0f && t1 > 0.0f && t1 < shortestDist)
-        {
-          shortestDist = t1;
-          foundIndex = i;
-        }
-      }
-
-      // Report results
-      if (foundIndex >= 0 && shortestDist <= ray.Distance)
-      {
-        result.Set(
-          this,
-          shortestDist,
-          // N.B.: For historical raycasts this normal will be wrong!
-          // We will invalidate the value later. It just isn't worth
-          // transforming the normal back to world space for reporting.
-          this.worldAxes[foundIndex].Normal);
-        return true;
-      }
-      return false;
-    }
-
-    private bool CircleCastVertices(
-      ref RayCast ray,
-      float radius,
-      ref RayResult result,
-      Vector2[] vertices)
-    {
-      float sqrRadius = radius * radius;
-      bool castHit = false;
-
-      for (int i = 0; i < vertices.Length; i++)
-      {
-        castHit |= 
-          Circle.CircleRayCast(
-            this,
-            vertices[i],
-            sqrRadius,
-            ref ray,
-            ref result);
-      }
-
-      return castHit;
-    }
-
-    internal override bool ShapeRayCastLocal(
-      Vector2 position,
-      Vector2 facing,
-      ref RayCast ray, 
-      ref RayResult result)
-    {
-      ray.CreateMask(position, facing);
-      bool hit = this.ShapeRayCast(ref ray, ref result);
-      ray.ClearMask();
-      return hit;
-    }
-
-    internal override bool ShapeCircleCastLocal(
-      Vector2 position,
-      Vector2 facing,
-      ref RayCast ray, 
-      float radius,
-      ref RayResult result)
-    {
-      ray.CreateMask(position, facing);
-      bool hit = this.ShapeCircleCast(ref ray, radius, ref result);
-      ray.ClearMask();
-      return hit;
     }
     #endregion
 
@@ -582,6 +487,109 @@ namespace Volatile
           this.localAxes[i].Width;
         this.worldAxes[i] = new Axis(normal, dot);
       }
+    }
+
+    private bool CircleCastEdges(
+      ref RayCast ray,
+      float radius,
+      ref RayResult result,
+      Axis[] axes,
+      Vector2[] vertices)
+    {
+      int foundIndex = -1;
+      int length = vertices.Length;
+
+      // Pre-compute and initialize values
+      float shortestDist = float.MaxValue;
+      Vector2 v3 = ray.Direction.Left();
+
+      // Check the edges -- this will be different from the raycast because
+      // we care about staying within the ends of the segment this time
+      for (int i = 0; i < vertices.Length; i++)
+      {
+        Axis curAxis = axes[i];
+
+        // Only consider rays pointing towards the edge
+        if (Vector2.Dot(curAxis.Normal, ray.Direction) >= 0.0f)
+          continue;
+
+        // Push the edges out by the radius
+        Vector2 extension = curAxis.Normal * radius;
+        Vector2 a = vertices[i] + extension;
+        Vector2 b = vertices[(i + 1) % length] + extension;
+
+        // See: 
+        // https://rootllama.wordpress.com/2014/06/20/ray-line-segment-intersection-test-in-2d/
+        Vector2 v1 = ray.Origin - a;
+        Vector2 v2 = b - a;
+
+        float denominator = Vector2.Dot(v2, v3);
+        float t1 = VolatileUtil.Cross(v2, v1) / denominator;
+        float t2 = Vector2.Dot(v1, v3) / denominator;
+
+        if (t2 >= 0.0f && t2 <= 1.0f && t1 > 0.0f && t1 < shortestDist)
+        {
+          shortestDist = t1;
+          foundIndex = i;
+        }
+      }
+
+      // Report results
+      if (foundIndex >= 0 && shortestDist <= ray.Distance)
+      {
+        result.Set(
+          this,
+          shortestDist,
+          // N.B.: For historical raycasts this normal will be wrong!
+          // We will invalidate the value later. It just isn't worth
+          // transforming the normal back to world space for reporting.
+          this.worldAxes[foundIndex].Normal);
+        return true;
+      }
+      return false;
+    }
+
+    private bool CircleCastVertices(
+      ref RayCast ray,
+      float radius,
+      ref RayResult result,
+      Vector2[] vertices)
+    {
+      float sqrRadius = radius * radius;
+      bool castHit = false;
+
+      for (int i = 0; i < vertices.Length; i++)
+      {
+        castHit |=
+          Circle.CircleRayCast(
+            this,
+            vertices[i],
+            sqrRadius,
+            ref ray,
+            ref result);
+      }
+
+      return castHit;
+    }
+
+    private Axis[] GetAxes(bool useLocalSpace)
+    {
+      return (useLocalSpace ? this.localAxes : this.worldAxes);
+    }
+
+    private Axis[] GetAxes(ref RayCast ray)
+    {
+      return (ray.IsLocalSpace ? this.localAxes : this.worldAxes);
+    }
+
+    private Vector2[] GetVertices(bool useLocalSpace)
+    {
+      return (useLocalSpace ? this.localVertices : this.worldVertices);
+    }
+
+    private Vector2[] GetVertices(ref RayCast ray)
+    {
+      return (ray.IsLocalSpace ? this.localVertices : this.worldVertices);
     }
     #endregion
 

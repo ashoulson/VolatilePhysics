@@ -87,7 +87,13 @@ namespace Volatile
     #endregion
 
     public override Shape.ShapeType Type { get { return ShapeType.Circle; } }
-    public override Vector2 Position { get { return this.origin; } }
+
+    public override Vector2 Position 
+    { 
+      get { return this.origin; }
+      internal set { this.origin = value; }
+    }
+
     public override Vector2 Facing { get { return new Vector2(1.0f, 0.0f); } }
     public override float Angle { get { return 0.0f; } }
 
@@ -100,37 +106,43 @@ namespace Volatile
     #region Tests
     internal override float ShapeMinDistance(Vector2 point)
     {
-      float distance = 
-        Collision.PointCircleDistance(point, this.origin, this.radius);
+      float distance = (point - this.origin).magnitude - this.radius;
       if (distance < 0.0f)
         distance = 0.0f;
       return distance;
     }
 
-    internal override bool ShapeQuery(Vector2 point)
+    internal override bool ShapeQuery(
+      Vector2 point, 
+      bool useLocalSpace = false)
     {
       return 
         Collision.TestPointCircleSimple(
-          this.Position, 
+          (useLocalSpace ? Vector2.zero : this.Position), 
           point, 
           this.radius);
     }
 
-    internal override bool ShapeQuery(Vector2 origin, float radius)
+    internal override bool ShapeQuery(
+      Vector2 point, 
+      float radius,
+      bool useLocalSpace = false)
     {
       return 
         Collision.TestCircleCircleSimple(
-          this.Position, 
-          origin, 
+          (useLocalSpace ? Vector2.zero : this.Position),
+          point, 
           this.radius, 
           radius);
     }
 
-    internal override bool ShapeRayCast(ref RayCast ray, ref RayResult result)
+    internal override bool ShapeRayCast(
+      ref RayCast ray, 
+      ref RayResult result)
     {
       return Circle.CircleRayCast(
         this, 
-        this.origin, 
+        (ray.IsLocalSpace ? Vector2.zero : this.origin), 
         this.sqrRadius, 
         ref ray, 
         ref result);
@@ -144,43 +156,7 @@ namespace Volatile
       float totalRadius = this.radius + radius;
       return Circle.CircleRayCast(
         this,
-        this.origin,
-        totalRadius * totalRadius,
-        ref ray,
-        ref result);
-    }
-
-
-    internal override bool ShapeRayCastLocal(
-      Vector2 position,
-      Vector2 facing,
-      ref RayCast ray,
-      ref RayResult result)
-    {
-      // For circles, there's no savings in actually converting to local
-      // space, so we perform the cast in world space with the given position.
-      return Circle.CircleRayCast(
-        this,
-        position,
-        this.sqrRadius,
-        ref ray,
-        ref result);
-    }
-
-    internal override bool ShapeCircleCastLocal(
-      Vector2 position,
-      Vector2 facing,
-      ref RayCast ray,
-      float radius,
-      ref RayResult result)
-    {
-      float totalRadius = this.radius + radius;
-
-      // For circles, there's no savings in actually converting to local
-      // space, so we perform the cast in world space with the given position.
-      return Circle.CircleRayCast(
-        this,
-        position,
+        (ray.IsLocalSpace ? Vector2.zero : this.origin),
         totalRadius * totalRadius,
         ref ray,
         ref result);

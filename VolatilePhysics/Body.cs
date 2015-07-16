@@ -25,7 +25,7 @@ using UnityEngine;
 
 namespace Volatile
 {
-  public sealed class Body
+  public class Body
   {
     /// <summary>
     /// User token, for attaching arbitrary data to this body.
@@ -151,6 +151,19 @@ namespace Volatile
       if (this.AABB.Query(point) == true)
         foreach (Shape shape in this.shapes)
           if (shape.Query(point) == true)
+            return true;
+      return false;
+    }
+
+    /// <summary>
+    /// Checks if a circle overlaps with this body. 
+    /// Begins with AABB checks.
+    /// </summary>
+    public bool Query(Vector2 point, float radius)
+    {
+      if (this.AABB.Query(point, radius) == true)
+        foreach (Shape shape in this.shapes)
+          if (shape.Query(point, radius) == true)
             return true;
       return false;
     }
