@@ -133,7 +133,7 @@ namespace Volatile
 
     public void CreateMask(Vector2 shapeOrigin, Vector2 shapeFacing)
     {
-      VolatileUtil.Transform(
+      VolatileUtil.TransformRay(
         ref this, 
         shapeOrigin, 
         shapeFacing, 
