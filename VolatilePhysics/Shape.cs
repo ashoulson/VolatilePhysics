@@ -46,7 +46,10 @@ namespace Volatile
     }
 
     public abstract ShapeType Type { get; }
-    public abstract Vector2 Position { get; }
+
+    // We need to provide set access to this for historical ray/circle casting
+    public abstract Vector2 Position { get; internal set; }
+
     public abstract float Angle { get; }
     public abstract Vector2 Facing { get; }
 
@@ -115,6 +118,8 @@ namespace Volatile
     /// </summary>
     public bool RayCast(ref RayCast ray, ref RayResult result)
     {
+      Debug.Assert(ray.IsLocalSpace == false);
+
       // Check to see if start is contained first
       if (this.Query(ray.Origin) == true)
       {
@@ -136,6 +141,8 @@ namespace Volatile
       float radius,
       ref RayResult result)
     {
+      Debug.Assert(ray.IsLocalSpace == false);
+
       // Check to see if start is contained first
       if (this.Query(ray.Origin, radius) == true)
       {
@@ -182,28 +189,18 @@ namespace Volatile
     #region Test Overrides
     internal abstract float ShapeMinDistance(Vector2 point);
 
-    internal abstract bool ShapeQuery(Vector2 point);
-    internal abstract bool ShapeQuery(Vector2 origin, float radius);
+    internal abstract bool ShapeQuery(
+      Vector2 point, 
+      bool useLocalSpace = false);
+    internal abstract bool ShapeQuery(
+      Vector2 point, 
+      float radius, 
+      bool useLocalSpace = false);
 
     internal abstract bool ShapeRayCast(
       ref RayCast ray,
       ref RayResult result);
     internal abstract bool ShapeCircleCast(
-      ref RayCast ray,
-      float radius,
-      ref RayResult result);
-
-    // Local-space, for historical casts
-    internal abstract bool ShapeRayCastLocal(
-      Vector2 position,
-      Vector2 facing,
-      ref RayCast ray,
-      ref RayResult result);
-
-    // Local-space, for historical casts
-    internal abstract bool ShapeCircleCastLocal(
-      Vector2 position,
-      Vector2 facing,
       ref RayCast ray,
       float radius,
       ref RayResult result);

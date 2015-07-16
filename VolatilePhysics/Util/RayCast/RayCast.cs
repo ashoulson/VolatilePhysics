@@ -32,7 +32,7 @@ namespace Volatile
   /// </summary>
   public struct RayCast
   {
-    internal bool IsLocal { get { return this.hasLocalMask; } }
+    internal bool IsLocalSpace { get { return this.hasLocalMask; } }
     internal float Distance { get { return this.distance; } }
 
     internal Vector2 Origin 
@@ -143,6 +143,18 @@ namespace Volatile
     }
 
     public void ClearMask()
+    {
+      this.hasLocalMask = false;
+      this.localOrigin = Vector2.zero;
+      this.localDirection = Vector2.zero;
+    }
+
+    public void EnableMask()
+    {
+      this.hasLocalMask = true;
+    }
+
+    public void DisableMask()
     {
       this.hasLocalMask = false;
     }

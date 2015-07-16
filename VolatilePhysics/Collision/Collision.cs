@@ -107,7 +107,7 @@ namespace Volatile
         Collision.FindAxisMaxPenetration(
           circ.Position, 
           circ.Radius, 
-          poly, 
+          poly.worldAxes, 
           out penetration);
 
       if (ix < 0)
@@ -308,17 +308,6 @@ namespace Volatile
     }
 
     /// <summary>
-    /// Distance between a point and the surface of a circle.
-    /// </summary>
-    internal static float PointCircleDistance(
-      Vector2 point,
-      Vector2 origin,
-      float radius)
-    {
-      return (point - origin).magnitude - radius;
-    }
-
-    /// <summary>
     /// Returns the index of the nearest axis on the poly to a point.
     /// Outputs the minimum distance between the axis and the point.
     /// </summary>
@@ -363,16 +352,16 @@ namespace Volatile
     internal static int FindAxisMaxPenetration(
       Vector2 origin,
       float radius,
-      Polygon poly,
+      Axis[] axes,
       out float penetration)
     {
       int ix = 0;
       penetration = float.NegativeInfinity;
 
-      for (int i = 0; i < poly.worldAxes.Length; i++)
+      for (int i = 0; i < axes.Length; i++)
       {
-        float dot = Vector2.Dot(poly.worldAxes[i].Normal, origin);
-        float dist = dot - poly.worldAxes[i].Width - radius;
+        float dot = Vector2.Dot(axes[i].Normal, origin);
+        float dist = dot - axes[i].Width - radius;
 
         if (dist > 0)
           return -1;
