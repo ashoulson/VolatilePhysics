@@ -74,7 +74,7 @@ namespace Volatile
       return a * a;
     }
 
-    public static void Transform(
+    public static void TransformRay(
       ref RayCast cast, 
       Vector2 localOrigin,
       Vector2 localFacing,
@@ -109,6 +109,36 @@ namespace Volatile
       direction = new Vector2(
         cos * rayDirection.x + sin * rayDirection.y,
         -sin * rayDirection.x + cos * rayDirection.y);
+    }
+
+    public static Vector2 WorldToLocalPoint(
+      Vector2 point,
+      Vector2 shapeOrigin,
+      Vector2 shapeFacing)
+    {
+      float sin = shapeFacing.y;
+      float cos = shapeFacing.x;
+
+      Vector2 newOrigin = point - shapeOrigin;
+
+      return
+        new Vector2(
+          cos * newOrigin.x + sin * newOrigin.y,
+          -sin * newOrigin.x + cos * newOrigin.y);
+    }
+
+    public static Vector2 WorldToLocalVector(
+      Vector2 vector,
+      Vector2 shapeOrigin,
+      Vector2 shapeFacing)
+    {
+      float sin = shapeFacing.y;
+      float cos = shapeFacing.x;
+
+      return
+        new Vector2(
+          cos * vector.x + sin * vector.y,
+          -sin * vector.x + cos * vector.y);
     }
 
     #region Debug
