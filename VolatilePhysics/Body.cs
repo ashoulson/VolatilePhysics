@@ -48,10 +48,15 @@ namespace Volatile
       }
     }
 
-    public IEnumerable<Shape> Shapes 
+    public IList<Shape> Shapes 
     { 
       get { return this.shapes.AsReadOnly(); } 
     }
+
+    /// <summary>
+    /// Number of shapes in the body.
+    /// </summary>
+    public int Count { get { return this.shapes.Count; } }
 
     public Vector2 LinearVelocity { get; set; }
     public float AngularVelocity { get; set; }

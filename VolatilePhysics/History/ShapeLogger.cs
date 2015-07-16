@@ -23,7 +23,7 @@ using System.Collections.Generic;
 
 using UnityEngine;
 
-namespace Volatile
+namespace Volatile.History
 {
   internal class ShapeLogger
   {
@@ -75,8 +75,23 @@ namespace Volatile
       }
     }
 
+    internal Shape Shape { get { return this.shape; } }
+
     private ShapeRecord[] records;
     private Shape shape;
+
+    public ShapeLogger(Shape shape, int capacity)
+    {
+      this.shape = shape;
+      this.records = new ShapeRecord[capacity];
+      for (int i = 0; i < capacity; i++)
+        this.records[i].Invalidate();
+    }
+
+    public void Store(int frame)
+    {
+      this.records[this.FrameToIndex(frame)].Set(frame, this.shape);
+    }
 
     internal bool RayCast(
       int frame, 
@@ -112,6 +127,9 @@ namespace Volatile
           ray.EnableMask();
           if (this.shape.RayCast(ref ray, ref result) == true)
           {
+            // Invalidate the normal since it isn't worth transforming it back
+            result.InvalidateNormal();
+
             ray.ClearMask();
             return true;
           }
@@ -119,9 +137,6 @@ namespace Volatile
 
         // Clear the mask since we're now done with it
         ray.ClearMask();
-
-        // Invalidate the normal since it isn't worth transforming it back
-        result.InvalidateNormal();
       }
       else
       {
@@ -167,6 +182,9 @@ namespace Volatile
           ray.EnableMask();
           if (this.shape.CircleCast(ref ray, radius, ref result) == true)
           {
+            // Invalidate the normal since it isn't worth transforming it back
+            result.InvalidateNormal();
+
             ray.ClearMask();
             return true;
           }
