@@ -366,7 +366,7 @@ namespace Volatile
           this, 
           outer,
           // N.B.: For historical raycasts this normal will be wrong!
-          // Must be either transformed back to world or invalidated.
+          // Must be either transformed back to world or invalidated later.
           axes[foundIndex].Normal);
         return true;
       }
