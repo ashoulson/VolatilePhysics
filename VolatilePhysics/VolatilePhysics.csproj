@@ -48,6 +48,7 @@
     <Compile Include="Collision\Manifold.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="History\BodyLogger.cs" />
+    <Compile Include="History\History.cs" />
     <Compile Include="History\ShapeLogger.cs" />
     <Compile Include="Util\Fixture.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

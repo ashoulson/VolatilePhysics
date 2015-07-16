@@ -51,8 +51,8 @@ namespace Volatile
 
     internal float Elasticity { get; private set; }
 
-    private List<Body> bodies;
-    private List<Shape> shapes;
+    internal List<Body> bodies;
+    internal List<Shape> shapes;
 
     internal Vector2 gravity;
     internal float damping = 0.999f;
