@@ -150,15 +150,35 @@ namespace Volatile
 
     #region Tests
     /// <summary>
+    /// Returns true iff an area overlaps with our AABB.
+    /// </summary>
+    public bool Query(AABB area)
+    {
+      return this.AABB.Intersect(area);
+    }
+
+    /// <summary>
     /// Checks if a point is contained in this body. 
     /// Begins with AABB checks.
     /// </summary>
-    public bool Query(Vector2 point)
+    public bool Query(
+      Vector2 point,
+      Func<Shape, bool> filter = null)
     {
       if (this.AABB.Query(point) == true)
-        foreach (Shape shape in this.shapes)
-          if (shape.Query(point) == true)
-            return true;
+      {
+        for (int i = 0; i < this.shapes.Count; i++)
+        {
+          Shape shape = this.shapes[i];
+          if (filter == null || filter(shape) == true)
+          {
+            if (shape.Query(point) == true)
+            {
+              return true;
+            }
+          }
+        }
+      }
       return false;
     }
 
@@ -166,13 +186,56 @@ namespace Volatile
     /// Checks if a circle overlaps with this body. 
     /// Begins with AABB checks.
     /// </summary>
-    public bool Query(Vector2 point, float radius)
+    public bool Query(
+      Vector2 point, 
+      float radius,
+      Func<Shape, bool> filter = null)
     {
       if (this.AABB.Query(point, radius) == true)
-        foreach (Shape shape in this.shapes)
-          if (shape.Query(point, radius) == true)
-            return true;
+      {
+        for (int i = 0; i < this.shapes.Count; i++)
+        {
+          Shape shape = this.shapes[i];
+          if (filter == null || filter(shape) == true)
+          {
+            if (shape.Query(point, radius) == true)
+            {
+              return true;
+            }
+          }
+        }
+      }
       return false;
+    }
+
+    /// <summary>
+    /// Returns the minimum distance between this body and the point.
+    /// </summary>
+    public bool MinDistance(
+      Vector2 point,
+      float maxDistance,
+      out float minDistance,
+      Func<Shape, bool> filter = null)
+    {
+      minDistance = float.PositiveInfinity;
+      bool result = false;
+
+      if (this.AABB.Query(point, maxDistance) == true)
+      {
+        for (int i = 0; i < this.shapes.Count; i++)
+        {
+          Shape shape = this.shapes[i];
+          if (filter == null || filter(shape) == true)
+          {
+            float distance;
+            result |= shape.MinDistance(point, maxDistance, out distance);
+            if (distance < minDistance)
+              minDistance = distance;
+          }
+        }
+      }
+
+      return result;
     }
 
     /// <summary>
@@ -187,14 +250,17 @@ namespace Volatile
       bool hit = false;
       if (this.AABB.RayCast(ref ray) == true)
       {
-        foreach (Shape shape in this.shapes)
+        for (int i = 0; i < this.shapes.Count; i++)
         {
+          Shape shape = this.shapes[i];
           if (filter == null || filter(shape) == true)
           {
             if (shape.RayCast(ref ray, ref result) == true)
             {
               if (result.IsContained == true)
+              {
                 return true;
+              }
               hit = true;
             }
           }
@@ -216,14 +282,17 @@ namespace Volatile
       bool hit = false;
       if (this.AABB.CircleCast(ref ray, radius) == true)
       {
-        foreach (Shape shape in this.shapes)
+        for (int i = 0; i < this.shapes.Count; i++)
         {
+          Shape shape = this.shapes[i];
           if (filter == null || filter(shape) == true)
           {
             if (shape.CircleCast(ref ray, radius, ref result) == true)
             {
               if (result.IsContained == true)
+              {
                 return true;
+              }
               hit = true;
             }
           }
@@ -335,8 +404,8 @@ namespace Volatile
     internal void ApplyPosition()
     {
       this.Facing = VolatileUtil.Polar(this.Angle);
-      foreach (Fixture fixture in this.fixtures)
-        fixture.Apply(this.Position, this.Facing);
+      for (int i = 0; i < this.fixtures.Count; i++)
+        this.fixtures[i].Apply(this.Position, this.Facing);
       this.UpdateAABB();
     }
 
@@ -359,9 +428,9 @@ namespace Volatile
       float bottom = Mathf.Infinity;
       float left = Mathf.Infinity;
 
-      foreach (Fixture fixture in this.fixtures)
+      for (int i = 0; i < this.fixtures.Count; i++)
       {
-        AABB aabb = fixture.Shape.AABB;
+        AABB aabb = this.fixtures[i].Shape.AABB;
         top = Mathf.Max(top, aabb.Top);
         right = Mathf.Max(right, aabb.Right);
         bottom = Mathf.Min(bottom, aabb.Bottom);
@@ -381,7 +450,7 @@ namespace Volatile
       this.AngularVelocity *= this.World.damping;
 
       // Calculate total force and torque
-      Vector2 totalForce = (this.Force * this.InvMass);
+      Vector2 totalForce = this.Force * this.InvMass;
       if (this.UseGravity == true)
         totalForce += this.World.gravity;
       float totalTorque = this.Torque * this.InvInertia;
@@ -424,8 +493,9 @@ namespace Volatile
       float mass = 0.0f;
       float inertia = 0.0f;
 
-      foreach (Fixture fixture in this.fixtures)
+      for (int i = 0; i < this.fixtures.Count; i++)
       {
+        Fixture fixture = this.fixtures[i];
         if (fixture.Shape.Density == 0.0f)
           continue;
         float curMass = fixture.ComputeMass();

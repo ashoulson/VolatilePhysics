@@ -106,14 +106,6 @@ namespace Volatile
     private Vector2 origin;
 
     #region Tests
-    internal override float ShapeMinDistance(Vector2 point)
-    {
-      float distance = (point - this.origin).magnitude - this.radius;
-      if (distance < 0.0f)
-        distance = 0.0f;
-      return distance;
-    }
-
     internal override bool ShapeQuery(
       Vector2 point, 
       bool useLocalSpace = false)
@@ -136,6 +128,17 @@ namespace Volatile
           point, 
           this.radius, 
           radius);
+    }
+
+    internal override float ShapeMinDistance(
+      Vector2 point,
+      bool useLocalSpace = false)
+    {
+      Vector2 offset = useLocalSpace ? point : point - this.origin;
+      float distance = offset.magnitude - this.radius;
+      if (distance < 0.0f)
+        distance = 0.0f;
+      return distance;
     }
 
     internal override bool ShapeRayCast(

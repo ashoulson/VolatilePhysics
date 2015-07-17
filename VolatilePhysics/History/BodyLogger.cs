@@ -48,6 +48,21 @@ namespace Volatile.History
         this.frame = -1;
       }
 
+      internal bool QueryAABB(AABB aabb)
+      {
+        return this.aabb.Intersect(aabb);
+      }
+
+      internal bool QueryAABB(Vector2 point)
+      {
+        return this.aabb.Query(point);
+      }
+
+      internal bool QueryAABB(Vector2 point, float radius)
+      {
+        return this.aabb.Query(point, radius);
+      }
+
       public bool RayCastAABB(ref RayCast ray)
       {
         return this.aabb.RayCast(ref ray);
@@ -84,6 +99,137 @@ namespace Volatile.History
         this.shapes[i].Store(frame);
     }
 
+    #region Tests
+
+    #region Queries
+    /// <summary>
+    /// Checks if a body's AABB overlaps with a given AABB.
+    /// </summary>
+    internal bool Query(
+      int frame,
+      AABB area)
+    {
+      BodyRecord record = this.records[this.FrameToIndex(frame)];
+
+      if (record.Frame == frame)
+        return record.QueryAABB(area);
+
+      // If the record is invalid, fall back to a current-time query
+      return this.body.Query(area);
+    }
+
+    /// <summary>
+    /// Checks if a point is contained within this body
+    /// Begins with AABB checks.
+    /// </summary>
+    internal bool Query(
+      int frame,
+      Vector2 point,
+      Func<Shape, bool> filter = null)
+    {
+      BodyRecord record = this.records[this.FrameToIndex(frame)];
+
+      if (record.Frame == frame)
+      {
+        if (record.QueryAABB(point) == true)
+        {
+          for (int i = 0; i < this.shapes.Length; i++)
+          {
+            ShapeLogger shape = this.shapes[i];
+            if (filter == null || filter(shape.Shape) == true)
+            {
+              if (shape.Query(frame, point) == true)
+              {
+                return true;
+              }
+            }
+          }
+        }
+        return false;
+      }
+
+      // If the record is invalid, fall back to a current-time query
+      return this.body.Query(point, filter);
+    }
+
+    /// <summary>
+    /// Checks if a circle overlaps with this body. 
+    /// Begins with AABB checks.
+    /// </summary>
+    internal bool Query(
+      int frame,
+      Vector2 point,
+      float radius,
+      Func<Shape, bool> filter = null)
+    {
+      BodyRecord record = this.records[this.FrameToIndex(frame)];
+
+      if (record.Frame == frame)
+      {
+        if (record.QueryAABB(point, radius) == true)
+        {
+          for (int i = 0; i < this.shapes.Length; i++)
+          {
+            ShapeLogger shape = this.shapes[i];
+            if (filter == null || filter(shape.Shape) == true)
+            {
+              if (shape.Query(frame, point, radius) == true)
+              {
+                return true;
+              }
+            }
+          }
+        }
+        return false;
+      }
+
+      // If the record is invalid, fall back to a current-time query
+      return this.body.Query(point, radius, filter);
+    }
+
+    /// <summary>
+    /// Returns the minimum distance between this body and the point.
+    /// </summary>
+    internal bool MinDistance(
+      int frame,
+      Vector2 point,
+      float maxDistance,
+      out float minDistance,
+      Func<Shape, bool> filter = null)
+    {
+      BodyRecord record = this.records[this.FrameToIndex(frame)];
+
+      if (record.Frame == frame)
+      {
+        minDistance = float.PositiveInfinity;
+        bool result = false;
+
+        if (record.QueryAABB(point, maxDistance) == true)
+        {
+          for (int i = 0; i < this.shapes.Length; i++)
+          {
+            ShapeLogger shape = this.shapes[i];
+            if (filter == null || filter(shape.Shape) == true)
+            {
+              float distance;
+              result |=
+                shape.MinDistance(frame, point, maxDistance, out distance);
+              if (distance < minDistance)
+                minDistance = distance;
+            }
+          }
+        }
+
+        return result;
+      }
+
+      // If the record is invalid, fall back to a current-time query
+      return
+        this.body.MinDistance(point, maxDistance, out minDistance, filter);
+    }
+    #endregion
+
+    #region Line/Sweep Tests
     internal bool RayCast(
       int frame,
       ref RayCast ray,
@@ -112,11 +258,9 @@ namespace Volatile.History
         }
         return hit;
       }
-      else
-      {
-        // If the record is invalid, fall back to a current-time ray cast
-        return this.body.RayCast(ref ray, ref result);
-      }
+
+      // If the record is invalid, fall back to a current-time ray cast
+      return this.body.RayCast(ref ray, ref result);
     }
 
     internal bool CircleCast(
@@ -148,17 +292,20 @@ namespace Volatile.History
         }
         return hit;
       }
-      else
-      {
-        // If the record is invalid, fall back to a current-time ray cast
-        return this.body.RayCast(ref ray, ref result);
-      }
+        
+      // If the record is invalid, fall back to a current-time ray cast
+      return this.body.RayCast(ref ray, ref result);
     }
+    #endregion
 
+    #endregion
+
+    #region Internals
     private int FrameToIndex(int frame)
     {
       return frame % this.records.Length;
     }
+    #endregion
 
     #region Debug
     public void GizmoDraw(

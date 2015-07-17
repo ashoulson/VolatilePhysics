@@ -29,19 +29,19 @@ namespace Volatile.History
   {
     private struct ShapeRecord
     {
-      public int Frame { get { return this.frame; } }
-      public AABB AABB { get { return this.aabb; } }
-      public Vector2 Position { get { return this.position; } }
-      public Vector2 Facing { get { return this.facing; } }
+      internal int Frame { get { return this.frame; } }
+      internal AABB AABB { get { return this.aabb; } }
+      internal Vector2 Position { get { return this.position; } }
+      internal Vector2 Facing { get { return this.facing; } }
 
-      public bool IsValid { get { return this.frame >= 0; } }
+      internal bool IsValid { get { return this.frame >= 0; } }
 
       private int frame;
       private AABB aabb;
       private Vector2 position;
       private Vector2 facing;
 
-      public void Set(int frame, Shape shape)
+      internal void Set(int frame, Shape shape)
       {
         this.frame = frame;
         this.aabb = shape.AABB;
@@ -49,27 +49,27 @@ namespace Volatile.History
         this.facing = shape.Facing;
       }
 
-      public void Invalidate()
+      internal void Invalidate()
       {
         this.frame = -1;
       }
 
-      public bool QueryAABB(Vector2 point)
+      internal bool QueryAABB(Vector2 point)
       {
         return this.aabb.Query(point);
       }
 
-      public bool QueryAABB(Vector2 point, float radius)
+      internal bool QueryAABB(Vector2 point, float radius)
       {
         return this.aabb.Query(point, radius);
       }
 
-      public bool RayCastAABB(ref RayCast ray)
+      internal bool RayCastAABB(ref RayCast ray)
       {
         return this.aabb.RayCast(ref ray);
       }
 
-      public bool CircleCastAABB(ref RayCast ray, float radius)
+      internal bool CircleCastAABB(ref RayCast ray, float radius)
       {
         return this.aabb.CircleCast(ref ray, radius);
       }
@@ -80,7 +80,7 @@ namespace Volatile.History
     private ShapeRecord[] records;
     private Shape shape;
 
-    public ShapeLogger(Shape shape, int capacity)
+    internal ShapeLogger(Shape shape, int capacity)
     {
       this.shape = shape;
       this.records = new ShapeRecord[capacity];
@@ -88,11 +88,114 @@ namespace Volatile.History
         this.records[i].Invalidate();
     }
 
-    public void Store(int frame)
+    internal void Store(int frame)
     {
       this.records[this.FrameToIndex(frame)].Set(frame, this.shape);
     }
 
+    #region Tests
+
+    #region Queries
+    /// <summary>
+    /// Checks if a point is contained in this shape. 
+    /// Begins with an AABB check.
+    /// </summary>
+    internal bool Query(
+      int frame,
+      Vector2 point)
+    {
+      ShapeRecord record = this.records[this.FrameToIndex(frame)];
+
+      if (record.Frame == frame)
+      {
+        if (record.QueryAABB(point) == true)
+        {
+          // Transform the point into the shape's old local space
+          Vector2 localPoint =
+            VolatileUtil.WorldToLocalPoint(
+              point,
+              record.Position,
+              record.Facing);
+
+          return this.shape.ShapeQuery(localPoint, true);
+        }
+        return false;
+      }
+
+      // If the record is invalid, fall back to a current-time query
+      return this.shape.Query(point);
+    }
+
+    /// <summary>
+    /// Checks if a circle overlaps with this shape. 
+    /// Begins with an AABB check.
+    /// </summary>
+    internal bool Query(
+      int frame,
+      Vector2 point, 
+      float radius)
+    {
+      ShapeRecord record = this.records[this.FrameToIndex(frame)];
+
+      if (record.Frame == frame)
+      {
+        if (record.QueryAABB(point, radius) == true)
+        {
+          // Transform the point into the shape's old local space
+          Vector2 localPoint =
+            VolatileUtil.WorldToLocalPoint(
+              point,
+              record.Position,
+              record.Facing);
+
+          return this.shape.ShapeQuery(localPoint, radius, true);
+        }
+        return false;
+      }
+
+      // If the record is invalid, fall back to a current-time query
+      return this.shape.Query(point, radius);
+    }
+
+    /// <summary>
+    /// Checks if a circle overlaps with this shape.
+    /// Begins with an AABB check.
+    /// Outputs the minimum surface distance from the shape to the origin.
+    /// More expensive than a normal query.
+    /// </summary>
+    internal bool MinDistance(
+      int frame,
+      Vector2 point,
+      float maxDistance,
+      out float minDistance)
+    {
+      ShapeRecord record = this.records[this.FrameToIndex(frame)];
+
+      if (record.Frame == frame)
+      {
+        minDistance = maxDistance;
+        if (record.QueryAABB(point, maxDistance) == true)
+        {
+          // Transform the point into the shape's old local space
+          Vector2 localPoint =
+            VolatileUtil.WorldToLocalPoint(
+              point,
+              record.Position,
+              record.Facing);
+
+          minDistance = this.shape.ShapeMinDistance(localPoint, true);
+          if (minDistance < maxDistance)
+            return true;
+        }
+        return false;
+      }
+
+      // If the record is invalid, fall back to a current-time query
+      return this.shape.MinDistance(point, maxDistance, out minDistance);
+    }
+    #endregion
+
+    #region Line/Sweep Tests
     internal bool RayCast(
       int frame, 
       ref RayCast ray, 
@@ -137,14 +240,11 @@ namespace Volatile.History
 
         // Clear the mask since we're now done with it
         ray.ClearMask();
-      }
-      else
-      {
-        // If the record is invalid, fall back to a current-time ray cast
-        return this.shape.RayCast(ref ray, ref result);
+        return false;
       }
 
-      return false;
+      // If the record is invalid, fall back to a current-time ray cast
+      return this.shape.RayCast(ref ray, ref result);
     }
 
     internal bool CircleCast(
@@ -195,23 +295,26 @@ namespace Volatile.History
 
         // Invalidate the normal since it isn't worth transforming it back
         result.InvalidateNormal();
-      }
-      else
-      {
-        // If the record is invalid, fall back to a current-time ray cast
-        return this.shape.CircleCast(ref ray, radius, ref result);
+
+        return false;
       }
 
-      return false;
+      // If the record is invalid, fall back to a current-time circle cast
+      return this.shape.CircleCast(ref ray, radius, ref result);
     }
+    #endregion
 
+    #endregion
+
+    #region Internals
     private int FrameToIndex(int frame)
     {
       return frame % this.records.Length;
     }
+    #endregion
 
     #region Debug
-    public void GizmoDraw(Color aabbColorShape)
+    internal void GizmoDraw(Color aabbColorShape)
     {
       for (int i = 0; i < this.records.Length; i++)
         if (this.records[i].IsValid == true)

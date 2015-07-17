@@ -73,6 +73,14 @@ namespace Volatile
 
     #region Tests
     /// <summary>
+    /// Returns true iff an area overlaps with our AABB.
+    /// </summary>
+    public bool Query(AABB area)
+    {
+      return this.AABB.Intersect(area);
+    }
+
+    /// <summary>
     /// Checks if a point is contained in this shape. 
     /// Begins with an AABB check.
     /// </summary>
@@ -87,10 +95,10 @@ namespace Volatile
     /// Checks if a circle overlaps with this shape. 
     /// Begins with an AABB check.
     /// </summary>
-    public bool Query(Vector2 origin, float radius)
+    public bool Query(Vector2 point, float radius)
     {
-      if (this.AABB.Query(origin, radius) == true)
-        return this.ShapeQuery(origin, radius);
+      if (this.AABB.Query(point, radius) == true)
+        return this.ShapeQuery(point, radius);
       return false;
     }
 
@@ -100,13 +108,16 @@ namespace Volatile
     /// Outputs the minimum surface distance from the shape to the origin.
     /// More expensive than a normal query.
     /// </summary>
-    public bool Query(Vector2 origin, float radius, out float minDistance)
+    public bool MinDistance(
+      Vector2 point, 
+      float maxDistance, 
+      out float minDistance)
     {
-      minDistance = float.NaN;
-      if (this.AABB.Query(origin, radius) == true)
+      minDistance = maxDistance;
+      if (this.AABB.Query(point, maxDistance) == true)
       {
-        minDistance = this.ShapeMinDistance(origin);
-        if (minDistance < radius)
+        minDistance = this.ShapeMinDistance(point);
+        if (minDistance < maxDistance)
           return true;
       }
       return false;
@@ -187,19 +198,23 @@ namespace Volatile
     #endregion
 
     #region Test Overrides
-    internal abstract float ShapeMinDistance(Vector2 point);
-
     internal abstract bool ShapeQuery(
       Vector2 point, 
       bool useLocalSpace = false);
+
     internal abstract bool ShapeQuery(
       Vector2 point, 
       float radius, 
       bool useLocalSpace = false);
 
+    internal abstract float ShapeMinDistance(
+      Vector2 point,
+      bool useLocalSpace = false);
+
     internal abstract bool ShapeRayCast(
       ref RayCast ray,
       ref RayResult result);
+
     internal abstract bool ShapeCircleCast(
       ref RayCast ray,
       float radius,

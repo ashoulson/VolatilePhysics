@@ -313,17 +313,17 @@ namespace Volatile
     /// </summary>
     internal static int FindAxisShortestDistance(
       Vector2 point,
-      Polygon poly,
+      Axis[] axes,
       out float minDistance)
     {
       int ix = 0;
       minDistance = float.PositiveInfinity;
       bool inside = true;
 
-      for (int i = 0; i < poly.worldAxes.Length; i++)
+      for (int i = 0; i < axes.Length; i++)
       {
-        float dot = Vector2.Dot(poly.worldAxes[i].Normal, point);
-        float dist = poly.worldAxes[i].Width - dot;
+        float dot = Vector2.Dot(axes[i].Normal, point);
+        float dist = axes[i].Width - dot;
 
         if (dist < 0.0f)
           inside = false;
