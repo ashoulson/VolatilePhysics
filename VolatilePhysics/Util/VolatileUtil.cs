@@ -141,6 +141,25 @@ namespace Volatile
           -sin * vector.x + cos * vector.y);
     }
 
+    public static Vector2 WorldToLocalVector(this Shape shape, Vector2 vector)
+    {
+      return
+        VolatileUtil.WorldToLocalVector(
+          vector,
+          shape.Position,
+          shape.Facing);
+    }
+
+
+    public static Vector2 WorldToLocalPoint(this Shape shape, Vector2 point)
+    {
+      return
+        VolatileUtil.WorldToLocalPoint(
+          point,
+          shape.Position,
+          shape.Facing);
+    }
+
     #region Debug
     public static void Draw(Body body)
     {

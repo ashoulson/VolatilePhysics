@@ -236,30 +236,6 @@ namespace Volatile
     #endregion
 
     #region Tests
-    internal override float ShapeMinDistance(Vector2 point)
-    {
-      // Get the axis on the polygon closest to the circle's origin
-      float dist;
-      int ix = Collision.FindAxisShortestDistance(point, this, out dist);
-
-      if (ix == -1)
-        return dist;
-
-      int length = this.worldAxes.Length;
-      Vector2 a = this.worldVertices[ix];
-      Vector2 b = this.worldVertices[(ix + 1) % length];
-      Axis axis = this.worldAxes[ix];
-
-      // If the point is past one of the two vertices, check it like
-      // a point-circle intersection where the vertex has radius 0
-      float d = VolatileUtil.Cross(axis.Normal, point);
-      if (d > VolatileUtil.Cross(axis.Normal, a))
-        return (point - a).magnitude;
-      if (d < VolatileUtil.Cross(axis.Normal, b))
-        return (point - b).magnitude;
-      return Mathf.Abs(dist);
-    }
-
     internal override bool ShapeQuery(
       Vector2 point, 
       bool useLocalSpace = false)
@@ -273,7 +249,7 @@ namespace Volatile
     }
 
     internal override bool ShapeQuery(
-      Vector2 origin,
+      Vector2 point,
       float radius,
       bool useLocalSpace = false)
     {
@@ -284,7 +260,7 @@ namespace Volatile
       float penetration;
       int foundIndex =
         Collision.FindAxisMaxPenetration(
-          origin, 
+          point, 
           radius,
           axes, 
           out penetration);
@@ -298,12 +274,41 @@ namespace Volatile
 
       // If the circle is past one of the two vertices, check it like
       // a circle-circle intersection where the vertex has radius 0
-      float d = VolatileUtil.Cross(axis.Normal, origin);
+      float d = VolatileUtil.Cross(axis.Normal, point);
       if (d > VolatileUtil.Cross(axis.Normal, a))
-        return Collision.TestPointCircleSimple(a, origin, radius);
+        return Collision.TestPointCircleSimple(a, point, radius);
       if (d < VolatileUtil.Cross(axis.Normal, b))
-        return Collision.TestPointCircleSimple(b, origin, radius);
+        return Collision.TestPointCircleSimple(b, point, radius);
       return true;
+    }
+
+    internal override float ShapeMinDistance(
+      Vector2 point,
+      bool useLocalSpace = false)
+    {
+      Axis[] axes = this.GetAxes(useLocalSpace);
+      Vector2[] vertices = this.GetVertices(useLocalSpace);
+
+      // Get the axis on the polygon closest to the circle's origin
+      float dist;
+      int ix = Collision.FindAxisShortestDistance(point, axes, out dist);
+
+      if (ix == -1)
+        return dist;
+
+      int length = axes.Length;
+      Vector2 a = vertices[ix];
+      Vector2 b = vertices[(ix + 1) % length];
+      Axis axis = axes[ix];
+
+      // If the point is past one of the two vertices, check it like
+      // a point-circle intersection where the vertex has radius 0
+      float d = VolatileUtil.Cross(axis.Normal, point);
+      if (d > VolatileUtil.Cross(axis.Normal, a))
+        return (point - a).magnitude;
+      if (d < VolatileUtil.Cross(axis.Normal, b))
+        return (point - b).magnitude;
+      return Mathf.Abs(dist);
     }
 
     internal override bool ShapeRayCast(

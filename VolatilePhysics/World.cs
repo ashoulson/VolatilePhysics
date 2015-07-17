@@ -123,50 +123,183 @@ namespace Volatile
     }
 
     #region Tests
+
+    #region Shape Queries
     /// <summary>
     /// Returns all shapes whose bounding boxes overlap an area.
     /// </summary>
-    public IEnumerable<Shape> Query(AABB area)
+    public IEnumerable<Shape> QueryShapes(
+      AABB area,
+      Func<Shape, bool> filter = null)
     {
-      foreach (Shape shape in this.shapes)
-        if (shape.AABB.Intersect(area))
-          yield return shape;
+      for (int i = 0; i < this.shapes.Count; i++)
+      {
+        Shape shape = this.shapes[i];
+        if (filter == null || filter(shape) == true)
+        {
+          if (shape.AABB.Intersect(area))
+          {
+            yield return shape;
+          }
+        }
+      }
     }
 
     /// <summary>
     /// Returns all shapes containing a point.
     /// </summary>
-    public IEnumerable<Shape> Query(Vector2 point)
+    public IEnumerable<Shape> QueryShapes(
+      Vector2 point,
+      Func<Shape, bool> filter = null)
     {
-      foreach (Shape shape in this.shapes)
-        if (shape.Query(point) == true)
-          yield return shape;
+      for (int i = 0; i < this.shapes.Count; i++)
+      {
+        Shape shape = this.shapes[i];
+        if (filter == null || filter(shape) == true)
+        {
+          if (shape.Query(point) == true)
+          {
+            yield return shape;
+          }
+        }
+      }
     }
 
     /// <summary>
     /// Returns all shapes overlapping with a circle.
     /// </summary>
-    public IEnumerable<Shape> Query(Vector2 point, float radius)
+    public IEnumerable<Shape> QueryShapes(
+      Vector2 point,
+      float radius,
+      Func<Shape, bool> filter = null)
     {
-      foreach (Shape shape in this.shapes)
-        if (shape.Query(point, radius) == true)
-          yield return shape;
+      for (int i = 0; i < this.shapes.Count; i++)
+      {
+        Shape shape = this.shapes[i];
+        if (filter == null || filter(shape) == true)
+        {
+          if (shape.Query(point, radius) == true)
+          {
+            yield return shape;
+          }
+        }
+      }
     }
 
     /// <summary>
     /// Returns all shapes overlapping with a circle, with distance.
     /// More expensive than a simple circle overlap query.
     /// </summary>
-    public IEnumerable<KeyValuePair<Shape, float>> QueryDistance(
+    public IEnumerable<KeyValuePair<Shape, float>> MinDistanceShapes(
       Vector2 point, 
-      float radius)
+      float radius,
+      Func<Shape, bool> filter = null)
     {
       float dist;
-      foreach (Shape shape in this.shapes)
-        if (shape.Query(point, radius, out dist) == true)
-          yield return new KeyValuePair<Shape, float>(shape, dist);
+      for (int i = 0; i < this.shapes.Count; i++)
+      {
+        Shape shape = this.shapes[i];
+        if (filter == null || filter(shape) == true)
+        {
+          if (shape.MinDistance(point, radius, out dist) == true)
+          {
+            yield return new KeyValuePair<Shape, float>(shape, dist);
+          }
+        }
+      }
+    }
+    #endregion
+
+    #region Body Queries
+    /// <summary>
+    /// Returns all bodies whose bounding boxes overlap an area.
+    /// </summary>
+    public IEnumerable<Body> QueryBodies(
+      AABB area,
+      Func<Body, bool> filter = null)
+    {
+      for (int i = 0; i < this.bodies.Count; i++)
+      {
+        Body body = this.bodies[i];
+        if (filter == null || filter(body) == true)
+        {
+          if (body.Query(area))
+          {
+            yield return body;
+          }
+        }
+      }
     }
 
+    /// <summary>
+    /// Returns all bodies containing a point.
+    /// </summary>
+    public IEnumerable<Body> QueryBodies(
+      Vector2 point,
+      Func<Body, bool> bodyFilter = null,
+      Func<Shape, bool> shapeFilter = null)
+    {
+      for (int i = 0; i < this.bodies.Count; i++)
+      {
+        Body body = this.bodies[i];
+        if (bodyFilter == null || bodyFilter(body) == true)
+        {
+          if (body.Query(point, shapeFilter) == true)
+          {
+            yield return body;
+          }
+        }
+      }
+    }
+
+    /// <summary>
+    /// Returns all bodies overlapping with a circle.
+    /// </summary>
+    public IEnumerable<Body> QueryBodies(
+      Vector2 point,
+      float radius,
+      Func<Body, bool> bodyFilter = null,
+      Func<Shape, bool> shapeFilter = null)
+    {
+      for (int i = 0; i < this.bodies.Count; i++)
+      {
+        Body body = this.bodies[i];
+        if (bodyFilter == null || bodyFilter(body) == true)
+        {
+          if (body.Query(point, radius, shapeFilter) == true)
+          {
+            yield return body;
+          }
+        }
+      }
+    }
+
+    /// <summary>
+    /// Returns all bodies overlapping with a circle, with distance.
+    /// More expensive than a simple circle overlap query.
+    /// </summary>
+    public IEnumerable<KeyValuePair<Body, float>> MinDistanceBodies(
+      Vector2 point,
+      float radius,
+      Func<Body, bool> bodyFilter = null,
+      Func<Shape, bool> shapeFilter = null)
+    {
+      float dist;
+      for (int i = 0; i < this.bodies.Count; i++)
+      {
+        Body body = this.bodies[i];
+        if (bodyFilter == null || bodyFilter(body) == true)
+        {
+          if (body.MinDistance(point, radius, out dist) == true)
+          {
+            yield return new KeyValuePair<Body, float>(body, dist);
+          }
+        }
+      }
+    }
+    #endregion
+
+    #region Line/Sweep Tests
     /// <summary>
     /// Performs a raycast on all bodies contained in the world.
     /// Filters by body or shape.
@@ -213,6 +346,8 @@ namespace Volatile
       }
       return result.IsValid;
     }
+    #endregion
+
     #endregion
 
     #region Internals
