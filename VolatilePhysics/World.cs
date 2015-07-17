@@ -192,7 +192,7 @@ namespace Volatile
     /// </summary>
     public IEnumerable<KeyValuePair<Shape, float>> MinDistanceShapes(
       Vector2 point, 
-      float radius,
+      float maxDistance,
       Func<Shape, bool> filter = null)
     {
       float dist;
@@ -201,7 +201,7 @@ namespace Volatile
         Shape shape = this.shapes[i];
         if (filter == null || filter(shape) == true)
         {
-          if (shape.MinDistance(point, radius, out dist) == true)
+          if (shape.MinDistance(point, maxDistance, out dist) == true)
           {
             yield return new KeyValuePair<Shape, float>(shape, dist);
           }
@@ -280,7 +280,7 @@ namespace Volatile
     /// </summary>
     public IEnumerable<KeyValuePair<Body, float>> MinDistanceBodies(
       Vector2 point,
-      float radius,
+      float maxDistance,
       Func<Body, bool> bodyFilter = null,
       Func<Shape, bool> shapeFilter = null)
     {
@@ -290,7 +290,7 @@ namespace Volatile
         Body body = this.bodies[i];
         if (bodyFilter == null || bodyFilter(body) == true)
         {
-          if (body.MinDistance(point, radius, out dist, shapeFilter) == true)
+          if (body.MinDistance(point, maxDistance, out dist, shapeFilter) == true)
           {
             yield return new KeyValuePair<Body, float>(body, dist);
           }

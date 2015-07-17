@@ -196,7 +196,7 @@ namespace Volatile.History
       this World world,
       int frame,
       Vector2 point,
-      float radius,
+      float maxDistance,
       Func<Body, bool> bodyFilter = null,
       Func<Shape, bool> shapeFilter = null)
     {
@@ -206,7 +206,7 @@ namespace Volatile.History
         Body body = world.bodies[i];
         if (bodyFilter == null || bodyFilter(body) == true)
         {
-          if (body.MinDistance(frame, point, radius, out dist, shapeFilter) == true)
+          if (body.MinDistance(frame, point, maxDistance, out dist, shapeFilter) == true)
           {
             yield return new KeyValuePair<Body, float>(body, dist);
           }
