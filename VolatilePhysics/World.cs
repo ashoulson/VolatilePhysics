@@ -290,7 +290,7 @@ namespace Volatile
         Body body = this.bodies[i];
         if (bodyFilter == null || bodyFilter(body) == true)
         {
-          if (body.MinDistance(point, radius, out dist) == true)
+          if (body.MinDistance(point, radius, out dist, shapeFilter) == true)
           {
             yield return new KeyValuePair<Body, float>(body, dist);
           }
