@@ -27,69 +27,108 @@ namespace Volatile
 {
   public class Explosion
   {
+    public delegate void HitCallback(
+      Body body,
+      Vector2 point,
+      Vector2 direction,
+      float distance,
+      float interval);
+
     // We push the arc borders in to avoid edge-cases on the borders
     // of the shape we're casting on
     private const float BORDER_EPSILON = 0.005f;
 
+
     private World world;
+
     private Vector2 origin;
     private float radius;
     private float radiusSqr;
+    private AABB aabb;
+
+    private int rayBudget;
+    private int minimumRays;
+
     private BodyFilter filter;
 
     public Explosion(
       World world,
       Vector2 origin,
       float radius,
+      int rayBudget,
+      int minimumRays,
       BodyFilter filter = null)
     {
       this.world = world;
+
       this.origin = origin;
       this.radius = radius;
       this.radiusSqr = radius * radius;
+      this.aabb = new AABB(this.origin, this.radius);
+
+      this.rayBudget = rayBudget;
+      this.minimumRays = minimumRays;
+
       this.filter = filter;
     }
 
-    public void PerformRaycasts(
+    public void Perform(HitCallback callback)
+    {
+      List<Body> hitBodies = 
+        new List<Body>(this.world.QueryDynamic(this.aabb, this.filter));
+
+      int count = hitBodies.Count;
+      if (count == 0)
+        return;
+
+      int numRays = this.rayBudget / count;
+      if (numRays < this.minimumRays)
+        numRays = this.minimumRays;
+
+      for (int i = 0; i < count; i++)
+        this.PerformOnBody(hitBodies[i], numRays, callback);
+    }
+
+    private void PerformOnBody(
       Body body, 
-      int resolution, 
-      IList<Tuple<Vector2, float>> rayHits, 
-      out float interval)
+      int numRays, 
+      HitCallback callback)
     {
       float minAngle;
+      float interval;
       this.ComputeAngleInformation(
         body, 
-        resolution,
+        numRays,
         out minAngle, 
         out interval);
 
       IEnumerable<Vector2> directions = 
         this.GetRayDirections(
-          resolution, 
+          numRays, 
           minAngle, 
           interval);
 
-      RayCast ray;
-      RayResult result = new RayResult();;
-      BodyFilter filter;
+      RayCast cast;
+      RayResult result = new RayResult();
+      BodyFilter staticFilter;
       foreach (Vector2 direction in directions)
       {
-        Vector2 scaled = direction * this.radius;
-        ray = new RayCast(this.origin, this.origin + scaled);
-        filter = this.CreateFilter(body);
-        result.Reset();
+        Vector2 endPoint = this.origin + (direction * this.radius);
+        cast = new RayCast(this.origin, endPoint);
+        staticFilter = this.CreateFilter(body);
+        result = new RayResult();
 
-        if (this.world.RayCast(ref ray, ref result, filter) == true)
-        {
-          if (result.Shape.Body == body)
-          {
-            Tuple<Vector2, float> hit =
-              new Tuple<Vector2, float>(
-                result.ComputePoint(ref ray),
-                result.Distance);
-            rayHits.Add(hit);
-          }
-        }
+        bool validResult =
+          (this.world.RayCast(ref cast, ref result, staticFilter) == true) &&
+          (result.Shape.Body == body);
+
+        if (validResult == true)
+          callback.Invoke(
+            body, 
+            result.ComputePoint(ref cast),
+            direction,
+            result.Distance,
+            interval);
       }
     }
 
@@ -144,7 +183,6 @@ namespace Volatile
           float t1 = b - a;
           float t2 = b + a;
 
-          // Add the tangent points
           yield return
             circle.Position + 
             new Vector2(

@@ -204,6 +204,11 @@ namespace Volatile
       this.left = bottomLeft.x;
     }
 
+    public AABB(Vector2 center, float radius)
+      : this (center, new Vector2(radius, radius))
+    {
+    }
+
     public AABB ComputeTopLeft(Vector2 center)
     {
       return new AABB(this.top, center.y, this.left, center.x);
