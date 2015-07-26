@@ -55,6 +55,11 @@ namespace Volatile
       }
     }
 
+    internal void Reset()
+    {
+      this.shape = null;
+    }
+
     // We can't accurately report normal information for historical
     // raycasts (it isn't worth transforming the normal back to world
     // space), so we need to be able to clear it out.
@@ -70,7 +75,7 @@ namespace Volatile
       this.normal = null;
     }
 
-    private Vector2 ComputePoint(ref RayCast cast)
+    public Vector2 ComputePoint(ref RayCast cast)
     {
       return cast.Origin + (cast.Direction * this.distance);
     }
