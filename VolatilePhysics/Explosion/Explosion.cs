@@ -23,12 +23,15 @@ using System.Collections.Generic;
 
 using UnityEngine;
 
+using Volatile.History;
+
 namespace Volatile
 {
   public class Explosion
   {
     public delegate void HitCallback(
       Body body,
+      bool isContained,
       Vector2 point,
       Vector2 direction,
       float distance,
@@ -38,25 +41,19 @@ namespace Volatile
     // of the shape we're casting on
     private const float BORDER_EPSILON = 0.005f;
 
+    internal World world;
 
-    private World world;
+    internal Vector2 origin;
+    internal float radius;
+    internal float radiusSqr;
+    internal AABB aabb;
 
-    private Vector2 origin;
-    private float radius;
-    private float radiusSqr;
-    private AABB aabb;
-
-    private int rayBudget;
-    private int minimumRays;
-
-    private BodyFilter filter;
+    internal BodyFilter filter;
 
     public Explosion(
       World world,
       Vector2 origin,
       float radius,
-      int rayBudget,
-      int minimumRays,
       BodyFilter filter = null)
     {
       this.world = world;
@@ -66,34 +63,56 @@ namespace Volatile
       this.radiusSqr = radius * radius;
       this.aabb = new AABB(this.origin, this.radius);
 
-      this.rayBudget = rayBudget;
-      this.minimumRays = minimumRays;
-
       this.filter = filter;
     }
 
-    public void Perform(HitCallback callback)
+    public void Perform(int rayBudget, int minRays, HitCallback callback)
     {
-      List<Body> hitBodies = 
+      List<Body> closeBodies = 
         new List<Body>(this.world.QueryDynamic(this.aabb, this.filter));
 
-      int count = hitBodies.Count;
+      int count = closeBodies.Count;
       if (count == 0)
         return;
 
-      int numRays = this.rayBudget / count;
-      if (numRays < this.minimumRays)
-        numRays = this.minimumRays;
-
       for (int i = 0; i < count; i++)
-        this.PerformOnBody(hitBodies[i], numRays, callback);
+        this.DoPerformOnBody(
+          closeBodies[i],
+          this.ComputeBudget(rayBudget, minRays, count), 
+          callback);
     }
 
-    private void PerformOnBody(
+    public void Perform(Body body, int numRays, HitCallback callback)
+    {
+      if (body.Query(this.aabb) == true)
+        this.DoPerformOnBody(body, numRays, callback);
+    }
+
+    internal int ComputeBudget(int rayBudget, int minRays, int count)
+    {
+      int numRays = rayBudget / count;
+      if (numRays < minRays)
+        numRays = minRays;
+      if (numRays < 3)
+        numRays = 3;
+      return numRays;
+    }
+
+    internal void DoPerformOnBody(
       Body body, 
       int numRays, 
       HitCallback callback)
     {
+      // Check for point containment first
+      if (body.Query(this.origin) == true)
+      {
+        Vector2 toBodyOrigin = body.Position - this.origin;
+        float distance = toBodyOrigin.magnitude;
+        Vector2 direction = toBodyOrigin.normalized;
+        callback.Invoke(body, true, this.origin, direction, distance, 1.0f);
+        return;
+      }
+
       float minAngle;
       float interval;
       this.ComputeAngleInformation(
@@ -122,9 +141,11 @@ namespace Volatile
           (this.world.RayCast(ref cast, ref result, staticFilter) == true) &&
           (result.Shape.Body == body);
 
+        Debug.Assert(result.IsContained == false);
         if (validResult == true)
           callback.Invoke(
-            body, 
+            body,
+            false,
             result.ComputePoint(ref cast),
             direction,
             result.Distance,
@@ -139,7 +160,7 @@ namespace Volatile
 
     private void ComputeAngleInformation(
       Body body,
-      int resolution, 
+      int numRays, 
       out float minAngle,
       out float interval)
     {
@@ -152,15 +173,15 @@ namespace Volatile
 
       minAngle = (minVertex - this.origin).Angle() + BORDER_EPSILON;
       float maxAngle = (maxVertex - this.origin).Angle() - BORDER_EPSILON;
-      interval = CCWDiffAngle(minAngle, maxAngle) / (float)resolution;
+      interval = CCWDiffAngle(minAngle, maxAngle) / (float)(numRays - 1);
     }
 
     private IEnumerable<Vector2> GetRayDirections(
-      int resolution,
+      int numRays,
       float minAngle,
       float interval)
     {
-      for (int i = 0; i <= resolution; i++)
+      for (int i = 0; i < numRays; i++)
         yield return VolatileUtil.Polar(minAngle + ((float)i * interval));
     }
 
@@ -212,10 +233,24 @@ namespace Volatile
     /// </summary>
     private float CCWDiffAngle(float min, float max)
     {
-      if (max >= 0.0f && min >= 0.0f)
-        return (min >= 0.0f) ? max - min : max + Mathf.Abs(min);
+      if (max >= 0.0f)
+      {
+        if (min >= 0.0f && min > max)
+          return (max + (2.0f * Mathf.PI)) - min;
+        else if (min >= 0.0f)
+          return max - min;
+        else
+          return max + Mathf.Abs(min);
+      }
       else
-        return (min >= 0.0f) ? (max + (2.0f * Mathf.PI)) - min : max - min;
+      {
+        if (min < 0.0f && min > max)
+          return (max + (2.0f * Mathf.PI)) - min;
+        else if (min >= 0.0f) 
+          return (max + (2.0f * Mathf.PI)) - min;
+        else
+          return max - min;
+      }
     }
 
     #region Pseudoangles

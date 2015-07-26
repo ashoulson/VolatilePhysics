@@ -4,8 +4,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 using Volatile;
+using Volatile.History;
 
-public class SimpleExplosion : MonoBehaviour 
+public class SimpleExplosion : MonoBehaviour
 {
   [SerializeField]
   private float radius;
@@ -15,6 +16,9 @@ public class SimpleExplosion : MonoBehaviour
 
   [SerializeField]
   private int minRays;
+
+  [SerializeField]
+  private int frame = -1;
 
   [SerializeField]
   private Gradient colorGradient;
@@ -30,16 +34,21 @@ public class SimpleExplosion : MonoBehaviour
         new Explosion(
           VolatileWorld.Instance.world,
           transform.position,
-          this.radius,
-          this.rayBudget,
-          this.minRays);
+          this.radius);
 
       if (this.results == null)
         this.results = new List<Tuple<Vector2, float>>();
       this.results.Clear();
 
       Gizmos.DrawWireSphere(this.origin, this.radius);
-      explosion.Perform(this.HitCallback);
+
+      if (this.frame == -1)
+        explosion.Perform(this.rayBudget, this.minRays, this.HitCallback);
+      else
+        explosion.Perform(
+          this.frame, 
+          this.rayBudget, 
+          this.minRays, this.HitCallback);
 
       foreach (Tuple<Vector2, float> hit in this.results)
       {
@@ -52,11 +61,15 @@ public class SimpleExplosion : MonoBehaviour
 
   private void HitCallback(
     Body body,
+    bool isContained,
     Vector2 point,
     Vector2 direction,
     float distance,
     float interval)
   {
-    this.results.Add(new Tuple<Vector2, float>(point, distance));
+    if (isContained == true)
+      this.results.Add(new Tuple<Vector2, float>(body.Position, 0.0f));
+    else
+      this.results.Add(new Tuple<Vector2, float>(point, distance));
   }
 }
