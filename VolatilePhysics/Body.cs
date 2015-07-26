@@ -94,14 +94,20 @@ namespace Volatile
     internal Volatile.History.BodyLogger bodyLogger = null;
 
     #region Force and Impulse Application
+    public void AddTorque(float torque)
+    {
+      this.Torque += torque;
+    }
+
     public void AddForce(Vector2 force)
     {
       this.Force += force;
     }
 
-    public void AddTorque(float torque)
+    public void AddForce(Vector2 force, Vector2 point)
     {
-      this.Torque += torque;
+      this.Force += force;
+      this.Torque += VolatileUtil.Cross(this.Position - point, force);
     }
     #endregion
 
