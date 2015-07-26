@@ -31,16 +31,22 @@ namespace Volatile.History
     {
       public int Frame { get { return this.frame; } }
       public AABB AABB { get { return this.aabb; } }
+      public Vector2 Position { get { return this.position; } }
+      public float Angle { get { return this.radians; } }
 
       public bool IsValid { get { return this.frame >= 0; } }
 
       private int frame;
       private AABB aabb;
+      private Vector2 position;
+      private float radians;
 
       public void Set(int frame, Body body)
       {
         this.frame = frame;
         this.aabb = body.AABB;
+        this.position = body.Position;
+        this.radians = body.Angle;
       }
 
       public void Invalidate()
@@ -74,12 +80,18 @@ namespace Volatile.History
       }
     }
 
+    internal int CurrentStateFrame { get { return this.currentStateFrame; } }
+
     private Body body;
     private BodyRecord[] records;
+    private Stack<BodyRecord> rollbackStack;
+    private int currentStateFrame;
 
     public BodyLogger(Body body, int capacity)
     {
       this.body = body;
+      this.rollbackStack = new Stack<BodyRecord>();
+      this.currentStateFrame = History.CURRENT_FRAME;
 
       this.records = new BodyRecord[capacity];
       for (int i = 0; i < capacity; i++)
@@ -98,6 +110,32 @@ namespace Volatile.History
       IList<Shape> bodyShapes = this.body.shapes;
       for (int i = 0; i < bodyShapes.Count; i++)
         bodyShapes[i].shapeLogger.Store(frame);
+    }
+
+    public void Rollback(int frame)
+    {
+      BodyRecord record = this.records[this.FrameToIndex(frame)];
+      if (record.Frame == frame)
+      {
+        // Store the current state
+        BodyRecord current = new BodyRecord();
+        current.Set(this.currentStateFrame, this.body);
+        this.rollbackStack.Push(current);
+
+        // Restore the previous state
+        this.body.SetWorld(record.Position, record.Angle);
+        this.currentStateFrame = record.Frame;
+      }
+    }
+
+    public void Restore()
+    {
+      if (this.rollbackStack.Count > 0)
+      {
+        BodyRecord priorState = this.rollbackStack.Pop();
+        this.body.SetWorld(priorState.Position, priorState.Angle);
+        this.currentStateFrame = priorState.Frame;
+      }
     }
 
     #region Tests

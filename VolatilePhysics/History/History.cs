@@ -27,7 +27,28 @@ namespace Volatile.History
 {
   public static class History
   {
+    public const int CURRENT_FRAME = -1;
+
     #region Body Extensions
+    public static int GetCurrentFrame(this Body body)
+    {
+      if (body.bodyLogger == null)
+        return CURRENT_FRAME;
+      return body.bodyLogger.CurrentStateFrame;
+    }
+
+    public static void Rollback(this Body body, int frame)
+    {
+      if (body.bodyLogger != null)
+        body.bodyLogger.Rollback(frame);
+    }
+
+    public static void Restore(this Body body)
+    {
+      if (body.bodyLogger != null)
+        body.bodyLogger.Restore();
+    }
+
     public static void BeginLogging(this Body body, int capacity)
     {
       if (body.IsStatic == false)
@@ -104,7 +125,7 @@ namespace Volatile.History
     /// <summary>
     /// Returns all bodies whose bounding boxes overlap an area.
     /// </summary>
-    public static IEnumerable<Body> QueryBodies(
+    public static IEnumerable<Body> Query(
       this World world,
       int frame,
       AABB area,
@@ -124,7 +145,7 @@ namespace Volatile.History
     /// <summary>
     /// Returns all bodies containing a point.
     /// </summary>
-    public static IEnumerable<Body> QueryBodies(
+    public static IEnumerable<Body> Query(
       this World world,
       int frame,
       Vector2 point,
@@ -144,7 +165,7 @@ namespace Volatile.History
     /// <summary>
     /// Returns all bodies overlapping with a circle.
     /// </summary>
-    public static IEnumerable<Body> QueryBodies(
+    public static IEnumerable<Body> Query(
       this World world,
       int frame,
       Vector2 point,
@@ -216,6 +237,26 @@ namespace Volatile.History
       world.staticBroad.CircleCast(ref ray, radius, ref result, filter);
       return result.IsValid;
     }
+
+    #region Internal
+    /// <summary>
+    /// Returns all bodies whose bounding boxes overlap an area.
+    /// </summary>
+    internal static IEnumerable<Body> QueryDynamic(
+      this World world,
+      int frame,
+      AABB area,
+      BodyFilter filter = null)
+    {
+      for (int i = 0; i < world.dynamicBodies.Count; i++)
+      {
+        Body body = world.dynamicBodies[i];
+        if (Body.Filter(body, filter) && body.Query(frame, area))
+          yield return body;
+      }
+    }
+    #endregion
+
     #endregion
 
     public static void GizmoDrawHistory(
