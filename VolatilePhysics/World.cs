@@ -153,9 +153,9 @@ namespace Volatile
       ref RayResult result,
       BodyFilter filter = null)
     {
-      return
-        this.RayCastDynamic(ref ray, ref result, filter) ||
-        this.staticBroad.RayCast(ref ray, ref result, filter);
+      bool dynamicHit = this.RayCastDynamic(ref ray, ref result, filter);
+      bool staticHit = this.staticBroad.RayCast(ref ray, ref result, filter);
+      return dynamicHit || staticHit;
     }
 
     public bool CircleCast(
@@ -164,13 +164,15 @@ namespace Volatile
       ref RayResult result,
       BodyFilter filter = null)
     {
-      return
-        this.CircleCastDynamic(ref ray, radius, ref result, filter) ||
+      bool dynamicHit =
+        this.CircleCastDynamic(ref ray, radius, ref result, filter);
+      bool staticHit = 
         this.staticBroad.CircleCast(ref ray, radius, ref result, filter);
+      return dynamicHit || staticHit;
     }
 
     #region Dynamic
-    private IEnumerable<Body> QueryDynamic(
+    internal IEnumerable<Body> QueryDynamic(
       AABB area,
       BodyFilter filter = null)
     {
@@ -182,7 +184,7 @@ namespace Volatile
       }
     }
 
-    private IEnumerable<Body> QueryDynamic(
+    internal IEnumerable<Body> QueryDynamic(
       Vector2 point,
       BodyFilter filter = null)
     {
@@ -194,7 +196,7 @@ namespace Volatile
       }
     }
 
-    private IEnumerable<Body> QueryDynamic(
+    internal IEnumerable<Body> QueryDynamic(
       Vector2 point,
       float radius,
       BodyFilter filter = null)
@@ -207,7 +209,7 @@ namespace Volatile
       }
     }
 
-    private bool RayCastDynamic(
+    internal bool RayCastDynamic(
       ref RayCast ray,
       ref RayResult result,
       BodyFilter filter = null)
@@ -225,7 +227,7 @@ namespace Volatile
       return result.IsValid;
     }
 
-    private bool CircleCastDynamic(
+    internal bool CircleCastDynamic(
       ref RayCast ray,
       float radius,
       ref RayResult result,

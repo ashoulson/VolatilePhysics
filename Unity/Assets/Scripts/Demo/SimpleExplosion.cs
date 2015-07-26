@@ -11,12 +11,16 @@ public class SimpleExplosion : MonoBehaviour
   private float radius;
 
   [SerializeField]
-  private int resolution;
+  private int rayBudget;
 
   [SerializeField]
-  private VolatileBody body;
+  private int minRays;
+
+  [SerializeField]
+  private Gradient colorGradient;
 
   private Vector2 origin { get { return this.transform.position; } }
+  private List<Tuple<Vector2, float>> results = null;
 
   void OnDrawGizmos()
   {
@@ -26,32 +30,33 @@ public class SimpleExplosion : MonoBehaviour
         new Explosion(
           VolatileWorld.Instance.world,
           transform.position,
-          this.radius);
+          this.radius,
+          this.rayBudget,
+          this.minRays);
 
-      if (this.body != null)
+      if (this.results == null)
+        this.results = new List<Tuple<Vector2, float>>();
+      this.results.Clear();
+
+      Gizmos.DrawWireSphere(this.origin, this.radius);
+      explosion.Perform(this.HitCallback);
+
+      foreach (Tuple<Vector2, float> hit in this.results)
       {
-        Gizmos.DrawWireSphere(this.origin, this.radius);
-
-        List<Tuple<Vector2, float>> rayHits = new List<Tuple<Vector2,float>>();
-        float interval;
-        explosion.PerformRaycasts(
-          this.body.body, 
-          this.resolution, 
-          rayHits, 
-          out interval);
-
-        if (rayHits.Count > 0)
-        {
-          for (int i = 0; i < rayHits.Count; i++)
-          {
-            Tuple<Vector2, float> hit = rayHits[i];
-            Gizmos.DrawLine(this.origin, hit.Item1);
-          }
-          Debug.Log(interval);
-        }
+        float t = hit.Item2 / this.radius;
+        Gizmos.color = this.colorGradient.Evaluate(t);
+        Gizmos.DrawLine(this.origin, hit.Item1);
       }
     }
   }
 
-
+  private void HitCallback(
+    Body body,
+    Vector2 point,
+    Vector2 direction,
+    float distance,
+    float interval)
+  {
+    this.results.Add(new Tuple<Vector2, float>(point, distance));
+  }
 }
