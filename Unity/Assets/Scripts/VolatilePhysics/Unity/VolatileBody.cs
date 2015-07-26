@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 
 using UnityEngine;
@@ -10,9 +11,6 @@ public class VolatileBody : MonoBehaviour
 {
   [SerializeField]
   private VolatileShape[] shapes;
-
-  [SerializeField]
-  private bool useGravity = false;
 
   [SerializeField]
   private bool isStatic = false;
@@ -27,19 +25,14 @@ public class VolatileBody : MonoBehaviour
 
   void Awake()
   {
-    List<Shape> shapes = new List<Shape>();
-    foreach (VolatileShape shape in this.shapes)
-    {
-      shapes.Add(shape.Shape);
-      shape.isStandalone = false;
-    }
+    IEnumerable<Shape> shapes = this.shapes.Select((s) => s.Shape);
+    Vector2 position = transform.position;
+    float radians = Mathf.Deg2Rad * transform.eulerAngles.z;
 
-    this.body = new Body(
-      transform.position, 
-      Mathf.Deg2Rad * transform.eulerAngles.z, 
-      shapes);
-    this.body.UseGravity = this.useGravity;
-    this.body.IsStatic = this.isStatic;
+    if (this.isStatic == true)
+      this.body = Body.CreateStatic(position, radians, shapes);
+    else
+      this.body = Body.CreateDynamic(position, radians, shapes);
 
     this.lastPosition = this.nextPosition = transform.position;
     this.lastAngle = this.nextAngle = transform.eulerAngles.z;
@@ -91,6 +84,8 @@ public class VolatileBody : MonoBehaviour
       {
         foreach (VolatileShape shape in this.shapes)
         {
+          shape.DrawShapeInEditor();
+
           // Draw True COM
           Vector2 trueShapeCOM = shape.ComputeTrueCenterOfMass();
           trueBodyCOM += trueShapeCOM;
@@ -124,16 +119,6 @@ public class VolatileBody : MonoBehaviour
   public void AddTorque(float radians)
   {
     this.body.AddTorque(radians);
-  }
-
-  public void Set(Vector2 position)
-  {
-    this.body.SetWorld(position);
-  }
-
-  public void Set(float radians)
-  {
-    this.body.SetWorld(radians);
   }
 
   public void Set(Vector2 position, float radians)

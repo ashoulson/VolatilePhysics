@@ -16,7 +16,7 @@ public class VolatileWorld : MonoBehaviour
   void Awake()
   {
     VolatileWorld.instance = this;
-    this.world = new World(new Vector2(0.0f, -9.81f));
+    this.world = new World();
   }
 
   void Start()

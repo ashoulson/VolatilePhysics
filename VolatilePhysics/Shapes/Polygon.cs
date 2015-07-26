@@ -30,7 +30,7 @@ namespace Volatile
     #region Factory Functions
     public static Polygon FromWorldVertices(
       Vector2 origin,
-      Vector2 facing, 
+      Vector2 facing,
       Vector2[] vertices,
       float density = 1.0f,
       float friction = Config.DEFAULT_FRICTION,
@@ -45,20 +45,21 @@ namespace Volatile
         restitution);
     }
 
+    /// <summary>
+    /// Assumes the shape is at the origin, facing right.
+    /// </summary>
     public static Polygon FromLocalVertices(
-      Vector2 origin,
-      Vector2 facing, 
       Vector2[] vertices,
       float density = 1.0f,
       float friction = Config.DEFAULT_FRICTION,
       float restitution = Config.DEFAULT_RESTITUTION)
     {
       return new Polygon(
-        origin, 
-        facing, 
-        vertices, 
-        density, 
-        friction, 
+        Vector2.zero,
+        new Vector2(1.0f, 0.0f),
+        vertices,
+        density,
+        friction,
         restitution);
     }
     #endregion
@@ -87,7 +88,7 @@ namespace Volatile
     /// (rotation-adjusted) offset to that origin.
     /// </summary>
     private static Vector2 ComputeVertexOffset(
-      Vector2 vertex, 
+      Vector2 vertex,
       Vector2 originOffset,
       Vector2 shapeFacing)
     {
@@ -123,8 +124,8 @@ namespace Volatile
     }
 
     private static float ComputeInertia(
-      Vector2[] vertices, 
-      Vector2 originOffset, 
+      Vector2[] vertices,
+      Vector2 originOffset,
       Vector2 shapeFacing)
     {
       float s1 = 0.0f;
@@ -190,18 +191,13 @@ namespace Volatile
     #region Properties
     public override Shape.ShapeType Type { get { return ShapeType.Polygon; } }
 
-    public override Vector2 Position 
-    { 
-      get { return this.origin; }
-      internal set { this.origin = value; }
-    }
-
+    public override Vector2 Position { get { return this.origin; } }
     public override Vector2 Facing { get { return this.facing; } }
     public override float Angle { get { return this.facing.Angle(); } }
 
-    public Vector2[] LocalVertices 
-    { 
-      get { return Polygon.CloneVertices(this.localVertices); } 
+    public Vector2[] LocalVertices
+    {
+      get { return Polygon.CloneVertices(this.localVertices); }
     }
 
     public Vector2[] WorldVertices
@@ -222,8 +218,8 @@ namespace Volatile
 
     #region Fields
     // Local space values
-    private Vector2[] localVertices;
-    private Axis[] localAxes;
+    internal Vector2[] localVertices;
+    internal Axis[] localAxes;
 
     // World space values
     private Vector2 origin;
@@ -237,7 +233,7 @@ namespace Volatile
 
     #region Tests
     internal override bool ShapeQuery(
-      Vector2 point, 
+      Vector2 point,
       bool useLocalSpace = false)
     {
       Axis[] axes = this.GetAxes(useLocalSpace);
@@ -260,9 +256,9 @@ namespace Volatile
       float penetration;
       int foundIndex =
         Collision.FindAxisMaxPenetration(
-          point, 
+          point,
           radius,
-          axes, 
+          axes,
           out penetration);
 
       if (foundIndex < 0)
@@ -282,37 +278,8 @@ namespace Volatile
       return true;
     }
 
-    internal override float ShapeMinDistance(
-      Vector2 point,
-      bool useLocalSpace = false)
-    {
-      Axis[] axes = this.GetAxes(useLocalSpace);
-      Vector2[] vertices = this.GetVertices(useLocalSpace);
-
-      // Get the axis on the polygon closest to the circle's origin
-      float dist;
-      int ix = Collision.FindAxisShortestDistance(point, axes, out dist);
-
-      if (ix == -1)
-        return dist;
-
-      int length = axes.Length;
-      Vector2 a = vertices[ix];
-      Vector2 b = vertices[(ix + 1) % length];
-      Axis axis = axes[ix];
-
-      // If the point is past one of the two vertices, check it like
-      // a point-circle intersection where the vertex has radius 0
-      float d = VolatileUtil.Cross(axis.Normal, point);
-      if (d > VolatileUtil.Cross(axis.Normal, a))
-        return (point - a).magnitude;
-      if (d < VolatileUtil.Cross(axis.Normal, b))
-        return (point - b).magnitude;
-      return Mathf.Abs(dist);
-    }
-
     internal override bool ShapeRayCast(
-      ref RayCast ray, 
+      ref RayCast ray,
       ref RayResult result)
     {
       Axis[] axes = this.GetAxes(ref ray);
@@ -321,6 +288,7 @@ namespace Volatile
       int foundIndex = -1;
       float inner = float.MaxValue;
       float outer = 0;
+      bool couldBeContained = true;
 
       for (int i = 0; i < vertices.Length; i++)
       {
@@ -330,26 +298,30 @@ namespace Volatile
         // (i.e., shortest distance between ray origin and the edge).
         float proj = Vector2.Dot(curAxis.Normal, ray.Origin) - curAxis.Width;
 
+        // See if the point is outside of any of the axes
+        if (proj > 0.0f)
+          couldBeContained = false;
+
         // Projection of the ray direction onto the axis normal (use negative
         // normal because we want to get the penetration length).
         float slope = Vector2.Dot(-curAxis.Normal, ray.Direction);
 
-        if (slope == 0.0f) 
+        if (slope == 0.0f)
           continue;
         float dist = proj / slope;
 
         // The ray is pointing opposite the edge normal (towards the edge)
-        if (slope > 0.0f) 
+        if (slope > 0.0f)
         {
           if (dist > inner)
           {
             return false;
           }
-          if (dist > outer) 
-          { 
-            outer = dist; 
-            foundIndex = i; 
-          } 
+          if (dist > outer)
+          {
+            outer = dist;
+            foundIndex = i;
+          }
         }
         // The ray is pointing along the edge normal (away from the edge)
         else
@@ -365,10 +337,15 @@ namespace Volatile
         }
       }
 
-      if (foundIndex >= 0 && outer <= ray.Distance)
+      if (couldBeContained == true)
+      {
+        result.SetContained(this);
+        return true;
+      }
+      else if (foundIndex >= 0 && outer <= ray.Distance)
       {
         result.Set(
-          this, 
+          this,
           outer,
           // N.B.: For historical raycasts this normal will be wrong!
           // Must be either transformed back to world or invalidated later.
@@ -380,29 +357,29 @@ namespace Volatile
     }
 
     internal override bool ShapeCircleCast(
-      ref RayCast ray, 
+      ref RayCast ray,
       float radius,
       ref RayResult result)
     {
       Axis[] axes = this.GetAxes(ref ray);
       Vector2[] vertices = this.GetVertices(ref ray);
 
-      bool checkEdges = 
-        this.CircleCastEdges(
-          ref ray, 
-          radius, 
-          ref result, 
-          axes, 
-          vertices);
-
-      bool checkVertices = 
+      bool checkVertices =
         this.CircleCastVertices(
-          ref ray, 
-          radius, 
+          ref ray,
+          radius,
           ref result,
           vertices);
 
-      return checkEdges || checkVertices;
+      bool checkEdges =
+        this.CircleCastEdges(
+          ref ray,
+          radius,
+          ref result,
+          axes,
+          vertices);
+
+      return checkVertices || checkEdges;
     }
     #endregion
 
@@ -502,25 +479,48 @@ namespace Volatile
     {
       int foundIndex = -1;
       int length = vertices.Length;
+      bool couldBeContained = true;
 
       // Pre-compute and initialize values
       float shortestDist = float.MaxValue;
       Vector2 v3 = ray.Direction.Left();
 
       // Check the edges -- this will be different from the raycast because
-      // we care about staying within the ends of the segment this time
+      // we care about staying within the ends of the edge line segment
       for (int i = 0; i < vertices.Length; i++)
       {
         Axis curAxis = axes[i];
-
-        // Only consider rays pointing towards the edge
-        if (Vector2.Dot(curAxis.Normal, ray.Direction) >= 0.0f)
-          continue;
 
         // Push the edges out by the radius
         Vector2 extension = curAxis.Normal * radius;
         Vector2 a = vertices[i] + extension;
         Vector2 b = vertices[(i + 1) % length] + extension;
+
+        // Update the check for containment
+        if (couldBeContained == true)
+        {
+          float proj = Vector2.Dot(curAxis.Normal, ray.Origin) - curAxis.Width;
+
+          // The point lies outside of the outer layer
+          if (proj > radius)
+          {
+            couldBeContained = false;
+          }
+          // The point lies between the outer and inner layer
+          else if (proj > 0.0f)
+          {
+            // See if the point is within the center Vornoi region of the edge
+            float d = VolatileUtil.Cross(curAxis.Normal, ray.Origin);
+            if (d > VolatileUtil.Cross(curAxis.Normal, a))
+              couldBeContained = false;
+            if (d < VolatileUtil.Cross(curAxis.Normal, b))
+              couldBeContained = false;
+          }
+        }
+
+        // For the cast, only consider rays pointing towards the edge
+        if (Vector2.Dot(curAxis.Normal, ray.Direction) >= 0.0f)
+          continue;
 
         // See: 
         // https://rootllama.wordpress.com/2014/06/20/ray-line-segment-intersection-test-in-2d/
@@ -531,15 +531,21 @@ namespace Volatile
         float t1 = VolatileUtil.Cross(v2, v1) / denominator;
         float t2 = Vector2.Dot(v1, v3) / denominator;
 
-        if (t2 >= 0.0f && t2 <= 1.0f && t1 > 0.0f && t1 < shortestDist)
+        if ((t2 >= 0.0f) && (t2 <= 1.0f) && (t1 > 0.0f) && (t1 < shortestDist))
         {
+          // See if the point is outside of any of the axes
           shortestDist = t1;
           foundIndex = i;
         }
       }
 
       // Report results
-      if (foundIndex >= 0 && shortestDist <= ray.Distance)
+      if (couldBeContained == true)
+      {
+        result.SetContained(this);
+        return true;
+      }
+      else if (foundIndex >= 0 && shortestDist <= ray.Distance)
       {
         result.Set(
           this,
@@ -565,12 +571,14 @@ namespace Volatile
       for (int i = 0; i < vertices.Length; i++)
       {
         castHit |=
-          Circle.CircleRayCast(
+          Collision.CircleRayCast(
             this,
             vertices[i],
             sqrRadius,
             ref ray,
             ref result);
+        if (result.IsContained == true)
+          return true;
       }
 
       return castHit;
@@ -599,10 +607,10 @@ namespace Volatile
 
     #region Debug
     public override void GizmoDraw(
-      Color edgeColor, 
-      Color normalColor, 
-      Color originColor, 
-      Color aabbColor, 
+      Color edgeColor,
+      Color normalColor,
+      Color originColor,
+      Color aabbColor,
       float normalLength)
     {
       Color current = Gizmos.color;
@@ -611,7 +619,7 @@ namespace Volatile
       for (int i = 0; i < this.worldVertices.Length; i++)
       {
         Vector2 u = this.worldVertices[i];
-        Vector2 v = 
+        Vector2 v =
           this.worldVertices[(i + 1) % this.worldVertices.Length];
         Vector2 n = worldNormals[i];
 

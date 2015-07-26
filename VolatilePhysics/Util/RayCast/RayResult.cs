@@ -28,12 +28,13 @@ namespace Volatile
   public struct RayResult
   {
     public bool IsValid { get { return this.shape != null; } }
-    public bool IsContained 
-    { 
-      get { return this.IsValid && this.distance == 0.0f; } 
+    public bool IsContained
+    {
+      get { return this.IsValid && this.distance == 0.0f; }
     }
 
     public Shape Shape { get { return this.shape; } }
+    public Body Body { get { return this.shape.Body; } }
     public float Distance { get { return this.distance; } }
     public Vector2? Normal { get { return this.normal; } }
 
@@ -42,8 +43,8 @@ namespace Volatile
     private Vector2? normal;
 
     internal void Set(
-      Shape shape, 
-      float distance, 
+      Shape shape,
+      float distance,
       Vector2 normal)
     {
       if (this.IsValid == false || distance < this.distance)
@@ -69,7 +70,7 @@ namespace Volatile
       this.normal = null;
     }
 
-    public Vector2 GetPoint(ref RayCast cast)
+    private Vector2 ComputePoint(ref RayCast cast)
     {
       return cast.Origin + (cast.Direction * this.distance);
     }

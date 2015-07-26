@@ -76,7 +76,6 @@ namespace Volatile.History
 
     private Body body;
     private BodyRecord[] records;
-    private ShapeLogger[] shapes;
 
     public BodyLogger(Body body, int capacity)
     {
@@ -86,22 +85,22 @@ namespace Volatile.History
       for (int i = 0; i < capacity; i++)
         this.records[i].Invalidate();
 
-      IList<Shape> bodyShapes = body.Shapes;
-      this.shapes = new ShapeLogger[bodyShapes.Count];
+      // Initialize the shape loggers
+      IList<Shape> bodyShapes = this.body.shapes;
       for (int i = 0; i < bodyShapes.Count; i++)
-        this.shapes[i] = new ShapeLogger(bodyShapes[i], capacity);
+        bodyShapes[i].shapeLogger =
+          new ShapeLogger(bodyShapes[i], capacity);
     }
 
     public void Store(int frame)
     {
       this.records[this.FrameToIndex(frame)].Set(frame, this.body);
-      for (int i = 0; i < this.shapes.Length; i++)
-        this.shapes[i].Store(frame);
+      IList<Shape> bodyShapes = this.body.shapes;
+      for (int i = 0; i < bodyShapes.Count; i++)
+        bodyShapes[i].shapeLogger.Store(frame);
     }
 
     #region Tests
-
-    #region Queries
     /// <summary>
     /// Checks if a body's AABB overlaps with a given AABB.
     /// </summary>
@@ -110,11 +109,8 @@ namespace Volatile.History
       AABB area)
     {
       BodyRecord record = this.records[this.FrameToIndex(frame)];
-
       if (record.Frame == frame)
         return record.QueryAABB(area);
-
-      // If the record is invalid, fall back to a current-time query
       return this.body.Query(area);
     }
 
@@ -128,28 +124,15 @@ namespace Volatile.History
       Func<Shape, bool> filter = null)
     {
       BodyRecord record = this.records[this.FrameToIndex(frame)];
-
-      if (record.Frame == frame)
+      if ((record.Frame == frame) && (record.QueryAABB(point) == true))
       {
-        if (record.QueryAABB(point) == true)
-        {
-          for (int i = 0; i < this.shapes.Length; i++)
-          {
-            ShapeLogger shape = this.shapes[i];
-            if (filter == null || filter(shape.Shape) == true)
-            {
-              if (shape.Query(frame, point) == true)
-              {
-                return true;
-              }
-            }
-          }
-        }
+        for (int i = 0; i < this.body.shapes.Count; i++)
+          if (this.body.shapes[i].shapeLogger.Query(frame, point))
+            return true;
         return false;
       }
 
-      // If the record is invalid, fall back to a current-time query
-      return this.body.Query(point, filter);
+      return this.body.Query(point);
     }
 
     /// <summary>
@@ -159,107 +142,45 @@ namespace Volatile.History
     internal bool Query(
       int frame,
       Vector2 point,
-      float radius,
-      Func<Shape, bool> filter = null)
+      float radius)
     {
       BodyRecord record = this.records[this.FrameToIndex(frame)];
-
-      if (record.Frame == frame)
+      if ((record.Frame == frame) && (record.QueryAABB(point, radius) == true))
       {
-        if (record.QueryAABB(point, radius) == true)
-        {
-          for (int i = 0; i < this.shapes.Length; i++)
-          {
-            ShapeLogger shape = this.shapes[i];
-            if (filter == null || filter(shape.Shape) == true)
-            {
-              if (shape.Query(frame, point, radius) == true)
-              {
-                return true;
-              }
-            }
-          }
-        }
+        for (int i = 0; i < this.body.shapes.Count; i++)
+          if (this.body.shapes[i].shapeLogger.Query(frame, point, radius))
+            return true;
         return false;
       }
 
-      // If the record is invalid, fall back to a current-time query
-      return this.body.Query(point, radius, filter);
+      return this.body.Query(point);
     }
 
-    /// <summary>
-    /// Returns the minimum distance between this body and the point.
-    /// </summary>
-    internal bool MinDistance(
-      int frame,
-      Vector2 point,
-      float maxDistance,
-      out float minDistance,
-      Func<Shape, bool> filter = null)
-    {
-      BodyRecord record = this.records[this.FrameToIndex(frame)];
-
-      if (record.Frame == frame)
-      {
-        minDistance = float.PositiveInfinity;
-        bool result = false;
-
-        if (record.QueryAABB(point, maxDistance) == true)
-        {
-          for (int i = 0; i < this.shapes.Length; i++)
-          {
-            ShapeLogger shape = this.shapes[i];
-            if (filter == null || filter(shape.Shape) == true)
-            {
-              float distance;
-              result |=
-                shape.MinDistance(frame, point, maxDistance, out distance);
-              if (distance < minDistance)
-                minDistance = distance;
-            }
-          }
-        }
-
-        return result;
-      }
-
-      // If the record is invalid, fall back to a current-time query
-      return
-        this.body.MinDistance(point, maxDistance, out minDistance, filter);
-    }
-    #endregion
-
-    #region Line/Sweep Tests
     internal bool RayCast(
       int frame,
       ref RayCast ray,
-      ref RayResult result,
-      Func<Shape, bool> filter = null)
+      ref RayResult result)
     {
       BodyRecord record = this.records[this.FrameToIndex(frame)];
 
       if (record.Frame == frame)
       {
-        bool hit = false;
         if (record.RayCastAABB(ref ray) == true)
         {
-          foreach (ShapeLogger shape in this.shapes)
+          for (int i = 0; i < this.body.shapes.Count; i++)
           {
-            if (filter == null || filter(shape.Shape) == true)
-            {
-              if (shape.RayCast(frame, ref ray, ref result) == true)
-              {
-                if (result.IsContained == true)
-                  return true;
-                hit = true;
-              }
-            }
+            this.body.shapes[i].shapeLogger.RayCast(
+              frame,
+              ref ray,
+              ref result);
+
+            if (result.IsContained == true)
+              return true;
           }
         }
-        return hit;
+        return result.IsValid;
       }
 
-      // If the record is invalid, fall back to a current-time ray cast
       return this.body.RayCast(ref ray, ref result);
     }
 
@@ -274,36 +195,40 @@ namespace Volatile.History
 
       if (record.Frame == frame)
       {
-        bool hit = false;
         if (record.CircleCastAABB(ref ray, radius) == true)
         {
-          foreach (ShapeLogger shape in this.shapes)
+          for (int i = 0; i < this.body.shapes.Count; i++)
           {
-            if (filter == null || filter(shape.Shape) == true)
-            {
-              if (shape.CircleCast(frame, ref ray, radius, ref result) == true)
-              {
-                if (result.IsContained == true)
-                  return true;
-                hit = true;
-              }
-            }
+            this.body.shapes[i].shapeLogger.CircleCast(
+              frame,
+              ref ray,
+              radius,
+              ref result);
+
+            if (result.IsContained == true)
+              return true;
           }
         }
-        return hit;
+        return result.IsValid;
       }
-        
-      // If the record is invalid, fall back to a current-time ray cast
-      return this.body.RayCast(ref ray, ref result);
-    }
-    #endregion
 
+      // If the record is invalid, fall back to a current-time circle cast
+      return this.body.CircleCast(ref ray, radius, ref result);
+    }
     #endregion
 
     #region Internals
     private int FrameToIndex(int frame)
     {
       return frame % this.records.Length;
+    }
+
+    private IEnumerable<Shape> GetShapes(Func<Shape, bool> filter = null)
+    {
+      IList<Shape> bodyShapes = this.body.shapes;
+      for (int i = 0; i < bodyShapes.Count; i++)
+        if (filter == null || filter(bodyShapes[i]) == true)
+          yield return bodyShapes[i];
     }
     #endregion
 
@@ -315,8 +240,9 @@ namespace Volatile.History
       for (int i = 0; i < this.records.Length; i++)
         if (this.records[i].IsValid == true)
           this.records[i].AABB.GizmoDraw(aabbColorBody);
-      foreach (ShapeLogger shape in this.shapes)
-        shape.GizmoDraw(aabbColorShape);
+      foreach (Shape shape in this.body.shapes)
+        if (shape.shapeLogger != null)
+          shape.shapeLogger.GizmoDraw(aabbColorShape);
     }
     #endregion
   }

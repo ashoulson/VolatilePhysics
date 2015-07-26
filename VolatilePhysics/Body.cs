@@ -25,33 +25,42 @@ using UnityEngine;
 
 namespace Volatile
 {
+  public delegate bool BodyFilter(Body body);
+
   public class Body
   {
+    public static bool Filter(Body body, BodyFilter filter)
+    {
+      return ((filter == null) || (filter.Invoke(body) == true));
+    }
+
+    public static Body CreateDynamic(
+      Vector2 position,
+      float radians,
+      IEnumerable<Shape> shapesToAdd)
+    {
+      Body body = new Body(position, radians, shapesToAdd);
+      body.ComputeDynamics();
+      return body;
+    }
+
+    public static Body CreateStatic(
+      Vector2 position,
+      float radians,
+      IEnumerable<Shape> shapesToAdd)
+    {
+      Body body = new Body(position, radians, shapesToAdd);
+      body.SetStatic();
+      return body;
+    }
+
     /// <summary>
-    /// User token, for attaching arbitrary data to this body.
+    /// For attaching arbitrary data to this body.
     /// </summary>
-    public object Token { get; set; }
+    public object UserData { get; set; }
 
     public World World { get; internal set; }
-    public bool UseGravity { get; set; }
-
-    public bool IsStatic 
-    { 
-      get
-      {
-        return this.isStatic;
-      }
-      set 
-      {
-        if (Mathf.Approximately(this.mass, 0.0f) == false)
-          this.isStatic = value;
-      }
-    }
-
-    public IList<Shape> Shapes 
-    { 
-      get { return this.shapes.AsReadOnly(); } 
-    }
+    public IList<Shape> Shapes { get { return this.shapes.AsReadOnly(); } }
 
     /// <summary>
     /// Number of shapes in the body.
@@ -70,40 +79,19 @@ namespace Volatile
     public Vector2 Facing { get; private set; }
     public AABB AABB { get; private set; }
 
-    public float Mass 
-    {
-      get { return this.IsStatic ? 0.0f : this.mass; } 
-    }
-
-    public float Inertia 
-    {
-      get { return this.IsStatic ? 0.0f : this.inertia; } 
-    }
-
-    public float InvMass 
-    {
-      get { return this.IsStatic ? 0.0f : this.invMass; } 
-    }
-
-    public float InvInertia 
-    {
-      get { return this.IsStatic ? 0.0f : this.invInertia; } 
-    }
+    public bool IsStatic { get; private set; }
+    public float Mass { get; private set; }
+    public float Inertia { get; private set; }
+    public float InvMass { get; private set; }
+    public float InvInertia { get; private set; }
 
     internal Vector2 BiasVelocity { get; private set; }
     internal float BiasRotation { get; private set; }
 
-    private bool isStatic = false;
-    private float mass;
-    private float inertia;
-    private float invMass;
-    private float invInertia;
-
-    private List<Shape> shapes;
+    internal List<Shape> shapes;
     private List<Fixture> fixtures;
-    private Dictionary<Shape, Fixture> shapeToFixture;
 
-    internal Volatile.History.BodyLogger logger = null;
+    internal Volatile.History.BodyLogger bodyLogger = null;
 
     #region Force and Impulse Application
     public void AddForce(Vector2 force)
@@ -115,31 +103,9 @@ namespace Volatile
     {
       this.Torque += torque;
     }
-
-    public void AddImpulse(Vector2 impulse)
-    {
-      this.ApplyImpulse(impulse, this.Position);
-    }
-
-    public void AddImpulseAtPoint(Vector2 impulse, Vector2 point)
-    {
-      this.ApplyImpulse(impulse, point - this.Position);
-    }
     #endregion
 
     #region Position and Orientation
-    public void SetWorld(Vector2 position)
-    {
-      this.Position = position;
-      this.ApplyPosition();
-    }
-
-    public void SetWorld(float radians)
-    {
-      this.Angle = radians;
-      this.ApplyPosition();
-    }
-
     public void SetWorld(Vector2 position, float radians)
     {
       this.Position = position;
@@ -161,24 +127,12 @@ namespace Volatile
     /// Checks if a point is contained in this body. 
     /// Begins with AABB checks.
     /// </summary>
-    public bool Query(
-      Vector2 point,
-      Func<Shape, bool> filter = null)
+    public bool Query(Vector2 point)
     {
       if (this.AABB.Query(point) == true)
-      {
         for (int i = 0; i < this.shapes.Count; i++)
-        {
-          Shape shape = this.shapes[i];
-          if (filter == null || filter(shape) == true)
-          {
-            if (shape.Query(point) == true)
-            {
-              return true;
-            }
-          }
-        }
-      }
+          if (this.shapes[i].Query(point) == true)
+            return true;
       return false;
     }
 
@@ -186,87 +140,27 @@ namespace Volatile
     /// Checks if a circle overlaps with this body. 
     /// Begins with AABB checks.
     /// </summary>
-    public bool Query(
-      Vector2 point, 
-      float radius,
-      Func<Shape, bool> filter = null)
+    public bool Query(Vector2 point, float radius)
     {
       if (this.AABB.Query(point, radius) == true)
-      {
         for (int i = 0; i < this.shapes.Count; i++)
-        {
-          Shape shape = this.shapes[i];
-          if (filter == null || filter(shape) == true)
-          {
-            if (shape.Query(point, radius) == true)
-            {
-              return true;
-            }
-          }
-        }
-      }
+          if (this.shapes[i].Query(point, radius) == true)
+            return true;
       return false;
-    }
-
-    /// <summary>
-    /// Returns the minimum distance between this body and the point.
-    /// </summary>
-    public bool MinDistance(
-      Vector2 point,
-      float maxDistance,
-      out float minDistance,
-      Func<Shape, bool> filter = null)
-    {
-      minDistance = float.PositiveInfinity;
-      bool result = false;
-
-      if (this.AABB.Query(point, maxDistance) == true)
-      {
-        for (int i = 0; i < this.shapes.Count; i++)
-        {
-          Shape shape = this.shapes[i];
-          if (filter == null || filter(shape) == true)
-          {
-            float distance;
-            result |= shape.MinDistance(point, maxDistance, out distance);
-            if (distance < minDistance)
-              minDistance = distance;
-          }
-        }
-      }
-
-      return result;
     }
 
     /// <summary>
     /// Performs a ray cast check on this body. 
     /// Begins with AABB checks.
     /// </summary>
-    public bool RayCast(
-      ref RayCast ray, 
-      ref RayResult result, 
-      Func<Shape, bool> filter = null)
+    public bool RayCast(ref RayCast ray, ref RayResult result)
     {
-      bool hit = false;
       if (this.AABB.RayCast(ref ray) == true)
-      {
         for (int i = 0; i < this.shapes.Count; i++)
-        {
-          Shape shape = this.shapes[i];
-          if (filter == null || filter(shape) == true)
-          {
-            if (shape.RayCast(ref ray, ref result) == true)
-            {
-              if (result.IsContained == true)
-              {
-                return true;
-              }
-              hit = true;
-            }
-          }
-        }
-      }
-      return hit;
+          if (this.shapes[i].RayCast(ref ray, ref result) == true)
+            if (result.IsContained == true)
+              return true;
+      return result.IsValid;
     }
 
     /// <summary>
@@ -276,48 +170,18 @@ namespace Volatile
     public bool CircleCast(
       ref RayCast ray,
       float radius,
-      ref RayResult result,
-      Func<Shape, bool> filter = null)
+      ref RayResult result)
     {
-      bool hit = false;
       if (this.AABB.CircleCast(ref ray, radius) == true)
-      {
         for (int i = 0; i < this.shapes.Count; i++)
-        {
-          Shape shape = this.shapes[i];
-          if (filter == null || filter(shape) == true)
-          {
-            if (shape.CircleCast(ref ray, radius, ref result) == true)
-            {
-              if (result.IsContained == true)
-              {
-                return true;
-              }
-              hit = true;
-            }
-          }
-        }
-      }
-      return hit;
+          if (this.shapes[i].CircleCast(ref ray, radius, ref result) == true)
+            if (result.IsContained == true)
+              return true;
+      return result.IsValid;
     }
     #endregion
 
-    public Body(IEnumerable<Shape> shapesToAdd)
-      : this(Vector2.zero, 0.0f, shapesToAdd) { }
-
-    public Body(params Shape[] shapesToAdd)
-      : this(Vector2.zero, 0.0f, shapesToAdd) { }
-
-    public Body(Vector2 position, IEnumerable<Shape> shapesToAdd)
-      : this(position, 0.0f, shapesToAdd) { }
-
-    public Body(Vector2 position, params Shape[] shapesToAdd)
-      : this(position, 0.0f, shapesToAdd) { }
-
-    public Body(Vector2 position, float radians, params Shape[] shapesToAdd)
-      : this(position, radians, (IEnumerable<Shape>)shapesToAdd) { }
-
-    public Body(
+    private Body(
       Vector2 position, 
       float radians, 
       IEnumerable<Shape> shapesToAdd)
@@ -326,16 +190,12 @@ namespace Volatile
       this.Angle = radians;
       this.Facing = VolatileUtil.Polar(radians);
 
-      this.UseGravity = false;
-
-      this.isStatic = false;
       this.shapes = new List<Shape>();
       this.fixtures = new List<Fixture>();
-      this.shapeToFixture = new Dictionary<Shape, Fixture>();
 
       foreach (Shape shape in shapesToAdd)
         this.AddShape(shape);
-      this.FinalizeShapes();
+      this.ApplyPosition();
     }
 
     internal void Update()
@@ -355,31 +215,16 @@ namespace Volatile
       Fixture fixture = Fixture.FromWorldSpace(this, shape);
       this.shapes.Add(shape);
       this.fixtures.Add(fixture);
-      this.shapeToFixture.Add(shape, fixture);
       shape.Body = this;
-    }
-
-    /// <summary>
-    /// This function should be called after all shapes have been added.
-    /// </summary>
-    private void FinalizeShapes()
-    {
-      this.ComputeDynamics();
-      this.ApplyPosition();
     }
     #endregion
 
     #region Collision
-    internal bool CanCollide(Body other, bool allowDynamic)
+    internal bool CanCollide(Body other)
     {
-      // TODO: Layers, flags, etc.
-      if (this == other)
+      // Ignore self, static-static, and dynamic-dynamic collisions
+      if ((this == other) || (this.IsStatic == other.IsStatic))
         return false;
-      if (this.IsStatic && other.IsStatic)
-        return false;
-      if (allowDynamic == false)
-        if (this.IsStatic == false && other.IsStatic == false)
-          return false;
       return true;
     }
 
@@ -399,7 +244,6 @@ namespace Volatile
     #region Helper Functions
     /// <summary>
     /// Applies the current position and angle to shapes and the AABB.
-    /// Use this function for resetting shapes if they were moved for tests.
     /// </summary>
     internal void ApplyPosition()
     {
@@ -407,15 +251,6 @@ namespace Volatile
       for (int i = 0; i < this.fixtures.Count; i++)
         this.fixtures[i].Apply(this.Position, this.Facing);
       this.UpdateAABB();
-    }
-
-    /// <summary>
-    /// Returns a shape to its original body-relative position. Note that
-    /// this function does not recompute body facing or the AABB.
-    /// </summary>
-    internal void ResetShape(Shape shape)
-    {
-      this.shapeToFixture[shape].Apply(this.Position, this.Facing);
     }
 
     /// <summary>
@@ -451,8 +286,6 @@ namespace Volatile
 
       // Calculate total force and torque
       Vector2 totalForce = this.Force * this.InvMass;
-      if (this.UseGravity == true)
-        totalForce += this.World.gravity;
       float totalTorque = this.Torque * this.InvInertia;
 
       // See http://www.niksula.hut.fi/~hkankaan/Homepages/gravity.html
@@ -490,8 +323,8 @@ namespace Volatile
 
     private void ComputeDynamics()
     {
-      float mass = 0.0f;
-      float inertia = 0.0f;
+      this.Mass = 0.0f;
+      this.Inertia = 0.0f;
 
       for (int i = 0; i < this.fixtures.Count; i++)
       {
@@ -499,28 +332,32 @@ namespace Volatile
         if (fixture.Shape.Density == 0.0f)
           continue;
         float curMass = fixture.ComputeMass();
-        float curInertia = fixture.ComputeInertia(this.Facing);
+        float curInertia = fixture.ComputeInertia();
 
-        mass += curMass;
-        inertia += curMass * curInertia;
+        this.Mass += curMass;
+        this.Inertia += curMass * curInertia;
       }
 
-      if (Mathf.Approximately(mass, 0.0f) == true)
+      if (Mathf.Approximately(this.Mass, 0.0f) == true)
       {
-        this.isStatic = true;
-        this.mass = 0.0f;
-        this.inertia = 0.0f;
-        this.invMass = 0.0f;
-        this.invInertia = 0.0f;
+        Debug.LogWarning("Zero mass on dynamic body, setting to static");
+        this.SetStatic();
       }
       else
       {
-        this.isStatic = false;
-        this.mass = mass;
-        this.inertia = inertia;
-        this.invMass = 1.0f / mass;
-        this.invInertia = 1.0f / inertia;
+        this.InvMass = 1.0f / this.Mass;
+        this.InvInertia = 1.0f / this.Inertia;
+        this.IsStatic = false;
       }
+    }
+
+    private void SetStatic()
+    {
+      this.IsStatic = true;
+      this.Mass = 0.0f;
+      this.Inertia = 0.0f;
+      this.InvMass = 0.0f;
+      this.InvInertia = 0.0f;
     }
     #endregion
 

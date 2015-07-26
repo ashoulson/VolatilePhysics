@@ -10,10 +10,6 @@ public abstract class VolatileShape : MonoBehaviour
   [SerializeField]
   protected float density = 1.0f;
 
-  // TODO: This is mostly a debug feature
-  [SerializeField]
-  public bool isStandalone = true;
-
   public abstract Shape Shape { get; }
   public abstract void PrepareShape();
 
@@ -23,34 +19,5 @@ public abstract class VolatileShape : MonoBehaviour
   void Awake()
   {
     this.PrepareShape();
-  }
-
-  void Update()
-  {
-    // TODO: This is mostly a debug feature
-    if (this.isStandalone == true && this.Shape != null)
-    {
-      this.Shape.SetWorld(transform.position, transform.right);
-    }
-  }
-
-  void OnDrawGizmos()
-  {
-    // TODO: This is mostly a debug feature
-    if (this.isStandalone == true)
-    {
-      Color current = Gizmos.color;
-
-      if (this.Shape != null)
-      {
-        VolatileUtil.Draw(this.Shape);
-      }
-      else
-      {
-        this.DrawShapeInEditor();
-      }
-
-      Gizmos.color = current;
-    }
   }
 }
