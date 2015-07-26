@@ -49,6 +49,12 @@ namespace Volatile.History
         body.bodyLogger.Restore();
     }
 
+    public static void ClearRestorePoints(this Body body)
+    {
+      if (body.bodyLogger != null)
+        body.bodyLogger.ClearRestorePoints();
+    }
+
     public static void BeginLogging(this Body body, int capacity)
     {
       if (body.IsStatic == false)

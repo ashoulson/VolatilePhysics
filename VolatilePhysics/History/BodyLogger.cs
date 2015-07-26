@@ -138,6 +138,11 @@ namespace Volatile.History
       }
     }
 
+    public void ClearRestorePoints()
+    {
+      this.rollbackStack.Clear();
+    }
+
     #region Tests
     /// <summary>
     /// Checks if a body's AABB overlaps with a given AABB.
