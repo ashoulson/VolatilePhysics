@@ -45,24 +45,21 @@ namespace Volatile
       Polygon,
     }
 
+    /// <summary>
+    /// For attaching arbitrary data to this shape.
+    /// </summary>
+    public object UserData { get; set; }
+
     public abstract ShapeType Type { get; }
 
-    // We need to provide set access to this for historical ray/circle casting
-    public abstract Vector2 Position { get; internal set; }
-
+    public abstract Vector2 Position { get; }
     public abstract float Angle { get; }
     public abstract Vector2 Facing { get; }
-
-    /// <summary>
-    /// User token, for attaching arbitrary data to this shape.
-    /// </summary>
-    public object Token { get; set; }
 
     public Body Body { get; internal set; }
     public AABB AABB { get; protected set; }
 
     public float Area { get; protected set; }
-
     public float Density { get; private set; }
     public float Friction { get; private set; }
     public float Restitution { get; private set; }
@@ -70,6 +67,8 @@ namespace Volatile
     // TODO: Remove static here (for threading)
     internal static int nextId = 0;
     internal int id;
+
+    internal Volatile.History.ShapeLogger shapeLogger = null;
 
     #region Tests
     /// <summary>
@@ -103,40 +102,12 @@ namespace Volatile
     }
 
     /// <summary>
-    /// Checks if a circle overlaps with this shape.
-    /// Begins with an AABB check.
-    /// Outputs the minimum surface distance from the shape to the origin.
-    /// More expensive than a normal query.
-    /// </summary>
-    public bool MinDistance(
-      Vector2 point, 
-      float maxDistance, 
-      out float minDistance)
-    {
-      minDistance = maxDistance;
-      if (this.AABB.Query(point, maxDistance) == true)
-      {
-        minDistance = this.ShapeMinDistance(point);
-        if (minDistance < maxDistance)
-          return true;
-      }
-      return false;
-    }
-
-    /// <summary>
     /// Performs a raycast check on this shape. 
     /// Begins with an AABB check.
     /// </summary>
     public bool RayCast(ref RayCast ray, ref RayResult result)
     {
       Debug.Assert(ray.IsLocalSpace == false);
-
-      // Check to see if start is contained first
-      if (this.Query(ray.Origin) == true)
-      {
-        result.SetContained(this);
-        return true;
-      }
 
       if (this.AABB.RayCast(ref ray) == true)
         return this.ShapeRayCast(ref ray, ref result);
@@ -148,18 +119,11 @@ namespace Volatile
     /// Begins with an AABB check.
     /// </summary>
     public bool CircleCast(
-      ref RayCast ray, 
+      ref RayCast ray,
       float radius,
       ref RayResult result)
     {
       Debug.Assert(ray.IsLocalSpace == false);
-
-      // Check to see if start is contained first
-      if (this.Query(ray.Origin, radius) == true)
-      {
-        result.SetContained(this);
-        return true;
-      }
 
       if (this.AABB.CircleCast(ref ray, radius) == true)
         return this.ShapeCircleCast(ref ray, radius, ref result);
@@ -182,12 +146,6 @@ namespace Volatile
 
     public abstract void SetWorld(Vector2 position, Vector2 facing);
 
-    public void ResetFromBody()
-    {
-      if (this.Body != null)
-        this.Body.ResetShape(this);
-    }
-
     #region Internals
     internal float ComputeMass()
     {
@@ -199,16 +157,12 @@ namespace Volatile
 
     #region Test Overrides
     internal abstract bool ShapeQuery(
-      Vector2 point, 
+      Vector2 point,
       bool useLocalSpace = false);
 
     internal abstract bool ShapeQuery(
-      Vector2 point, 
-      float radius, 
-      bool useLocalSpace = false);
-
-    internal abstract float ShapeMinDistance(
       Vector2 point,
+      float radius,
       bool useLocalSpace = false);
 
     internal abstract bool ShapeRayCast(

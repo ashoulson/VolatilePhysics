@@ -19,6 +19,7 @@
 */
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 
 using UnityEngine;
@@ -27,16 +28,6 @@ namespace Volatile
 {
   public sealed class World
   {
-    public IEnumerable<Shape> Shapes 
-    { 
-      get { return this.shapes.AsReadOnly(); } 
-    }
-
-    public IEnumerable<Body> Bodies 
-    {
-      get { return this.bodies.AsReadOnly(); } 
-    }
-
     /// <summary>
     /// Fixed update delta time for body integration. 
     /// Defaults to Time.fixedDeltaTime.
@@ -51,10 +42,9 @@ namespace Volatile
 
     internal float Elasticity { get; private set; }
 
-    internal List<Body> bodies;
-    internal List<Shape> shapes;
+    internal List<Body> dynamicBodies;
+    internal IBroadPhase staticBroad;
 
-    internal Vector2 gravity;
     internal float damping = 0.999f;
 
     // Each World instance should own its own object pools, in case
@@ -63,15 +53,14 @@ namespace Volatile
     private Contact.Pool contactPool;
     private List<Manifold> manifolds;
 
-    public World(Vector2 gravity, float damping = 0.999f)
+    public World(float damping = 0.999f)
     {
       this.DeltaTime = Time.fixedDeltaTime;
       this.IterationCount = Config.DEFAULT_ITERATION_COUNT;
 
-      this.bodies = new List<Body>();
-      this.shapes = new List<Shape>();
+      this.dynamicBodies = new List<Body>();
+      this.staticBroad = new NaiveBroadphase();
 
-      this.gravity = gravity;
       this.damping = damping;
 
       this.contactPool = new Contact.Pool();
@@ -79,33 +68,41 @@ namespace Volatile
       this.manifolds = new List<Manifold>();
     }
 
+    /// <summary>
+    /// Adds a body to the world, dynamic or static.
+    /// </summary>
+    /// <param name="body"></param>
     public void AddBody(Body body)
     {
-      foreach (Shape s in body.Shapes)
-        this.shapes.Add(s);
-      this.bodies.Add(body);
+      if (body.IsStatic == true)
+        this.staticBroad.Add(body);
+      else
+        this.dynamicBodies.Add(body);
+
       body.World = this;
     }
 
+    /// <summary>
+    /// Removes a body from the world. Dynamic bodies only.
+    /// </summary>
+    /// <param name="body"></param>
     public void RemoveBody(Body body)
     {
-      // TODO: Ouch, this is costly.
-      foreach (Shape s in body.Shapes)
-        this.shapes.Remove(s);
-      this.bodies.Remove(body);
+      if (body.IsStatic == true)
+        throw new InvalidOperationException("Can't remove static bodies");
+      this.dynamicBodies.Remove(body);
       body.World = null;
     }
 
     /// <summary>
-    /// Ticks the world, updating all bodies and resolving collisions.
+    /// Ticks the world, updating all dynamic bodies and resolving collisions.
     /// </summary>
-    /// <param name="allowDynamic">Allow dynamic-dynamic collisions.</param>
-    public void Update(bool allowDynamic = true)
+    public void Update()
     {
-      foreach (Body body in this.bodies)
+      foreach (Body body in this.dynamicBodies)
         body.Update();
 
-      this.BroadPhase(allowDynamic);
+      this.BroadPhase();
       this.UpdateCollision();
       this.CleanupManifolds();
     }
@@ -117,205 +114,110 @@ namespace Volatile
     {
       body.Update();
 
-      this.BroadPhase(body, false);
+      this.BroadPhase(body);
       this.UpdateCollision();
       this.CleanupManifolds();
     }
 
     #region Tests
-
-    #region Shape Queries
-    /// <summary>
-    /// Returns all shapes whose bounding boxes overlap an area.
-    /// </summary>
-    public IEnumerable<Shape> QueryShapes(
+    public IEnumerable<Body> Query(
       AABB area,
-      Func<Shape, bool> filter = null)
+      BodyFilter filter = null)
     {
-      for (int i = 0; i < this.shapes.Count; i++)
-      {
-        Shape shape = this.shapes[i];
-        if (filter == null || filter(shape) == true)
-        {
-          if (shape.AABB.Intersect(area))
-          {
-            yield return shape;
-          }
-        }
-      }
+      return
+        this.QueryDynamic(area, filter).Concat(
+          this.staticBroad.Query(area, filter));
     }
 
-    /// <summary>
-    /// Returns all shapes containing a point.
-    /// </summary>
-    public IEnumerable<Shape> QueryShapes(
+    public IEnumerable<Body> Query(
       Vector2 point,
-      Func<Shape, bool> filter = null)
+      BodyFilter filter = null)
     {
-      for (int i = 0; i < this.shapes.Count; i++)
-      {
-        Shape shape = this.shapes[i];
-        if (filter == null || filter(shape) == true)
-        {
-          if (shape.Query(point) == true)
-          {
-            yield return shape;
-          }
-        }
-      }
+      return
+        this.QueryDynamic(point, filter).Concat(
+          this.staticBroad.Query(point, filter));
     }
 
-    /// <summary>
-    /// Returns all shapes overlapping with a circle.
-    /// </summary>
-    public IEnumerable<Shape> QueryShapes(
+    public IEnumerable<Body> Query(
       Vector2 point,
       float radius,
-      Func<Shape, bool> filter = null)
+      BodyFilter filter = null)
     {
-      for (int i = 0; i < this.shapes.Count; i++)
-      {
-        Shape shape = this.shapes[i];
-        if (filter == null || filter(shape) == true)
-        {
-          if (shape.Query(point, radius) == true)
-          {
-            yield return shape;
-          }
-        }
-      }
+      return
+        this.QueryDynamic(point, radius, filter).Concat(
+          this.staticBroad.Query(point, radius, filter));
     }
 
-    /// <summary>
-    /// Returns all shapes overlapping with a circle, with distance.
-    /// More expensive than a simple circle overlap query.
-    /// </summary>
-    public IEnumerable<KeyValuePair<Shape, float>> MinDistanceShapes(
-      Vector2 point, 
-      float maxDistance,
-      Func<Shape, bool> filter = null)
-    {
-      float dist;
-      for (int i = 0; i < this.shapes.Count; i++)
-      {
-        Shape shape = this.shapes[i];
-        if (filter == null || filter(shape) == true)
-        {
-          if (shape.MinDistance(point, maxDistance, out dist) == true)
-          {
-            yield return new KeyValuePair<Shape, float>(shape, dist);
-          }
-        }
-      }
-    }
-    #endregion
-
-    #region Body Queries
-    /// <summary>
-    /// Returns all bodies whose bounding boxes overlap an area.
-    /// </summary>
-    public IEnumerable<Body> QueryBodies(
-      AABB area,
-      Func<Body, bool> filter = null)
-    {
-      for (int i = 0; i < this.bodies.Count; i++)
-      {
-        Body body = this.bodies[i];
-        if (filter == null || filter(body) == true)
-        {
-          if (body.Query(area))
-          {
-            yield return body;
-          }
-        }
-      }
-    }
-
-    /// <summary>
-    /// Returns all bodies containing a point.
-    /// </summary>
-    public IEnumerable<Body> QueryBodies(
-      Vector2 point,
-      Func<Body, bool> bodyFilter = null,
-      Func<Shape, bool> shapeFilter = null)
-    {
-      for (int i = 0; i < this.bodies.Count; i++)
-      {
-        Body body = this.bodies[i];
-        if (bodyFilter == null || bodyFilter(body) == true)
-        {
-          if (body.Query(point, shapeFilter) == true)
-          {
-            yield return body;
-          }
-        }
-      }
-    }
-
-    /// <summary>
-    /// Returns all bodies overlapping with a circle.
-    /// </summary>
-    public IEnumerable<Body> QueryBodies(
-      Vector2 point,
-      float radius,
-      Func<Body, bool> bodyFilter = null,
-      Func<Shape, bool> shapeFilter = null)
-    {
-      for (int i = 0; i < this.bodies.Count; i++)
-      {
-        Body body = this.bodies[i];
-        if (bodyFilter == null || bodyFilter(body) == true)
-        {
-          if (body.Query(point, radius, shapeFilter) == true)
-          {
-            yield return body;
-          }
-        }
-      }
-    }
-
-    /// <summary>
-    /// Returns all bodies overlapping with a circle, with distance.
-    /// More expensive than a simple circle overlap query.
-    /// </summary>
-    public IEnumerable<KeyValuePair<Body, float>> MinDistanceBodies(
-      Vector2 point,
-      float maxDistance,
-      Func<Body, bool> bodyFilter = null,
-      Func<Shape, bool> shapeFilter = null)
-    {
-      float dist;
-      for (int i = 0; i < this.bodies.Count; i++)
-      {
-        Body body = this.bodies[i];
-        if (bodyFilter == null || bodyFilter(body) == true)
-        {
-          if (body.MinDistance(point, maxDistance, out dist, shapeFilter) == true)
-          {
-            yield return new KeyValuePair<Body, float>(body, dist);
-          }
-        }
-      }
-    }
-    #endregion
-
-    #region Line/Sweep Tests
-    /// <summary>
-    /// Performs a raycast on all bodies contained in the world.
-    /// Filters by body or shape.
-    /// </summary>
     public bool RayCast(
-      RayCast ray,
-      out RayResult result,
-      Func<Body, bool> bodyFilter = null,
-      Func<Shape, bool> shapeFilter = null)
+      ref RayCast ray,
+      ref RayResult result,
+      BodyFilter filter = null)
     {
-      result = new RayResult();
-      foreach (Body body in this.bodies)
+      return
+        this.RayCastDynamic(ref ray, ref result, filter) ||
+        this.staticBroad.RayCast(ref ray, ref result, filter);
+    }
+
+    public bool CircleCast(
+      ref RayCast ray,
+      float radius,
+      ref RayResult result,
+      BodyFilter filter = null)
+    {
+      return
+        this.CircleCastDynamic(ref ray, radius, ref result, filter) ||
+        this.staticBroad.CircleCast(ref ray, radius, ref result, filter);
+    }
+
+    #region Dynamic
+    private IEnumerable<Body> QueryDynamic(
+      AABB area,
+      BodyFilter filter = null)
+    {
+      for (int i = 0; i < this.dynamicBodies.Count; i++)
       {
-        if (bodyFilter == null || bodyFilter(body) == true)
+        Body body = this.dynamicBodies[i];
+        if (Body.Filter(body, filter) && body.Query(area))
+          yield return body;
+      }
+    }
+
+    private IEnumerable<Body> QueryDynamic(
+      Vector2 point,
+      BodyFilter filter = null)
+    {
+      for (int i = 0; i < this.dynamicBodies.Count; i++)
+      {
+        Body body = this.dynamicBodies[i];
+        if (Body.Filter(body, filter) && body.Query(point))
+          yield return body;
+      }
+    }
+
+    private IEnumerable<Body> QueryDynamic(
+      Vector2 point,
+      float radius,
+      BodyFilter filter = null)
+    {
+      for (int i = 0; i < this.dynamicBodies.Count; i++)
+      {
+        Body body = this.dynamicBodies[i];
+        if (Body.Filter(body, filter) && body.Query(point, radius))
+          yield return body;
+      }
+    }
+
+    private bool RayCastDynamic(
+      ref RayCast ray,
+      ref RayResult result,
+      BodyFilter filter = null)
+    {
+      for (int i = 0; i < this.dynamicBodies.Count; i++)
+      {
+        Body body = this.dynamicBodies[i];
+        if (Body.Filter(body, filter) == true)
         {
-          body.RayCast(ref ray, ref result, shapeFilter);
+          body.RayCast(ref ray, ref result);
           if (result.IsContained == true)
             return true;
         }
@@ -323,23 +225,18 @@ namespace Volatile
       return result.IsValid;
     }
 
-    /// <summary>
-    /// Performs a swept circle cast on all bodies contained in the world.
-    /// Filters by body or shape.
-    /// </summary>
-    public bool CircleCast(
-      RayCast ray,
+    private bool CircleCastDynamic(
+      ref RayCast ray,
       float radius,
-      out RayResult result,
-      Func<Body, bool> bodyFilter = null,
-      Func<Shape, bool> shapeFilter = null)
+      ref RayResult result,
+      BodyFilter filter = null)
     {
-      result = new RayResult();
-      foreach (Body body in this.bodies)
+      for (int i = 0; i < this.dynamicBodies.Count; i++)
       {
-        if (bodyFilter == null || bodyFilter(body) == true)
+        Body body = this.dynamicBodies[i];
+        if (Body.Filter(body, filter) == true)
         {
-          body.CircleCast(ref ray, radius, ref result, shapeFilter);
+          body.CircleCast(ref ray, radius, ref result);
           if (result.IsContained == true)
             return true;
         }
@@ -351,38 +248,24 @@ namespace Volatile
     #endregion
 
     #region Internals
-    private void BroadPhase(bool allowDynamic)
+    private void BroadPhase()
     {
-      // TODO: Extensible Broadphase
-      for (int i = 0; i < this.shapes.Count; i++)
-        for (int j = i + 1; j < this.shapes.Count; j++)
-          this.NarrowPhase(
-            this.shapes[i], 
-            this.shapes[j], 
-            this.manifolds,
-            allowDynamic);
+      for (int i = 0; i < this.dynamicBodies.Count; i++)
+        this.staticBroad.Collision(
+          this.dynamicBodies[i],
+          this.NarrowPhase);
     }
 
-    private void BroadPhase(Body body, bool allowDynamic)
+    private void BroadPhase(Body body)
     {
-      // TODO: Extensible Broadphase
-      foreach (Shape shape in body.Shapes)
-        for (int i = 0; i < this.shapes.Count; i++)
-          if (this.shapes[i].Body != body)
-            this.NarrowPhase(
-              shape, 
-              this.shapes[i], 
-              this.manifolds,
-              allowDynamic);
+      this.staticBroad.Collision(body, this.NarrowPhase);
     }
 
     private void NarrowPhase(
       Shape sa,
-      Shape sb,
-      List<Manifold> manifolds,
-      bool allowDynamic)
+      Shape sb)
     {
-      if (sa.Body.CanCollide(sb.Body, allowDynamic) == false)
+      if (sa.Body.CanCollide(sb.Body) == false)
         return;
       if (sa.AABB.Intersect(sb.AABB) == false)
         return;
@@ -390,7 +273,7 @@ namespace Volatile
       Shape.OrderShapes(ref sa, ref sb);
       Manifold manifold = Collision.Dispatch(sa, sb, this.manifoldPool);
       if (manifold != null)
-        manifolds.Add(manifold);
+        this.manifolds.Add(manifold);
     }
 
     private void CleanupManifolds()
@@ -406,7 +289,7 @@ namespace Volatile
     private void UpdateCollision()
     {
       for (int i = 0; i < this.manifolds.Count; i++)
-        this.manifolds[i].Prestep();
+        this.manifolds[i].PreStep();
 
       this.Elasticity = 1.0f;
       for (int j = 0; j < this.IterationCount * 1 / 3; j++)

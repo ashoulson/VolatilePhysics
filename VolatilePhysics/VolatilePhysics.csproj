@@ -43,6 +43,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Body.cs" />
+    <Compile Include="Broadphase\IBroadPhase.cs" />
+    <Compile Include="Broadphase\NaiveBroadPhase.cs" />
     <Compile Include="Collision\Collision.cs" />
     <Compile Include="Collision\Contact.cs" />
     <Compile Include="Collision\Manifold.cs" />

@@ -47,10 +47,10 @@ namespace Volatile
     #region IPoolable Members
     Manifold IPoolable<Manifold>.Next { get; set; }
 
-    bool IPoolable<Manifold>.IsValid 
-    { 
-      get { return this.isValid; } 
-      set { this.isValid = value; } 
+    bool IPoolable<Manifold>.IsValid
+    {
+      get { return this.isValid; }
+      set { this.isValid = value; }
     }
 
     private bool isValid = false;
@@ -76,11 +76,11 @@ namespace Volatile
       this.contacts = new Contact[Config.MAX_CONTACTS];
       this.used = 0;
 
-      this.isValid = false;     
+      this.isValid = false;
     }
 
     internal Manifold Assign(
-      Shape shapeA, 
+      Shape shapeA,
       Shape shapeB)
     {
       this.ShapeA = shapeA;
@@ -100,15 +100,15 @@ namespace Volatile
     {
       if (this.used >= contacts.Length)
         return false;
-      this.contacts[this.used++] = 
+      this.contacts[this.used++] =
         this.contactPool.Acquire().Assign(position, normal, penetration);
       return true;
     }
 
-    internal void Prestep()
+    internal void PreStep()
     {
       for (int i = 0; i < this.used; i++)
-        this.contacts[i].Prestep(this);
+        this.contacts[i].PreStep(this);
     }
 
     internal void Solve()

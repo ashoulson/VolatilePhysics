@@ -132,7 +132,7 @@ namespace Volatile.History
     /// </summary>
     internal bool Query(
       int frame,
-      Vector2 point, 
+      Vector2 point,
       float radius)
     {
       ShapeRecord record = this.records[this.FrameToIndex(frame)];
@@ -156,49 +156,12 @@ namespace Volatile.History
       // If the record is invalid, fall back to a current-time query
       return this.shape.Query(point, radius);
     }
-
-    /// <summary>
-    /// Checks if a circle overlaps with this shape.
-    /// Begins with an AABB check.
-    /// Outputs the minimum surface distance from the shape to the origin.
-    /// More expensive than a normal query.
-    /// </summary>
-    internal bool MinDistance(
-      int frame,
-      Vector2 point,
-      float maxDistance,
-      out float minDistance)
-    {
-      ShapeRecord record = this.records[this.FrameToIndex(frame)];
-
-      if (record.Frame == frame)
-      {
-        minDistance = maxDistance;
-        if (record.QueryAABB(point, maxDistance) == true)
-        {
-          // Transform the point into the shape's old local space
-          Vector2 localPoint =
-            VolatileUtil.WorldToLocalPoint(
-              point,
-              record.Position,
-              record.Facing);
-
-          minDistance = this.shape.ShapeMinDistance(localPoint, true);
-          if (minDistance < maxDistance)
-            return true;
-        }
-        return false;
-      }
-
-      // If the record is invalid, fall back to a current-time query
-      return this.shape.MinDistance(point, maxDistance, out minDistance);
-    }
     #endregion
 
     #region Line/Sweep Tests
     internal bool RayCast(
-      int frame, 
-      ref RayCast ray, 
+      int frame,
+      ref RayCast ray,
       ref RayResult result)
     {
       ShapeRecord record = this.records[this.FrameToIndex(frame)];

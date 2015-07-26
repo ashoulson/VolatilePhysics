@@ -25,16 +25,16 @@ public class SimpleCircleCast : MonoBehaviour
     VolatileWorld world = VolatileWorld.Instance;
     if (Application.isPlaying == true)
     {
-      RayResult result;
+      RayResult result = new RayResult();
       RayCast cast =
         new RayCast(
           transform.position,
           transform.position + (transform.up * 100.0f));
 
       if (this.frame >= 0)
-        world.world.CircleCast(this.frame, cast, this.radius, out result, this.Filter);
+        world.world.CircleCast(this.frame, ref cast, this.radius, ref result, this.Filter);
       else
-        world.world.CircleCast(cast, this.radius, out result, this.Filter);
+        world.world.CircleCast(ref cast, this.radius, ref result, this.Filter);
 
       Gizmos.color = Color.red;
       Gizmos.DrawLine(

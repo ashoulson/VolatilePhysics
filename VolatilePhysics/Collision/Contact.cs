@@ -40,10 +40,10 @@ namespace Volatile
     #region IPoolable Members
     Contact IPoolable<Contact>.Next { get; set; }
 
-    bool IPoolable<Contact>.IsValid 
-    { 
-      get { return this.isValid; } 
-      set { this.isValid = value; } 
+    bool IPoolable<Contact>.IsValid
+    {
+      get { return this.isValid; }
+      set { this.isValid = value; }
     }
 
     private bool isValid = false;
@@ -94,8 +94,8 @@ namespace Volatile
     }
 
     internal Contact Assign(
-      Vector2 position, 
-      Vector2 normal, 
+      Vector2 position,
+      Vector2 normal,
       float penetration)
     {
       this.position = position;
@@ -118,7 +118,7 @@ namespace Volatile
       return this;
     }
 
-    internal void Prestep(Manifold manifold)
+    internal void PreStep(Manifold manifold)
     {
       Body bodyA = manifold.ShapeA.Body;
       Body bodyB = manifold.ShapeB.Body;
@@ -199,13 +199,13 @@ namespace Volatile
       Vector2 normal)
     {
       float massSum = bodyA.InvMass + bodyB.InvMass;
-      float r1cnSqr = 
+      float r1cnSqr =
         VolatileUtil.Square(VolatileUtil.Cross(this.toA, normal));
-      float r2cnSqr = 
+      float r2cnSqr =
         VolatileUtil.Square(VolatileUtil.Cross(this.toB, normal));
-      return 
-        massSum + 
-        bodyA.InvInertia * r1cnSqr + 
+      return
+        massSum +
+        bodyA.InvInertia * r1cnSqr +
         bodyB.InvInertia * r2cnSqr;
     }
 

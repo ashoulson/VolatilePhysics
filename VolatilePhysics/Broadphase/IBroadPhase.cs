@@ -19,43 +19,41 @@
 */
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 
 using UnityEngine;
 
 namespace Volatile
 {
-  public struct Offset
+  public interface IBroadPhase
   {
-    public Vector2 PositionOffset { get { return this.positionOffset; } }
-    public Vector2 FacingOffset { get { return this.facingOffset; } }
+    void Add(Body body);
 
-    private Vector2 positionOffset;
-    private Vector2 facingOffset;
+    void Collision(Body body, Action<Shape, Shape> narrowPhase);
 
-    public Offset(
-      Vector2 parentPosition,
-      Vector2 parentFacing,
-      Vector2 childPosition,
-      Vector2 childFacing)
-    {
-      Vector2 rawPosOffset = childPosition - parentPosition;
-      this.positionOffset = rawPosOffset.InvRotate(parentFacing);
-      this.facingOffset = childFacing.InvRotate(parentFacing);
-    }
+    IEnumerable<Body> Query(
+      AABB area,
+      BodyFilter filter);
 
-    public Offset(Body parent, Shape child)
-      : this(parent.Position, parent.Facing, child.Position, child.Facing) { }
+    IEnumerable<Body> Query(
+      Vector2 point,
+      BodyFilter filter);
 
-    public void Compute(
-      Vector2 parentPosition,
-      Vector2 parentFacing,
-      out Vector2 childPosition,
-      out Vector2 childFacing)
-    {
-      childPosition =
-        parentPosition + this.positionOffset.Rotate(parentFacing);
-      childFacing = parentFacing.Rotate(this.facingOffset);
-    }
+    IEnumerable<Body> Query(
+      Vector2 point,
+      float radius,
+      BodyFilter filter = null);
+
+    bool RayCast(
+      ref RayCast ray,
+      ref RayResult result,
+      BodyFilter filter = null);
+
+    bool CircleCast(
+      ref RayCast ray,
+      float radius,
+      ref RayResult result,
+      BodyFilter filter = null);
   }
 }

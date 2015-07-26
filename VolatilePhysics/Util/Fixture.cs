@@ -37,43 +37,18 @@ namespace Volatile
     /// </summary>
     internal static Fixture FromWorldSpace(Body body, Shape shape)
     {
-      return new Fixture(
-        shape,
-        ComputePositionOffset(body, shape),
-        ComputeFacingOffset(body, shape));
-    }
-    #endregion
-
-    #region Static Computation Functions
-    /// <summary>
-    /// Computes the facing-adjusted offset between a body and shape.
-    /// </summary>
-    private static Vector2 ComputePositionOffset(Body body, Shape shape)
-    {
-      Vector2 rawOffset = shape.Position - body.Position;
-      return rawOffset.InvRotate(body.Facing);
-    }
-
-    /// <summary>
-    /// Computes the facing offset between two world space facing vectors.
-    /// </summary>
-    private static Vector2 ComputeFacingOffset(Body body, Shape shape)
-    {
-      return shape.Facing.InvRotate(body.Facing);
+      return new Fixture(shape, new Offset(body, shape));
     }
     #endregion
 
     public Shape Shape { get { return this.shape; } }
-
     private Shape shape;
-    private Vector2 positionOffset;
-    private Vector2 facingOffset;
+    private Offset offset;
 
-    private Fixture(Shape shape, Vector2 positionOffset, Vector2 facingOffset)
+    private Fixture(Shape shape, Offset offset)
     {
       this.shape = shape;
-      this.positionOffset = positionOffset;
-      this.facingOffset = facingOffset;
+      this.offset = offset;
     }
 
     /// <summary>
@@ -82,9 +57,12 @@ namespace Volatile
     /// </summary>
     internal void Apply(Vector2 bodyPosition, Vector2 bodyFacing)
     {
-      Vector2 shapePosition =
-        bodyPosition + this.positionOffset.Rotate(bodyFacing);
-      Vector2 shapeFacing = bodyFacing.Rotate(this.facingOffset);
+      Vector2 shapePosition, shapeFacing;
+      this.offset.Compute(
+        bodyPosition,
+        bodyFacing,
+        out shapePosition,
+        out shapeFacing);
       this.shape.SetWorld(shapePosition, shapeFacing);
     }
 
@@ -93,9 +71,9 @@ namespace Volatile
       return this.shape.ComputeMass();
     }
 
-    internal float ComputeInertia(Vector2 bodyFacing)
+    internal float ComputeInertia()
     {
-      return this.shape.ComputeInertia(bodyFacing.Rotate(this.positionOffset));
+      return this.shape.ComputeInertia(this.offset.PositionOffset);
     }
   }
 }

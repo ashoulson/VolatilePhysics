@@ -159,7 +159,142 @@ namespace Volatile
     }
     #endregion
 
-    #region Internals
+    #region Common Tests and Queries
+    /// <summary>
+    /// Simple check for point-circle containment.
+    /// </summary>
+    internal static bool TestPointCircleSimple(
+      Vector2 point,
+      Vector2 origin,
+      float radius)
+    {
+      Vector2 delta = origin - point;
+      return delta.sqrMagnitude <= (radius * radius);
+    }
+
+    /// <summary>
+    /// Simple check for two overlapping circles.
+    /// </summary>
+    internal static bool TestCircleCircleSimple(
+      Vector2 originA,
+      Vector2 originB,
+      float radiusA,
+      float radiusB)
+    {
+      float radiusTotal = radiusA + radiusB;
+      return (originA - originB).sqrMagnitude <= (radiusTotal * radiusTotal);
+    }
+
+    /// <summary>
+    /// Checks a ray against a circle with a given origin and square radius.
+    /// </summary>
+    internal static bool CircleRayCast(
+      Shape shape,
+      Vector2 shapeOrigin,
+      float sqrRadius,
+      ref RayCast ray,
+      ref RayResult result)
+    {
+      Vector2 toOrigin = shapeOrigin - ray.Origin;
+
+      if (toOrigin.sqrMagnitude < sqrRadius)
+      {
+        result.SetContained(shape);
+        return true;
+      }
+
+      float slope = Vector2.Dot(toOrigin, ray.Direction);
+      if (slope < 0)
+        return false;
+
+      float sqrSlope = slope * slope;
+      float d = sqrRadius + sqrSlope - Vector2.Dot(toOrigin, toOrigin);
+      if (d < 0)
+        return false;
+
+      float dist = slope - Mathf.Sqrt(d);
+      if (dist < 0 || dist > ray.Distance)
+        return false;
+
+      // N.B.: For historical raycasts this normal will be wrong!
+      // Must be either transformed back to world or invalidated later.
+      Vector2 normal = (dist * ray.Direction - toOrigin).normalized;
+      result.Set(shape, dist, normal);
+      return true;
+    }
+
+
+    /// <summary>
+    /// Returns the index of the nearest axis on the poly to a point.
+    /// Outputs the minimum distance between the axis and the point.
+    /// </summary>
+    internal static int FindAxisShortestDistance(
+      Vector2 point,
+      Axis[] axes,
+      out float minDistance)
+    {
+      int ix = 0;
+      minDistance = float.PositiveInfinity;
+      bool inside = true;
+
+      for (int i = 0; i < axes.Length; i++)
+      {
+        float dot = Vector2.Dot(axes[i].Normal, point);
+        float dist = axes[i].Width - dot;
+
+        if (dist < 0.0f)
+          inside = false;
+
+        if (dist < minDistance)
+        {
+          minDistance = dist;
+          ix = i;
+        }
+      }
+
+      if (inside == true)
+      {
+        minDistance = 0.0f;
+        ix = -1;
+      }
+
+      return ix;
+    }
+
+    /// <summary>
+    /// Returns the index of the axis with the max circle penetration depth.
+    /// Breaks out if a separating axis is found between the two shapes.
+    /// Outputs the penetration depth of the circle in the axis (if any).
+    /// </summary>
+    internal static int FindAxisMaxPenetration(
+      Vector2 origin,
+      float radius,
+      Axis[] axes,
+      out float penetration)
+    {
+      int ix = 0;
+      penetration = float.NegativeInfinity;
+
+      for (int i = 0; i < axes.Length; i++)
+      {
+        float dot = Vector2.Dot(axes[i].Normal, origin);
+        float dist = dot - axes[i].Width - radius;
+
+        if (dist > 0)
+          return -1;
+
+        if (dist > penetration)
+        {
+          penetration = dist;
+          ix = i;
+        }
+      }
+
+      return ix;
+    }
+    #endregion
+
+    #region Helpers
     /// <summary>
     /// Workhorse for circle-circle collisions, compares origin distance
     /// to the sum of the two circles' radii, returns a Manifold.
@@ -278,102 +413,6 @@ namespace Volatile
           if (manifold.AddContact(vertex, normal, penetration) == false)
             return;
       }
-    }
-    #endregion
-
-    #region Simple Tests and Helper Functions
-    /// <summary>
-    /// Simple check for point-circle containment.
-    /// </summary>
-    internal static bool TestPointCircleSimple(
-      Vector2 point,
-      Vector2 origin,
-      float radius)
-    {
-      Vector2 delta = origin - point;
-      return delta.sqrMagnitude <= (radius * radius);
-    }
-
-    /// <summary>
-    /// Simple check for two overlapping circles.
-    /// </summary>
-    internal static bool TestCircleCircleSimple(
-      Vector2 originA,
-      Vector2 originB,
-      float radiusA,
-      float radiusB)
-    {
-      float radiusTotal = radiusA + radiusB;
-      return (originA - originB).sqrMagnitude <= (radiusTotal * radiusTotal);
-    }
-
-    /// <summary>
-    /// Returns the index of the nearest axis on the poly to a point.
-    /// Outputs the minimum distance between the axis and the point.
-    /// </summary>
-    internal static int FindAxisShortestDistance(
-      Vector2 point,
-      Axis[] axes,
-      out float minDistance)
-    {
-      int ix = 0;
-      minDistance = float.PositiveInfinity;
-      bool inside = true;
-
-      for (int i = 0; i < axes.Length; i++)
-      {
-        float dot = Vector2.Dot(axes[i].Normal, point);
-        float dist = axes[i].Width - dot;
-
-        if (dist < 0.0f)
-          inside = false;
-
-        if (dist < minDistance)
-        {
-          minDistance = dist;
-          ix = i;
-        }
-      }
-
-      if (inside == true)
-      {
-        minDistance = 0.0f;
-        ix = -1;
-      }
-
-      return ix;
-    }
-
-    /// <summary>
-    /// Returns the index of the axis with the max circle penetration depth.
-    /// Breaks out if a separating axis is found between the two shapes.
-    /// Outputs the penetration depth of the circle in the axis (if any).
-    /// </summary>
-    internal static int FindAxisMaxPenetration(
-      Vector2 origin,
-      float radius,
-      Axis[] axes,
-      out float penetration)
-    {
-      int ix = 0;
-      penetration = float.NegativeInfinity;
-
-      for (int i = 0; i < axes.Length; i++)
-      {
-        float dot = Vector2.Dot(axes[i].Normal, origin);
-        float dist = dot - axes[i].Width - radius;
-
-        if (dist > 0)
-          return -1;
-
-        if (dist > penetration)
-        {
-          penetration = dist;
-          ix = i;
-        }
-      }
-
-      return ix;
     }
     #endregion
   }
