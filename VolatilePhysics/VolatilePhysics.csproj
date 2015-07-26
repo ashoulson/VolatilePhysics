@@ -49,6 +49,7 @@
     <Compile Include="Collision\Contact.cs" />
     <Compile Include="Collision\Manifold.cs" />
     <Compile Include="Config.cs" />
+    <Compile Include="Explosion\Explosion.cs" />
     <Compile Include="History\BodyLogger.cs" />
     <Compile Include="History\History.cs" />
     <Compile Include="History\ShapeLogger.cs" />
@@ -64,6 +65,7 @@
     <Compile Include="Util\Pooling\ObjectPool.cs" />
     <Compile Include="Util\RayCast\RayCast.cs" />
     <Compile Include="Util\RayCast\RayResult.cs" />
+    <Compile Include="Util\Tuple.cs" />
     <Compile Include="Util\VolatileUtil.cs" />
     <Compile Include="World.cs" />
   </ItemGroup>
