@@ -197,7 +197,7 @@ namespace Volatile
         {
           // For circles, find the tangent points
           Vector2 delta = circle.Position - this.origin;
-          float dd = Mathf.Sqrt(Vector2.Dot(delta, delta));
+          float dd = delta.magnitude;
           float a = Mathf.Asin(circle.Radius / dd);
           float b = Mathf.Atan2(delta.y, delta.x);
 
