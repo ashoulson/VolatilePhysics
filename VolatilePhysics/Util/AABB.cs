@@ -1,6 +1,6 @@
 ﻿/*
  *  VolatilePhysics - A 2D Physics Library for Networked Games
- *  Copyright (c) 2015 - Alexander Shoulson - http://ashoulson.com
+ *  Copyright (c) 2015-2016 - Alexander Shoulson - http://ashoulson.com
  *
  *  This software is provided 'as-is', without any express or implied
  *  warranty. In no event will the authors be held liable for any damages
@@ -28,6 +28,24 @@ namespace Volatile
   public struct AABB
   {
     #region Static Methods
+    public static AABB CreateExpanded(AABB aabb, float expansionAmount)
+    {
+      return new AABB(
+        aabb.top + expansionAmount,
+        aabb.bottom - expansionAmount,
+        aabb.left - expansionAmount,
+        aabb.right + expansionAmount);
+    }
+
+    public static AABB CreateMerged(AABB aabb1, AABB aabb2)
+    {
+      return new AABB(
+        Mathf.Max(aabb1.top, aabb2.top),
+        Mathf.Min(aabb1.bottom, aabb2.bottom),
+        Mathf.Min(aabb1.left, aabb2.left),
+        Mathf.Max(aabb1.right, aabb2.right));
+    }
+
     /// <summary>
     /// A cheap ray test that requires some precomputed information.
     /// Adapted from: http://www.cs.utah.edu/~awilliam/box/box.pdf
@@ -90,6 +108,12 @@ namespace Volatile
 
     public float Width { get { return this.Right - this.Left; } }
     public float Height { get { return this.Top - this.Bottom; } }
+
+    public float Area { get { return this.Width * this.Height; } }
+    public float Perimeter 
+    { 
+      get { return 2.0f * (this.Width + this.Height); } 
+    }
 
     public Vector2 Center { get { return this.ComputeCenter(); } }
     public Vector2 Extent 
@@ -167,21 +191,6 @@ namespace Volatile
         this.bottom <= other.Bottom &&
         this.right >= other.right &&
         this.left <= other.left;
-    }
-
-    /// <summary>
-    /// Returns true iff the given AABB could fit into this AABB, optionally
-    /// scaling width and height by a given value. Takes only width and height
-    /// into account, not position.
-    /// </summary>
-    public bool CouldFit(AABB other, float scaleW = 1.0f, float scaleH = 1.0f)
-    {
-      float thisWidth = (this.right - this.left) * scaleW;
-      float thisHeight = (this.top - this.bottom) * scaleH;
-      float otherWidth = other.right - other.left;
-      float otherHeight = other.top - other.bottom;
-
-      return (thisWidth >= otherWidth && thisHeight >= otherHeight);
     }
     #endregion
 

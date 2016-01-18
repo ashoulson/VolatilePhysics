@@ -17,7 +17,8 @@ public class StoreHistory : MonoBehaviour
 
   void Start()
   {
-    this.body.body.BeginLogging(10);
+    if (this.body.body.IsStatic == false)
+      this.body.body.BeginLogging(10);
   }
 
   void Update()
@@ -37,10 +38,9 @@ public class StoreHistory : MonoBehaviour
   void OnDrawGizmos()
   {
     if (Application.isPlaying == true)
-    {
-      this.body.body.GizmoDrawHistory(
-        new Color(0.0f, 0.5f, 0.0f),
-        new Color(0.0f, 0.9f, 0.0f));
-    }
+      if (this.body.body.IsStatic == false)
+        this.body.body.GizmoDrawHistory(
+          new Color(0.0f, 0.5f, 0.0f),
+          new Color(0.0f, 0.9f, 0.0f));
   }
 }

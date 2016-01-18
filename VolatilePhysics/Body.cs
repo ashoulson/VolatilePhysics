@@ -1,6 +1,6 @@
 ﻿/*
  *  VolatilePhysics - A 2D Physics Library for Networked Games
- *  Copyright (c) 2015 - Alexander Shoulson - http://ashoulson.com
+ *  Copyright (c) 2015-2016 - Alexander Shoulson - http://ashoulson.com
  *
  *  This software is provided 'as-is', without any express or implied
  *  warranty. In no event will the authors be held liable for any damages
@@ -84,6 +84,12 @@ namespace Volatile
     public float Inertia { get; private set; }
     public float InvMass { get; private set; }
     public float InvInertia { get; private set; }
+
+    /// <summary>
+    /// If we're doing historical queries or tests, the body may have since
+    /// been removed from the world.
+    /// </summary>
+    public bool IsInWorld { get { return this.World != null; } }
 
     internal Vector2 BiasVelocity { get; private set; }
     internal float BiasRotation { get; private set; }

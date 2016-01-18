@@ -1,6 +1,6 @@
 ﻿/*
  *  VolatilePhysics - A 2D Physics Library for Networked Games
- *  Copyright (c) 2015 - Alexander Shoulson - http://ashoulson.com
+ *  Copyright (c) 2015-2016 - Alexander Shoulson - http://ashoulson.com
  *
  *  This software is provided 'as-is', without any express or implied
  *  warranty. In no event will the authors be held liable for any damages
@@ -38,15 +38,18 @@ namespace Volatile
     #endregion
 
     #region IPoolable Members
+    private bool isValid = false;
     Contact IPoolable<Contact>.Next { get; set; }
 
     bool IPoolable<Contact>.IsValid
     {
       get { return this.isValid; }
-      set { this.isValid = value; }
     }
 
-    private bool isValid = false;
+    void IPoolable<Contact>.Invalidate()
+    {
+      this.isValid = false;
+    }
     #endregion
 
     #region Static Methods
