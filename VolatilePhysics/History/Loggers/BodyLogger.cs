@@ -1,6 +1,6 @@
 ﻿/*
  *  VolatilePhysics - A 2D Physics Library for Networked Games
- *  Copyright (c) 2015 - Alexander Shoulson - http://ashoulson.com
+ *  Copyright (c) 2015-2016 - Alexander Shoulson - http://ashoulson.com
  *
  *  This software is provided 'as-is', without any express or implied
  *  warranty. In no event will the authors be held liable for any damages
@@ -80,18 +80,18 @@ namespace Volatile.History
       }
     }
 
-    internal int CurrentStateFrame { get { return this.currentStateFrame; } }
+    internal int RepresentedFrame { get { return this.representedFrame; } }
 
     private Body body;
     private BodyRecord[] records;
     private Stack<BodyRecord> rollbackStack;
-    private int currentStateFrame;
+    private int representedFrame;
 
     public BodyLogger(Body body, int capacity)
     {
       this.body = body;
       this.rollbackStack = new Stack<BodyRecord>();
-      this.currentStateFrame = History.CURRENT_FRAME;
+      this.representedFrame = History.CURRENT_FRAME;
 
       this.records = new BodyRecord[capacity];
       for (int i = 0; i < capacity; i++)
@@ -119,12 +119,12 @@ namespace Volatile.History
       {
         // Store the current state
         BodyRecord current = new BodyRecord();
-        current.Set(this.currentStateFrame, this.body);
+        current.Set(this.representedFrame, this.body);
         this.rollbackStack.Push(current);
 
         // Restore the previous state
         this.body.SetWorld(record.Position, record.Angle);
-        this.currentStateFrame = record.Frame;
+        this.representedFrame = record.Frame;
       }
     }
 
@@ -134,7 +134,7 @@ namespace Volatile.History
       {
         BodyRecord priorState = this.rollbackStack.Pop();
         this.body.SetWorld(priorState.Position, priorState.Angle);
-        this.currentStateFrame = priorState.Frame;
+        this.representedFrame = priorState.Frame;
       }
     }
 

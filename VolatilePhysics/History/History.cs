@@ -1,6 +1,6 @@
 ﻿/*
  *  VolatilePhysics - A 2D Physics Library for Networked Games
- *  Copyright (c) 2015 - Alexander Shoulson - http://ashoulson.com
+ *  Copyright (c) 2015-2016 - Alexander Shoulson - http://ashoulson.com
  *
  *  This software is provided 'as-is', without any express or implied
  *  warranty. In no event will the authors be held liable for any damages
@@ -34,7 +34,7 @@ namespace Volatile.History
     {
       if (body.bodyLogger == null)
         return CURRENT_FRAME;
-      return body.bodyLogger.CurrentStateFrame;
+      return body.bodyLogger.RepresentedFrame;
     }
 
     public static void Rollback(this Body body, int frame)
@@ -57,7 +57,9 @@ namespace Volatile.History
 
     public static void BeginLogging(this Body body, int capacity)
     {
-      if (body.IsStatic == false)
+      if (body.IsStatic == true)
+        Debug.LogError("Cannot start logging on static body");
+      else
         body.bodyLogger = new BodyLogger(body, capacity);
     }
 
@@ -191,7 +193,7 @@ namespace Volatile.History
 
     /// <summary>
     /// Performs a raycast on all bodies contained in the world in a past
-    /// world state. Filters by body or shape. Falls back to present-time
+    /// world state. Filters by body. Falls back to present-time
     /// cast for any bodies without an accurate history.
     /// </summary>
     public static bool RayCast(

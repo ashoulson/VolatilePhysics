@@ -1,6 +1,6 @@
 ﻿/*
  *  VolatilePhysics - A 2D Physics Library for Networked Games
- *  Copyright (c) 2015 - Alexander Shoulson - http://ashoulson.com
+ *  Copyright (c) 2015-2016 - Alexander Shoulson - http://ashoulson.com
  *
  *  This software is provided 'as-is', without any express or implied
  *  warranty. In no event will the authors be held liable for any damages
@@ -42,6 +42,10 @@ namespace Volatile
 
     internal float Elasticity { get; private set; }
 
+    // The World makes a distinction between static and dynamic bodies.
+    // Static bodies are stored in a broadphase decomposition structure,
+    // while dynamic bodies are just kept in a list. This is for historical
+    // rollback and past-state raycasts.
     internal List<Body> dynamicBodies;
     internal IBroadPhase staticBroad;
 
@@ -78,7 +82,6 @@ namespace Volatile
         this.staticBroad.Add(body);
       else
         this.dynamicBodies.Add(body);
-
       body.World = this;
     }
 
@@ -89,13 +92,15 @@ namespace Volatile
     public void RemoveBody(Body body)
     {
       if (body.IsStatic == true)
-        throw new InvalidOperationException("Can't remove static bodies");
-      this.dynamicBodies.Remove(body);
+        this.staticBroad.Remove(body);
+      else
+        this.dynamicBodies.Remove(body);
       body.World = null;
     }
 
     /// <summary>
     /// Ticks the world, updating all dynamic bodies and resolving collisions.
+    /// Does not allow dynamic-dynamic collisions.
     /// </summary>
     public void Update()
     {
