@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 using Volatile;
-using Volatile.History;
+//using Volatile.History;
 
 public class SimpleRayCast : MonoBehaviour 
 {
@@ -30,10 +30,11 @@ public class SimpleRayCast : MonoBehaviour
           transform.position,
           transform.position + (transform.up * 100.0f));
 
-      if (this.frame >= 0)
-        world.world.RayCast(this.frame, ref cast, ref result, this.Filter);
-      else
-        world.world.RayCast(ref cast, ref result, this.Filter);
+      //if (this.frame >= 0)
+      //  world.world.RayCast(this.frame, ref cast, ref result, this.Filter);
+      //else
+      if (world.world.RayCast(ref cast, ref result, this.Filter))
+        Debug.Log("Hit");
 
       Gizmos.color = Color.green;
       Gizmos.DrawLine(transform.position, transform.position + (transform.up * 100.0f));

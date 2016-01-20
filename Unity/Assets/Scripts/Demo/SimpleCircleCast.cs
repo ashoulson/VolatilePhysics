@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 using Volatile;
-using Volatile.History;
+//using Volatile.History;
 
 public class SimpleCircleCast : MonoBehaviour
 {
@@ -31,10 +31,10 @@ public class SimpleCircleCast : MonoBehaviour
           transform.position,
           transform.position + (transform.up * 100.0f));
 
-      if (this.frame >= 0)
-        world.world.CircleCast(this.frame, ref cast, this.radius, ref result, this.Filter);
-      else
-        world.world.CircleCast(ref cast, this.radius, ref result, this.Filter);
+      //if (this.frame >= 0)
+      //  world.world.CircleCast(this.frame, ref cast, this.radius, ref result, this.Filter);
+      //else
+      world.world.CircleCast(ref cast, this.radius, ref result, this.Filter);
 
       Gizmos.color = Color.red;
       Gizmos.DrawLine(
