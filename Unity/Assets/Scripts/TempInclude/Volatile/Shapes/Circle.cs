@@ -39,20 +39,26 @@ namespace Volatile
     }
     #endregion
 
+    #region Properties
     public override Shape.ShapeType Type { get { return ShapeType.Circle; } }
 
-    public override Vector2 Position { get { return this.origin; } }
-    public override Vector2 Facing { get { return new Vector2(1.0f, 0.0f); } }
-    public override float Angle { get { return 0.0f; } }
-
+    public Vector2 Origin { get { return this.worldSpaceOrigin; } }
     public float Radius { get { return this.radius; } }
+    #endregion
 
+    #region Fields
+    private Vector2 worldSpaceOrigin;
     private float radius;
     private float sqrRadius;
-    private Vector2 origin;
+
+    // Precomputed body-space values (these should never change unless we
+    // want to support moving shapes relative to their body root later on)
+    private Vector2 bodySpacePosition;
+    #endregion
 
     #region Tests
-    internal override bool ShapeQuery(Vector2 bodySpacePoint)
+    internal override bool ShapeQuery(
+      Vector2 bodySpacePoint)
     {
       return 
         Collision.TestPointCircleSimple(
@@ -100,15 +106,11 @@ namespace Volatile
     }
     #endregion
 
-    /// <summary>
-    /// Creates a cache of the origin in world space. This should be called
-    /// every time the world updates or the shape/body is moved externally.
-    /// </summary>
     internal override void UpdateWorld()
     {
-      this.origin = 
+      this.worldSpaceOrigin = 
         this.Body.TransformPointBodyToWorld(this.bodySpacePosition);
-      this.AABB = new AABB(this.origin, this.radius);
+      this.AABB = new AABB(this.worldSpaceOrigin, this.radius);
     }
 
     #region Internals
@@ -120,17 +122,17 @@ namespace Volatile
       float restitution)
       : base(density, friction, restitution)
     {
-      this.origin = origin;
       this.radius = radius;
       this.sqrRadius = radius * radius;
+
+      this.worldSpaceOrigin = origin;
+      this.AABB = new AABB(origin, radius);
     }
 
     internal override void ComputeMetrics()
     {
-      this.bodySpacePosition = 
-        this.Body.TransformPointWorldToBody(this.Position);
-      this.bodySpaceFacing = 
-        this.Body.TransformDirectionWorldToBody(this.Facing);
+      this.bodySpacePosition =
+        this.Body.TransformPointWorldToBody(this.Origin);
       this.bodySpaceAABB = new AABB(this.bodySpacePosition, this.Radius);
 
       this.Area = this.sqrRadius * Mathf.PI;
@@ -151,7 +153,7 @@ namespace Volatile
       Color current = Gizmos.color;
 
       Gizmos.color = edgeColor;
-      Gizmos.DrawWireSphere(this.Position, this.Radius);
+      Gizmos.DrawWireSphere(this.Origin, this.Radius);
 
       this.AABB.GizmoDraw(aabbColor);
 

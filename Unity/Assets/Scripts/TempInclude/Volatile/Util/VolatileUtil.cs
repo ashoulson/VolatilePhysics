@@ -111,55 +111,6 @@ namespace Volatile
         -sin * rayDirection.x + cos * rayDirection.y);
     }
 
-    public static Vector2 WorldToLocalPoint(
-      Vector2 point,
-      Vector2 shapeOrigin,
-      Vector2 shapeFacing)
-    {
-      float sin = shapeFacing.y;
-      float cos = shapeFacing.x;
-
-      Vector2 newOrigin = point - shapeOrigin;
-
-      return
-        new Vector2(
-          cos * newOrigin.x + sin * newOrigin.y,
-          -sin * newOrigin.x + cos * newOrigin.y);
-    }
-
-    public static Vector2 WorldToLocalVector(
-      Vector2 vector,
-      Vector2 shapeOrigin,
-      Vector2 shapeFacing)
-    {
-      float sin = shapeFacing.y;
-      float cos = shapeFacing.x;
-
-      return
-        new Vector2(
-          cos * vector.x + sin * vector.y,
-          -sin * vector.x + cos * vector.y);
-    }
-
-    public static Vector2 WorldToLocalVector(this Shape shape, Vector2 vector)
-    {
-      return
-        VolatileUtil.WorldToLocalVector(
-          vector,
-          shape.Position,
-          shape.Facing);
-    }
-
-
-    public static Vector2 WorldToLocalPoint(this Shape shape, Vector2 point)
-    {
-      return
-        VolatileUtil.WorldToLocalPoint(
-          point,
-          shape.Position,
-          shape.Facing);
-    }
-
     #region Debug
     public static void Draw(Body body)
     {

@@ -16,7 +16,7 @@ public class SimpleForce : MonoBehaviour
     if (Input.GetKeyDown(KeyCode.F) == true)
     {
       Vector2 force = transform.up * this.intensity * Time.fixedDeltaTime;
-      this.body.body.AddForce(force, transform.position);
+      this.body.Body.AddForce(force, transform.position);
     }
   }
 }

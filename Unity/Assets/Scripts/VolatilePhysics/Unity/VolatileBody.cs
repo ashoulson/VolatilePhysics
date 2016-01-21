@@ -15,7 +15,8 @@ public class VolatileBody : MonoBehaviour
   [SerializeField]
   private bool isStatic = false;
 
-  public Body body;
+  public Body Body { get { return this.body; } }
+  private Body body;
 
   private Vector2 lastPosition;
   private Vector2 nextPosition;

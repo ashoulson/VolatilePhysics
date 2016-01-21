@@ -37,6 +37,6 @@ public class TestTransform : MonoBehaviour
     //Debug.Log("World: " + queryWorldPos + " " + derivedWorldPos + " " + deltaWorld);
     //Debug.Log("Local: " + queryLocalPos + " " + derivedLocalPos + " " + deltaLocal);
 
-    Debug.Log(body.transform.worldToLocalMatrix.MultiplyVector(facing));
+    //Debug.Log(body.transform.worldToLocalMatrix.MultiplyVector(facing));
 	}
 }

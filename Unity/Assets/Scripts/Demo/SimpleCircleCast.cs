@@ -16,7 +16,7 @@ public class SimpleCircleCast : MonoBehaviour
   private bool Filter(Body body)
   {
     if (this.ignoreBody != null)
-      return body != this.ignoreBody.body;
+      return body != this.ignoreBody.Body;
     return true;
   }
 

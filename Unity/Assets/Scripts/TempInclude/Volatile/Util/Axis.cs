@@ -56,10 +56,10 @@ namespace Volatile
     private readonly Vector2 normal;
     private readonly float width;
 
-    internal Axis(Vector2 normal, float value)
+    internal Axis(Vector2 normal, float width)
     {
       this.normal = normal;
-      this.width = value;
+      this.width = width;
     }
   }
 }
