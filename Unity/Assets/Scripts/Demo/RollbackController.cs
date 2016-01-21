@@ -53,10 +53,10 @@ public class RollbackController : MonoBehaviour
     this.commands = new List<Command>();
 
     Command start = new Command(false, false, false, false);
-    start.position = this.body.body.Position;
-    start.angle = this.body.body.Angle;
-    start.velocity = this.body.body.LinearVelocity;
-    start.angVelocity = this.body.body.AngularVelocity;
+    start.position = this.body.Body.Position;
+    start.angle = this.body.Body.Angle;
+    start.velocity = this.body.Body.LinearVelocity;
+    start.angVelocity = this.body.Body.AngularVelocity;
     this.commands.Add(start);
     this.debugIndex = 0;
   }
@@ -105,9 +105,9 @@ public class RollbackController : MonoBehaviour
     if (this.body != null && this.pause == false)
     {
       Command first = this.commands[0];
-      this.body.body.SetWorld(first.position, first.angle);
-      this.body.body.LinearVelocity = first.velocity;
-      this.body.body.AngularVelocity = first.angVelocity;
+      this.body.Body.SetWorld(first.position, first.angle);
+      this.body.Body.LinearVelocity = first.velocity;
+      this.body.Body.AngularVelocity = first.angVelocity;
 
       if (this.commands.Count < 60)
       {
@@ -125,10 +125,10 @@ public class RollbackController : MonoBehaviour
 
         if (cmd.hasBeenExecuted == false)
         {
-          cmd.position = this.body.body.Position;
-          cmd.angle = this.body.body.Angle;
-          cmd.velocity = this.body.body.LinearVelocity;
-          cmd.angVelocity = this.body.body.AngularVelocity;
+          cmd.position = this.body.Body.Position;
+          cmd.angle = this.body.Body.Angle;
+          cmd.velocity = this.body.Body.LinearVelocity;
+          cmd.angVelocity = this.body.Body.AngularVelocity;
           cmd.hasBeenExecuted = true;
         }
       }
@@ -169,12 +169,12 @@ public class RollbackController : MonoBehaviour
       (cmd.pollUp ? 1.0f : 0.0f) + (cmd.pollDown ? -1.0f : 0.0f);
     float turn =
       (cmd.pollLeft ? 1.0f : 0.0f) + (cmd.pollRight ? -1.0f : 0.0f);
-    this.body.AddForce(this.body.body.Facing * thrust * 0.1f);
+    this.body.AddForce(this.body.Body.Facing * thrust * 0.1f);
     this.body.AddTorque(-turn * 0.03f);
 
     // Stabilize
-    float angVel = this.body.body.AngularVelocity;
-    float inertia = this.body.body.Inertia;
+    float angVel = this.body.Body.AngularVelocity;
+    float inertia = this.body.Body.Inertia;
     float correction =
       (angVel * inertia) / Time.fixedDeltaTime;
 

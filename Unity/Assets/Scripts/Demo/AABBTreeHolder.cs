@@ -54,13 +54,13 @@ public class AABBTreeHolder : MonoBehaviour
   void Start()
   {
     for (int i = 0; i < this.bodies.Length; i++)
-      this.aabbTree.AddBody(this.bodies[i].body);
+      this.aabbTree.AddBody(this.bodies[i].Body);
   }
 
   void FixedUpdate()
   {
     for (int i = 0; i < this.bodies.Length; i++)
-      this.aabbTree.UpdateBody(this.bodies[i].body);
+      this.aabbTree.UpdateBody(this.bodies[i].Body);
   }
 
   void OnDrawGizmos()

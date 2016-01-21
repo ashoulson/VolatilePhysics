@@ -52,15 +52,11 @@ namespace Volatile
 
     public abstract ShapeType Type { get; }
 
-    public abstract Vector2 Position { get; }
-    public abstract float Angle { get; }
-    public abstract Vector2 Facing { get; }
-
     public Body Body { get; private set; }
 
-    public float Density { get; private set; }
-    public float Friction { get; private set; }
-    public float Restitution { get; private set; }
+    internal float Density { get; private set; }
+    internal float Friction { get; private set; }
+    internal float Restitution { get; private set; }
 
     /// <summary>
     /// The world-space bounding AABB for this shape.
@@ -82,9 +78,7 @@ namespace Volatile
     /// </summary>
     public float Inertia { get; protected set; }
 
-    // Body-space values for queries and casts
-    internal Vector2 bodySpacePosition;
-    internal Vector2 bodySpaceFacing;
+    // Body-space bounding AABB for pre-checks during queries/casts
     internal AABB bodySpaceAABB;
 
     // TODO: Remove static here (for threading)

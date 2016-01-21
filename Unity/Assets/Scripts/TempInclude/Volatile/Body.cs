@@ -155,6 +155,16 @@ namespace Volatile
     {
       return vector.Rotate(this.Facing);
     }
+
+    /// <summary>
+    /// Transforms an Polygon axis from body-local space to world space.
+    /// </summary>
+    internal Axis TransformAxisBodyToWorld(Axis axis)
+    {
+      Vector2 normal = axis.Normal.Rotate(this.Facing);
+      float width = Vector2.Dot(normal, this.Position) + axis.Width;
+      return new Axis(normal, width);
+    }
     #endregion
 
     #region Tests
@@ -164,11 +174,11 @@ namespace Volatile
     /// </summary>
     public bool Query(Vector2 point)
     {
-      if (this.AABB.Query(point) == true)
+      if (this.AABB.Query(point))
       {
         Vector2 bodySpacePoint = this.TransformPointWorldToBody(point);
         for (int i = 0; i < this.shapes.Count; i++)
-          if (this.shapes[i].Query(bodySpacePoint) == true)
+          if (this.shapes[i].Query(bodySpacePoint))
             return true;
       }
       return false;
@@ -180,11 +190,11 @@ namespace Volatile
     /// </summary>
     public bool Query(Vector2 point, float radius)
     {
-      if (this.AABB.Query(point, radius) == true)
+      if (this.AABB.Query(point, radius))
       {
         Vector2 bodySpacePoint = this.TransformPointWorldToBody(point);
         for (int i = 0; i < this.shapes.Count; i++)
-          if (this.shapes[i].Query(bodySpacePoint, radius) == true)
+          if (this.shapes[i].Query(bodySpacePoint, radius))
             return true;
       }
       return false;
