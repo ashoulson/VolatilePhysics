@@ -85,8 +85,8 @@ namespace Volatile
     internal static int nextId = 0;
     internal int id;
 
-    #region Events
-    internal void OnBodyAssigned(Body body)
+    #region Body-Related
+    internal void AssignBody(Body body)
     {
       this.Body = body;
       this.ComputeMetrics();

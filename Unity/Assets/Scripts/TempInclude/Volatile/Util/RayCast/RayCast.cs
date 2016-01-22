@@ -64,17 +64,12 @@ namespace Volatile
     /// <summary>
     /// Creates a copy of a world-space raycast in a body's local space.
     /// </summary>
-    internal RayCast(ref RayCast worldSpace, Body body)
+    internal RayCast ConvertSpace(ref Record record)
     {
-      this.origin = 
-        body.TransformPointWorldToBody(worldSpace.origin);
-      this.direction = 
-        body.TransformDirectionWorldToBody(worldSpace.direction);
-      this.distance = worldSpace.distance;
-      this.signX = this.direction.x < 0.0f;
-      this.signY = this.direction.y < 0.0f;
-      this.invDirection =
-        new Vector2(1.0f / this.direction.x, 1.0f / this.direction.y);
+      return new RayCast(
+        record.WorldToBodyPoint(this.origin),
+        record.WorldToBodyDirection(this.direction),
+        this.distance);
     }
   }
 }

@@ -29,6 +29,16 @@ namespace Volatile
 
   public class Body
   {
+    #region History Tracking
+    private Record[] history;
+    private Record currentStatus;
+
+    private Record GetRecord(int frame)
+    {
+      return this.currentStatus;
+    }
+    #endregion
+
     public static bool Filter(Body body, BodyFilter filter)
     {
       return ((filter == null) || (filter.Invoke(body) == true));
@@ -59,7 +69,7 @@ namespace Volatile
     /// </summary>
     public object UserData { get; set; }
 
-    public World World { get; internal set; }
+    public World World { get; private set; }
     public IList<Shape> Shapes { get { return this.shapes.AsReadOnly(); } }
 
     /// <summary>
@@ -67,17 +77,33 @@ namespace Volatile
     /// </summary>
     public int Count { get { return this.shapes.Count; } }
 
+    // Some basic properties are stored in an internal mutable
+    // record to avoid code redundancy when performing conversions
+    public Vector2 Position
+    {
+      get { return this.currentStatus.position; }
+      private set { this.currentStatus.position = value; }
+    }
+
+    public Vector2 Facing
+    {
+      get { return this.currentStatus.facing; }
+      private set { this.currentStatus.facing = value; }
+    }
+
+    public AABB AABB
+    {
+      get { return this.currentStatus.aabb; }
+      private set { this.currentStatus.aabb = value; }
+    }
+
+    public float Angle { get; private set; }
+
     public Vector2 LinearVelocity { get; set; }
     public float AngularVelocity { get; set; }
 
-    public Vector2 Position { get; private set; }
     public Vector2 Force { get; private set; }
-
-    public float Angle { get; private set; }
     public float Torque { get; private set; }
-
-    public Vector2 Facing { get; private set; }
-    public AABB AABB { get; private set; }
 
     public bool IsStatic { get; private set; }
     public float Mass { get; private set; }
@@ -95,8 +121,6 @@ namespace Volatile
     internal float BiasRotation { get; private set; }
 
     internal List<Shape> shapes;
-
-    //internal Volatile.History.BodyLogger bodyLogger = null;
 
     #region Force and Impulse Application
     public void AddTorque(float torque)
@@ -121,49 +145,43 @@ namespace Volatile
     {
       this.Position = position;
       this.Angle = radians;
+      this.Facing = VolatileUtil.Polar(radians);
       this.OnPositionUpdated();
     }
 
-    /// <summary>
-    /// Transforms a point from world space to body-local space.
-    /// </summary>
-    public Vector2 TransformPointWorldToBody(Vector2 vector)
+    internal Vector2 WorldToBodyPoint(
+      Vector2 vector,
+      int frame = History.CURRENT_FRAME)
     {
-      return (vector - this.Position).InvRotate(this.Facing);
+      return this.GetRecord(frame).WorldToBodyPoint(vector);
     }
 
-    /// <summary>
-    /// Transforms a point from body-local space to world space.
-    /// </summary>
-    public Vector2 TransformPointBodyToWorld(Vector2 vector)
+    internal Vector2 BodyToWorldPoint(
+      Vector2 vector,
+      int frame = History.CURRENT_FRAME)
     {
-      return vector.Rotate(this.Facing) + this.Position;
+      return this.GetRecord(frame).BodyToWorldPoint(vector);
     }
 
-    /// <summary>
-    /// Transforms a direction from world space to body-local space.
-    /// </summary>
-    public Vector2 TransformDirectionWorldToBody(Vector2 vector)
+    internal Vector2 WorldToBodyDirection(
+      Vector2 vector,
+      int frame = History.CURRENT_FRAME)
     {
-      return vector.InvRotate(this.Facing);
+      return this.GetRecord(frame).WorldToBodyDirection(vector);
     }
 
-    /// <summary>
-    /// Transforms a direction from body-local space to world space.
-    /// </summary>
-    public Vector2 TransformDirectionBodyToWorld(Vector2 vector)
+    internal Vector2 BodyToWorldDirection(
+      Vector2 vector,
+      int frame = History.CURRENT_FRAME)
     {
-      return vector.Rotate(this.Facing);
+      return this.GetRecord(frame).BodyToWorldDirection(vector);
     }
 
-    /// <summary>
-    /// Transforms an Polygon axis from body-local space to world space.
-    /// </summary>
-    internal Axis TransformAxisBodyToWorld(Axis axis)
+    internal Axis BodyToWorldAxis(
+      Axis axis,
+      int frame = History.CURRENT_FRAME)
     {
-      Vector2 normal = axis.Normal.Rotate(this.Facing);
-      float width = Vector2.Dot(normal, this.Position) + axis.Width;
-      return new Axis(normal, width);
+      return this.GetRecord(frame).BodyToWorldAxis(axis);
     }
     #endregion
 
@@ -172,11 +190,13 @@ namespace Volatile
     /// Checks if a point is contained in this body. 
     /// Begins with AABB checks.
     /// </summary>
-    public bool Query(Vector2 point)
+    public bool Query(
+      Vector2 point, 
+      int frame = History.CURRENT_FRAME)
     {
       if (this.AABB.Query(point))
       {
-        Vector2 bodySpacePoint = this.TransformPointWorldToBody(point);
+        Vector2 bodySpacePoint = this.WorldToBodyPoint(point);
         for (int i = 0; i < this.shapes.Count; i++)
           if (this.shapes[i].Query(bodySpacePoint))
             return true;
@@ -188,11 +208,14 @@ namespace Volatile
     /// Checks if a circle overlaps with this body. 
     /// Begins with AABB checks.
     /// </summary>
-    public bool Query(Vector2 point, float radius)
+    public bool Query(
+      Vector2 point, 
+      float radius,
+      int frame = History.CURRENT_FRAME)
     {
       if (this.AABB.Query(point, radius))
       {
-        Vector2 bodySpacePoint = this.TransformPointWorldToBody(point);
+        Vector2 bodySpacePoint = this.WorldToBodyPoint(point);
         for (int i = 0; i < this.shapes.Count; i++)
           if (this.shapes[i].Query(bodySpacePoint, radius))
             return true;
@@ -204,22 +227,27 @@ namespace Volatile
     /// Performs a ray cast check on this body. 
     /// Begins with AABB checks.
     /// </summary>
-    public bool RayCast(ref RayCast ray, ref RayResult result)
+    public bool RayCast(
+      ref RayCast ray, 
+      ref RayResult result,
+      int frame = History.CURRENT_FRAME)
     {
-      if (this.AABB.RayCast(ref ray))
-      {
-        // Once we clear the body's AABB, all subsequent checks 
-        // on the shapes are done in body-space
-        RayCast bodySpaceRay = new RayCast(ref ray, this);
-        for (int i = 0; i < this.shapes.Count; i++)
-          if (this.shapes[i].RayCast(ref bodySpaceRay, ref result))
-            if (result.IsContained)
-              return true;
+      Record record = this.GetRecord(frame);
+      if (record.aabb.RayCast(ref ray) == false)
+        return false;
 
-        // Unless we were contained, we need to convert the results
-        // back to world space to be any use
-        result.ConvertResultsToWorldSpace(this);
-      }
+      // Once we clear the body's AABB, all subsequent checks 
+      // on the shapes are done in body-space
+      RayCast bodySpaceRay = ray.ConvertSpace(ref record);
+      for (int i = 0; i < this.shapes.Count; i++)
+        if (this.shapes[i].RayCast(ref bodySpaceRay, ref result))
+          if (result.IsContained)
+            return true;
+
+      // Unless we were contained, we need to convert the results
+      // back to world space to be any use
+      if (result.IsValid && (result.Body == this))
+        result.ConvertToWorldSpace(ref record);
       return result.IsValid;
     }
 
@@ -230,22 +258,25 @@ namespace Volatile
     public bool CircleCast(
       ref RayCast ray,
       float radius,
-      ref RayResult result)
+      ref RayResult result,
+      int frame = History.CURRENT_FRAME)
     {
-      if (this.AABB.CircleCast(ref ray, radius))
-      {
-        // Once we clear the body's AABB, all subsequent checks 
-        // on the shapes are done in body-space
-        RayCast bodySpaceRay = new RayCast(ref ray, this);
-        for (int i = 0; i < this.shapes.Count; i++)
-          if (this.shapes[i].CircleCast(ref bodySpaceRay, radius, ref result))
-            if (result.IsContained)
-              return true;
+      Record record = this.GetRecord(frame);
+      if (record.aabb.CircleCast(ref ray, radius) == false)
+        return false;
 
-        // Unless we were contained, we need to convert the results
-        // back to world space to be any use
-        result.ConvertResultsToWorldSpace(this);
-      }
+      // Once we clear the body's AABB, all subsequent checks 
+      // on the shapes are done in body-space
+      RayCast bodySpaceRay = ray.ConvertSpace(ref record);
+      for (int i = 0; i < this.shapes.Count; i++)
+        if (this.shapes[i].CircleCast(ref bodySpaceRay, radius, ref result))
+          if (result.IsContained)
+            return true;
+
+      // Unless we were contained, we need to convert the results
+      // back to world space to be any use
+      if (result.IsValid && (result.Body == this))
+        result.ConvertToWorldSpace(ref record);
       return result.IsValid;
     }
     #endregion
@@ -255,6 +286,8 @@ namespace Volatile
       float radians, 
       IEnumerable<Shape> shapesToAdd)
     {
+      this.history = null;
+      this.currentStatus.frame = History.CURRENT_FRAME;
       this.Position = position;
       this.Angle = radians;
       this.Facing = VolatileUtil.Polar(radians);
@@ -271,18 +304,16 @@ namespace Volatile
       this.OnPositionUpdated();
     }
 
-    #region Fixture/Shape Management
-    /// <summary>
-    /// Adds a shape, using a fixture to "pin" that shape to the body
-    /// relative to its current position and rotation offset from the body.
-    /// Any subsequent movement of the body will also move the shape.
-    /// </summary>
+    internal void AssignWorld(World world)
+    {
+      this.World = world;
+    }
+
     private void AddShape(Shape shape)
     {
       this.shapes.Add(shape);
-      shape.OnBodyAssigned(this);
+      shape.AssignBody(this);
     }
-    #endregion
 
     #region Collision
     internal bool CanCollide(Body other, bool allowDynamic)
@@ -312,7 +343,6 @@ namespace Volatile
     /// </summary>
     internal void OnPositionUpdated()
     {
-      this.Facing = VolatileUtil.Polar(this.Angle);
       for (int i = 0; i < this.shapes.Count; i++)
         this.shapes[i].OnBodyPositionUpdated();
       this.UpdateAABB();
@@ -376,6 +406,7 @@ namespace Volatile
         this.World.DeltaTime * this.LinearVelocity + this.BiasVelocity;
       this.Angle +=
         this.World.DeltaTime * this.AngularVelocity + this.BiasRotation;
+      this.Facing = VolatileUtil.Polar(this.Angle);
     }
 
     private void ClearForces()

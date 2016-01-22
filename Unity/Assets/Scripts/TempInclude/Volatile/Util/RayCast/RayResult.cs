@@ -67,11 +67,10 @@ namespace Volatile
       this.normal = Vector2.zero;
     }
 
-    internal void ConvertResultsToWorldSpace(Body body)
+    internal void ConvertToWorldSpace(ref Record record)
     {
-      if (this.IsValid && (this.shape.Body == body))
-        if (this.normal != Vector2.zero)
-          this.normal = Body.TransformDirectionBodyToWorld(this.normal);
+      if (this.normal != Vector2.zero)
+        this.normal = record.BodyToWorldDirection(this.normal);
     }
 
     public Vector2 ComputePoint(ref RayCast cast)

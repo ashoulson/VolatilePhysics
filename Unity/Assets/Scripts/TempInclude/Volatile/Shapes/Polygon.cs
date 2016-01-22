@@ -124,7 +124,7 @@ namespace Volatile
       this.bodySpaceVertices = new Vector2[this.worldSpaceVertices.Length];
       for (int i = 0; i < this.worldSpaceVertices.Length; i++)
         this.bodySpaceVertices[i] =
-          this.Body.TransformPointWorldToBody(this.worldSpaceVertices[i]);
+          this.Body.WorldToBodyPoint(this.worldSpaceVertices[i]);
       this.bodySpaceAxes = Polygon.ComputeAxes(this.bodySpaceVertices);
       this.bodySpaceAABB = Polygon.ComputeBounds(this.bodySpaceVertices);
 
@@ -138,9 +138,9 @@ namespace Volatile
       for (int i = 0; i < this.bodySpaceVertices.Length; i++)
       {
         this.worldSpaceVertices[i] =
-          this.Body.TransformPointBodyToWorld(this.bodySpaceVertices[i]);
+          this.Body.BodyToWorldPoint(this.bodySpaceVertices[i]);
         this.worldSpaceAxes[i] =
-          this.Body.TransformAxisBodyToWorld(this.bodySpaceAxes[i]);
+          this.Body.BodyToWorldAxis(this.bodySpaceAxes[i]);
       }
 
       this.AABB = Polygon.ComputeBounds(this.worldSpaceVertices);
