@@ -30,19 +30,15 @@ namespace Volatile
     #region Factory Functions
     public static Polygon FromWorldVertices(
       Vector2[] vertices,
-      float density = 1.0f,
+      float density = Config.DEFAULT_DENSITY,
       float friction = Config.DEFAULT_FRICTION,
       float restitution = Config.DEFAULT_RESTITUTION)
     {
-      return new Polygon(
-        vertices, 
-        density, 
-        friction, 
-        restitution);
+      return new Polygon(vertices, density, friction, restitution);
     }
     #endregion
 
-    #region Private Static Methods
+    #region Static Helpers
     private static Axis[] ComputeAxes(Vector2[] vertices)
     {
       Axis[] axes = new Axis[vertices.Length];
@@ -78,8 +74,7 @@ namespace Volatile
 
     private static Vector2[] CloneVertices(Vector2[] source)
     {
-      Vector2[] vertices =
-        new Vector2[source.Length];
+      Vector2[] vertices = new Vector2[source.Length];
       for (int i = 0; i < source.Length; i++)
         vertices[i] = source[i];
       return vertices;
@@ -101,12 +96,59 @@ namespace Volatile
 
     // Precomputed body-space values (these should never change unless we
     // want to support moving shapes relative to their body root later on)
-    internal Vector2[] bodySpaceVertices;
-    internal Axis[] bodySpaceAxes;
+    private Vector2[] bodySpaceVertices;
+    private Axis[] bodySpaceAxes;
     #endregion
 
-    #region Tests
-    internal override bool ShapeQuery(
+    private Polygon(
+      Vector2[] worldSpaceVertices,
+      float density,
+      float friction,
+      float restitution)
+      : base(density, friction, restitution)
+    {
+      this.worldSpaceVertices = Polygon.CloneVertices(worldSpaceVertices);
+      this.worldSpaceAxes = Polygon.ComputeAxes(worldSpaceVertices);
+      this.AABB = Polygon.ComputeBounds(worldSpaceVertices);
+
+      // Will be initialized later once we're attached to a body
+      this.bodySpaceVertices = null;
+      this.bodySpaceAxes = null;
+      this.bodySpaceAABB = new AABB();
+    }
+
+    #region Functionalty Overrides
+    protected override void ComputeMetrics()
+    {
+      // Compute body-space geometry data (only need to do this once)
+      this.bodySpaceVertices = new Vector2[this.worldSpaceVertices.Length];
+      for (int i = 0; i < this.worldSpaceVertices.Length; i++)
+        this.bodySpaceVertices[i] =
+          this.Body.TransformPointWorldToBody(this.worldSpaceVertices[i]);
+      this.bodySpaceAxes = Polygon.ComputeAxes(this.bodySpaceVertices);
+      this.bodySpaceAABB = Polygon.ComputeBounds(this.bodySpaceVertices);
+
+      this.Area = this.ComputeArea();
+      this.Mass = this.Area * this.Density * Config.AreaMassRatio;
+      this.Inertia = this.ComputeInertia();
+    }
+
+    protected override void ApplyBodyPosition()
+    {
+      for (int i = 0; i < this.bodySpaceVertices.Length; i++)
+      {
+        this.worldSpaceVertices[i] =
+          this.Body.TransformPointBodyToWorld(this.bodySpaceVertices[i]);
+        this.worldSpaceAxes[i] =
+          this.Body.TransformAxisBodyToWorld(this.bodySpaceAxes[i]);
+      }
+
+      this.AABB = Polygon.ComputeBounds(this.worldSpaceVertices);
+    }
+    #endregion
+
+    #region Test Overrides
+    protected override bool ShapeQuery(
       Vector2 bodySpacePoint)
     {
       GizmoDrawer.Instance.point = bodySpacePoint;
@@ -116,12 +158,10 @@ namespace Volatile
       return true;
     }
 
-    internal override bool ShapeQuery(
+    protected override bool ShapeQuery(
       Vector2 bodySpacePoint,
       float radius)
     {
-      Vector2[] vertices = this.bodySpaceVertices;
-
       // Get the axis on the polygon closest to the circle's origin
       float penetration;
       int foundIndex =
@@ -149,7 +189,7 @@ namespace Volatile
       return true;
     }
 
-    internal override bool ShapeRayCast(
+    protected override bool ShapeRayCast(
       ref RayCast bodySpaceRay,
       ref RayResult result)
     {
@@ -162,8 +202,8 @@ namespace Volatile
       {
         Axis curAxis = this.bodySpaceAxes[i];
 
-        // Distance between the ray origin and the axis/edge along the normal
-        // (i.e., shortest distance between ray origin and the edge).
+        // Distance between the ray origin and the axis/edge along the 
+        // normal (i.e., shortest distance between ray origin and the edge)
         float proj = 
           Vector2.Dot(curAxis.Normal, bodySpaceRay.origin) - curAxis.Width;
 
@@ -171,8 +211,8 @@ namespace Volatile
         if (proj > 0.0f)
           couldBeContained = false;
 
-        // Projection of the ray direction onto the axis normal (use negative
-        // normal because we want to get the penetration length).
+        // Projection of the ray direction onto the axis normal (use 
+        // negative normal because we want to get the penetration length)
         float slope = Vector2.Dot(-curAxis.Normal, bodySpaceRay.direction);
 
         if (slope == 0.0f)
@@ -223,7 +263,7 @@ namespace Volatile
       return false;
     }
 
-    internal override bool ShapeCircleCast(
+    protected override bool ShapeCircleCast(
       ref RayCast bodySpaceRay,
       float radius,
       ref RayResult result)
@@ -240,48 +280,12 @@ namespace Volatile
           radius,
           ref result);
 
+      // We need to check both to get the closest hit distance
       return checkVertices || checkEdges;
     }
     #endregion
 
-    internal override void UpdateWorld()
-    {
-      for (int i = 0; i < this.bodySpaceVertices.Length; i++)
-      {
-        this.worldSpaceVertices[i] =
-          this.Body.TransformPointBodyToWorld(this.bodySpaceVertices[i]);
-        this.worldSpaceAxes[i] =
-          this.Body.TransformAxisBodyToWorld(this.bodySpaceAxes[i]);
-      }
-
-      this.AABB = Polygon.ComputeBounds(this.worldSpaceVertices);
-    }
-
-    #region Internals
-    /// <summary>
-    /// Creates a new polygon from an origin and local-space vertices.
-    /// </summary>
-    /// <param name="vertices">Vertex positions relative to the origin.</param>
-    /// <param name="density">Shape density.</param>
-    /// <param name="friction">Shape friction.</param>
-    /// <param name="restitution">Shape restitution.</param>
-    private Polygon(
-      Vector2[] vertices,
-      float density,
-      float friction,
-      float restitution)
-      : base(density, friction, restitution)
-    {
-      this.worldSpaceVertices = Polygon.CloneVertices(vertices);
-      this.worldSpaceAxes = Polygon.ComputeAxes(vertices);
-      this.AABB = Polygon.ComputeBounds(vertices);
-
-      // Will be initialized later once we're attached to a body
-      this.bodySpaceVertices = null;
-      this.bodySpaceAxes = null;
-      this.bodySpaceAABB = new AABB();
-    }
-
+    #region Collision Helpers
     /// <summary>
     /// A world-space point query, used as a shortcut in collision tests.
     /// </summary>
@@ -302,7 +306,7 @@ namespace Volatile
     /// Special case that ignores axes pointing away from the normal.
     /// </summary>
     internal bool ContainsPointPartial(
-      Vector2 worldSpacePoint, 
+      Vector2 worldSpacePoint,
       Vector2 worldSpaceNormal)
     {
       foreach (Axis axis in this.worldSpaceAxes)
@@ -311,22 +315,9 @@ namespace Volatile
           return false;
       return true;
     }
+    #endregion
 
-    internal override void ComputeMetrics()
-    {
-      // Compute body-space geometry data (only need to do this once)
-      this.bodySpaceVertices = new Vector2[this.worldSpaceVertices.Length];
-      for (int i = 0; i < this.worldSpaceVertices.Length; i++)
-        this.bodySpaceVertices[i] =
-          this.Body.TransformPointWorldToBody(this.worldSpaceVertices[i]);
-      this.bodySpaceAxes = Polygon.ComputeAxes(this.bodySpaceVertices);
-      this.bodySpaceAABB = Polygon.ComputeBounds(this.bodySpaceVertices);
-
-      this.Area = this.ComputeArea();
-      this.Mass = this.Area * this.Density * Config.AreaMassRatio;
-      this.Inertia = this.ComputeInertia();
-    }
-
+    #region Internals
     private float ComputeArea()
     {
       float sum = 0;

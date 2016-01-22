@@ -30,8 +30,8 @@ namespace Volatile
     #region Factory Functions
     public static Circle FromWorldPosition(
       Vector2 origin, 
-      float radius, 
-      float density = 1.0f,
+      float radius,
+      float density = Config.DEFAULT_DENSITY,
       float friction = Config.DEFAULT_FRICTION,
       float restitution = Config.DEFAULT_RESTITUTION)
     {
@@ -47,17 +47,53 @@ namespace Volatile
     #endregion
 
     #region Fields
-    private Vector2 worldSpaceOrigin;
-    private float radius;
-    private float sqrRadius;
+    internal Vector2 worldSpaceOrigin;
+    internal float radius;
+    internal float sqrRadius;
 
     // Precomputed body-space values (these should never change unless we
     // want to support moving shapes relative to their body root later on)
     private Vector2 bodySpacePosition;
     #endregion
 
-    #region Tests
-    internal override bool ShapeQuery(
+    private Circle(
+      Vector2 worldSpaceOrigin,
+      float radius,
+      float density,
+      float friction,
+      float restitution)
+      : base(density, friction, restitution)
+    {
+      this.radius = radius;
+      this.sqrRadius = radius * radius;
+
+      this.worldSpaceOrigin = worldSpaceOrigin;
+      this.AABB = new AABB(worldSpaceOrigin, radius);
+    }
+
+    #region Functionality Overrides
+    protected override void ComputeMetrics()
+    {
+      this.bodySpacePosition =
+        this.Body.TransformPointWorldToBody(this.worldSpaceOrigin);
+      this.bodySpaceAABB = new AABB(this.bodySpacePosition, this.radius);
+
+      this.Area = this.sqrRadius * Mathf.PI;
+      this.Mass = this.Area * this.Density * Config.AreaMassRatio;
+      this.Inertia =
+        this.sqrRadius / 2.0f + this.bodySpacePosition.sqrMagnitude;
+    }
+
+    protected override void ApplyBodyPosition()
+    {
+      this.worldSpaceOrigin =
+        this.Body.TransformPointBodyToWorld(this.bodySpacePosition);
+      this.AABB = new AABB(this.worldSpaceOrigin, this.radius);
+    }
+    #endregion
+
+    #region Test Overrides
+    protected override bool ShapeQuery(
       Vector2 bodySpacePoint)
     {
       return 
@@ -67,7 +103,7 @@ namespace Volatile
           this.radius);
     }
 
-    internal override bool ShapeQuery(
+    protected override bool ShapeQuery(
       Vector2 bodySpacePoint, 
       float radius)
     {
@@ -79,7 +115,7 @@ namespace Volatile
           radius);
     }
 
-    internal override bool ShapeRayCast(
+    protected override bool ShapeRayCast(
       ref RayCast bodySpaceRay, 
       ref RayResult result)
     {
@@ -91,7 +127,7 @@ namespace Volatile
         ref result);
     }
 
-    internal override bool ShapeCircleCast(
+    protected override bool ShapeCircleCast(
       ref RayCast bodySpaceRay, 
       float radius,
       ref RayResult result)
@@ -106,42 +142,6 @@ namespace Volatile
     }
     #endregion
 
-    internal override void UpdateWorld()
-    {
-      this.worldSpaceOrigin = 
-        this.Body.TransformPointBodyToWorld(this.bodySpacePosition);
-      this.AABB = new AABB(this.worldSpaceOrigin, this.radius);
-    }
-
-    #region Internals
-    private Circle(
-      Vector2 origin,
-      float radius,
-      float density,
-      float friction,
-      float restitution)
-      : base(density, friction, restitution)
-    {
-      this.radius = radius;
-      this.sqrRadius = radius * radius;
-
-      this.worldSpaceOrigin = origin;
-      this.AABB = new AABB(origin, radius);
-    }
-
-    internal override void ComputeMetrics()
-    {
-      this.bodySpacePosition =
-        this.Body.TransformPointWorldToBody(this.Origin);
-      this.bodySpaceAABB = new AABB(this.bodySpacePosition, this.Radius);
-
-      this.Area = this.sqrRadius * Mathf.PI;
-      this.Mass = this.Area * this.Density * Config.AreaMassRatio;
-      this.Inertia = 
-        this.sqrRadius / 2.0f + this.bodySpacePosition.sqrMagnitude;
-    }
-    #endregion
-
     #region Debug
     public override void GizmoDraw(
       Color edgeColor, 
@@ -153,7 +153,7 @@ namespace Volatile
       Color current = Gizmos.color;
 
       Gizmos.color = edgeColor;
-      Gizmos.DrawWireSphere(this.Origin, this.Radius);
+      Gizmos.DrawWireSphere(this.worldSpaceOrigin, this.radius);
 
       this.AABB.GizmoDraw(aabbColor);
 
