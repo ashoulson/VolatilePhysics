@@ -47,7 +47,6 @@ namespace Volatile
     // while dynamic bodies are just kept in a list. This is for historical
     // rollback and past-state raycasts.
     internal List<Body> bodies;
-    //internal IBroadPhase staticBroad;
 
     internal float damping = 0.999f;
 
@@ -55,49 +54,38 @@ namespace Volatile
     // you want to run multiple World instances simultaneously.
     private Manifold.Pool manifoldPool;
     private Contact.Pool contactPool;
+
+    // TODO: Could convert to a linked list using the pool pointers, maybe?
     private List<Manifold> manifolds;
 
     public World(float damping = 0.999f)
     {
       this.DeltaTime = Time.fixedDeltaTime;
       this.IterationCount = Config.DEFAULT_ITERATION_COUNT;
-
-      this.bodies = new List<Body>();
-      //this.staticBroad = new NaiveBroadphase();
-
       this.damping = damping;
 
+      this.bodies = new List<Body>();
       this.contactPool = new Contact.Pool();
       this.manifoldPool = new Manifold.Pool(this.contactPool);
       this.manifolds = new List<Manifold>();
     }
 
     /// <summary>
-    /// Adds a body to the world, dynamic or static.
+    /// Adds a body to the world.
     /// </summary>
-    /// <param name="body"></param>
     public void AddBody(Body body)
     {
       this.bodies.Add(body);
-      //if (body.IsStatic == true)
-      //  this.staticBroad.Add(body);
-      //else
-      //  this.dynamicBodies.Add(body);
-      body.World = this;
+      body.AssignWorld(this);
     }
 
     /// <summary>
-    /// Removes a body from the world. Dynamic bodies only.
+    /// Removes a body from the world.
     /// </summary>
-    /// <param name="body"></param>
     public void RemoveBody(Body body)
     {
       this.bodies.Remove(body);
-      //if (body.IsStatic == true)
-      //  this.staticBroad.Remove(body);
-      //else
-      //  this.dynamicBodies.Remove(body);
-      body.World = null;
+      body.AssignWorld(null);
     }
 
     /// <summary>
@@ -114,17 +102,17 @@ namespace Volatile
       this.CleanupManifolds();
     }
 
-    ///// <summary>
-    ///// Updates a single body. Does not allow dynamic-dynamic collisions.
-    ///// </summary>
-    //public void Update(Body body)
-    //{
-    //  body.Update();
+    /// <summary>
+    /// Updates a single body. Does not allow dynamic-dynamic collisions.
+    /// </summary>
+    public void Update(Body body)
+    {
+      body.Update();
 
-    //  this.BroadPhase(body);
-    //  this.UpdateCollision();
-    //  this.CleanupManifolds();
-    //}
+      this.BroadPhase(false);
+      this.UpdateCollision();
+      this.CleanupManifolds();
+    }
 
     #region Tests
     public IEnumerable<Body> Query(
