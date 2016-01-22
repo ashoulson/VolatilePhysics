@@ -121,7 +121,7 @@ namespace Volatile
     {
       this.Position = position;
       this.Angle = radians;
-      this.ApplyPosition();
+      this.OnPositionUpdated();
     }
 
     /// <summary>
@@ -262,13 +262,13 @@ namespace Volatile
       this.shapes = new List<Shape>();
       foreach (Shape shape in shapesToAdd)
         this.AddShape(shape);
-      this.ApplyPosition();
+      this.OnPositionUpdated();
     }
 
     internal void Update()
     {
       this.Integrate();
-      this.ApplyPosition();
+      this.OnPositionUpdated();
     }
 
     #region Fixture/Shape Management
@@ -280,7 +280,7 @@ namespace Volatile
     private void AddShape(Shape shape)
     {
       this.shapes.Add(shape);
-      shape.RegisterBody(this);
+      shape.OnBodyAssigned(this);
     }
     #endregion
 
@@ -310,11 +310,11 @@ namespace Volatile
     /// <summary>
     /// Applies the current position and angle to shapes and the AABB.
     /// </summary>
-    internal void ApplyPosition()
+    internal void OnPositionUpdated()
     {
       this.Facing = VolatileUtil.Polar(this.Angle);
       for (int i = 0; i < this.shapes.Count; i++)
-        this.shapes[i].UpdateWorld();
+        this.shapes[i].OnBodyPositionUpdated();
       this.UpdateAABB();
     }
 

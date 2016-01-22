@@ -85,6 +85,19 @@ namespace Volatile
     internal static int nextId = 0;
     internal int id;
 
+    #region Events
+    internal void OnBodyAssigned(Body body)
+    {
+      this.Body = body;
+      this.ComputeMetrics();
+    }
+
+    internal void OnBodyPositionUpdated()
+    {
+      this.ApplyBodyPosition();
+    }
+    #endregion
+
     #region Tests
     /// <summary>
     /// Checks if a point is contained in this shape. 
@@ -148,28 +161,24 @@ namespace Volatile
       this.Restitution = restitution;
     }
 
-    internal void RegisterBody(Body body)
-    {
-      this.Body = body;
-      this.ComputeMetrics();
-    }
-
-    internal abstract void ComputeMetrics();
-    internal abstract void UpdateWorld();
+    #region Functionality Overrides
+    protected abstract void ComputeMetrics();
+    protected abstract void ApplyBodyPosition();
+    #endregion
 
     #region Test Overrides
-    internal abstract bool ShapeQuery(
+    protected abstract bool ShapeQuery(
       Vector2 bodySpacePoint);
 
-    internal abstract bool ShapeQuery(
+    protected abstract bool ShapeQuery(
       Vector2 bodySpacePoint,
       float radius);
 
-    internal abstract bool ShapeRayCast(
+    protected abstract bool ShapeRayCast(
       ref RayCast bodySpaceRay,
       ref RayResult result);
 
-    internal abstract bool ShapeCircleCast(
+    protected abstract bool ShapeCircleCast(
       ref RayCast bodySpaceRay,
       float radius,
       ref RayResult result);

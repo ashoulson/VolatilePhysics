@@ -32,6 +32,7 @@ namespace Volatile
     public static float AreaMassRatio = 0.01f;
 
     // Defaults
+    internal const float DEFAULT_DENSITY = 1.0f;
     internal const float DEFAULT_RESTITUTION = 0.5f;
     internal const float DEFAULT_FRICTION = 0.8f;
     internal const int DEFAULT_ITERATION_COUNT = 20;

@@ -90,9 +90,9 @@ namespace Volatile
       return 
         TestCircles(
           circA, 
-          circB, 
-          circB.Origin, 
-          circB.Radius, 
+          circB,
+          circB.worldSpaceOrigin, 
+          circB.radius, 
           pool);
     }
 
@@ -105,8 +105,8 @@ namespace Volatile
       float penetration;
       int ix =
         Collision.FindAxisMaxPenetration(
-          circ.Origin,
-          circ.Radius,
+          circ.worldSpaceOrigin,
+          circ.radius,
           poly.worldSpaceAxes,
           out penetration);
 
@@ -120,7 +120,7 @@ namespace Volatile
 
       // If the circle is past one of the two vertices, check it like
       // a circle-circle intersection where the vertex has radius 0
-      float d = VolatileUtil.Cross(axis.Normal, circ.Origin);
+      float d = VolatileUtil.Cross(axis.Normal, circ.worldSpaceOrigin);
       if (d > VolatileUtil.Cross(axis.Normal, a))
         return Collision.TestCircles(circ, poly, a, 0.0f, pool);
       if (d < VolatileUtil.Cross(axis.Normal, b))
@@ -129,7 +129,7 @@ namespace Volatile
       // Build the collision Manifold
       Manifold manifold = pool.Acquire().Assign(circ, poly);
       Vector2 pos =
-        circ.Origin - (circ.Radius + penetration / 2) * axis.Normal;
+        circ.worldSpaceOrigin - (circ.radius + penetration / 2) * axis.Normal;
       manifold.AddContact(pos, -axis.Normal, penetration);
       return manifold;
     }
@@ -307,8 +307,8 @@ namespace Volatile
       float overrideBRadius,
       ObjectPool<Manifold> pool)
     {
-      Vector2 r = overrideBCenter - shapeA.Origin;
-      float min = shapeA.Radius + overrideBRadius;
+      Vector2 r = overrideBCenter - shapeA.worldSpaceOrigin;
+      float min = shapeA.radius + overrideBRadius;
       float distSq = r.sqrMagnitude;
 
       if (distSq >= min * min)
@@ -318,8 +318,8 @@ namespace Volatile
       float distInv = 1.0f / dist;
 
       Vector2 pos =
-        shapeA.Origin +
-        (0.5f + distInv * (shapeA.Radius - min / 2.0f)) * r;
+        shapeA.worldSpaceOrigin +
+        (0.5f + distInv * (shapeA.radius - min / 2.0f)) * r;
 
       // Build the collision Manifold
       Manifold manifold = pool.Acquire().Assign(shapeA, shapeB);
