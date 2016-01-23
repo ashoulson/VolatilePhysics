@@ -45,7 +45,6 @@ namespace Volatile
   {
     internal const int NULL_NODE_ID = -1;
     internal const int EMPTY_HEIGHT = -1;
-
     internal const int DEFAULT_CAPACITY = 16;
 
     /// <summary>
@@ -80,9 +79,7 @@ namespace Volatile
       }
     }
 
-    //private Stack<int> _raycastStack = new Stack<int>(256);
-    //private Stack<int> _queryStack = new Stack<int>(256);
-
+    private int frame;
     private int freeList;
     private int nodeCapacity;
     private int nodeCount;
@@ -90,6 +87,8 @@ namespace Volatile
     private TreeNode[] nodes;
     private int rootId;
     private Dictionary<Body, int> bodyToId;
+
+    private Stack<int> testStack = new Stack<int>(256);
 
     public int Height
     {
@@ -106,6 +105,7 @@ namespace Volatile
     /// </summary>
     public AABBTree(int capacity = AABBTree.DEFAULT_CAPACITY)
     {
+      this.frame = History.CURRENT_FRAME;
       this.rootId = AABBTree.NULL_NODE_ID;
 
       this.nodeCapacity = capacity;
@@ -178,143 +178,81 @@ namespace Volatile
     #endregion
 
     #region Tests
-    ///// <summary>
-    ///// Query an AABB for overlapping proxies. The callback class
-    ///// is called for each proxy that overlaps the supplied AABB.
-    ///// </summary>
-    ///// <param name="callback">The callback.</param>
-    ///// <param name="aabb">The aabb.</param>
-    //public void Query(Func<int, bool> callback, ref AABB aabb)
-    //{
-    //  _queryStack.Clear();
-    //  _queryStack.Push(this.root);
+    /// <summary>
+    /// Query an AABB for any bodies stored in leaves overlapping the provided
+    /// AABB and returns them in the given list. Note that this does not check
+    /// the bodies' bounding AABBs themselves, just the "fat" AABBs 
+    /// surrounding those bodies in the tree.
+    /// </summary>
+    public void Query(AABB aabb, IList<Body> foundBodies)
+    {
+      this.testStack.Clear();
+      this.testStack.Push(this.rootId);
 
-    //  while (_queryStack.Count > 0)
-    //  {
-    //    int nodeId = _queryStack.Pop();
-    //    if (nodeId == DynamicTree<T>.NULL_NODE)
-    //    {
-    //      continue;
-    //    }
+      while (this.testStack.Count > 0)
+      {
+        int nodeId = this.testStack.Pop();
+        if (nodeId == AABBTree.NULL_NODE_ID)
+          continue;
 
-    //    TreeNode<T> node = this.nodes[nodeId];
+        TreeNode node = this.nodes[nodeId];
 
-    //    if (AABB.TestOverlap(ref node.AABB, ref aabb))
-    //    {
-    //      if (node.IsLeaf())
-    //      {
-    //        bool proceed = callback(nodeId);
-    //        if (proceed == false)
-    //        {
-    //          return;
-    //        }
-    //      }
-    //      else
-    //      {
-    //        _queryStack.Push(node.left);
-    //        _queryStack.Push(node.right);
-    //      }
-    //    }
-    //  }
-    //}
+        if (node.AABB.Intersect(aabb))
+        {
+          if (node.IsLeaf)
+          {
+            Body body = node.body;
+            if (node.body != null)
+              foundBodies.Add(body);
+          }
+          else
+          {
+            this.testStack.Push(node.leftId);
+            this.testStack.Push(node.rightId);
+          }
+        }
+      }
+    }
 
-    ///// <summary>
-    ///// Ray-cast against the proxies in the tree. This relies on the callback
-    ///// to perform a exact ray-cast in the case were the proxy contains a Shape.
-    ///// The callback also performs the any collision filtering. This has performance
-    ///// roughly equal to k * log(n), where k is the number of collisions and n is the
-    ///// number of proxies in the tree.
-    ///// </summary>
-    ///// <param name="callback">A callback class that is called for each proxy that is hit by the ray.</param>
-    ///// <param name="input">The ray-cast input data. The ray extends from p1 to p1 + maxFraction * (p2 - p1).</param>
-    //public void RayCast(Func<RayCastInput, int, float> callback, ref RayCastInput input)
-    //{
-    //  Vector2 p1 = input.Point1;
-    //  Vector2 p2 = input.Point2;
-    //  Vector2 r = p2 - p1;
-    //  Debug.Assert(r.LengthSquared() > 0.0f);
-    //  r.Normalize();
+    public void RayCast(
+     ref RayCast ray,
+     ref RayResult result,
+     BodyFilter filter = null)
+    {
+      this.testStack.Clear();
+      this.testStack.Push(this.rootId);
 
-    //  // v is perpendicular to the segment.
-    //  Vector2 absV = MathUtils.Abs(new Vector2(-r.Y, r.X)); //FPE: Inlined the 'v' variable
+      while (this.testStack.Count > 0)
+      {
+        int nodeId = this.testStack.Pop();
+        if (nodeId == AABBTree.NULL_NODE_ID)
+          continue;
 
-    //  // Separating axis for segment (Gino, p80).
-    //  // |dot(v, p1 - c)| > dot(|v|, h)
+        TreeNode node = this.nodes[nodeId];
 
-    //  float maxFraction = input.MaxFraction;
-
-    //  // Build a bounding box for the segment.
-    //  AABB segmentAABB = new AABB();
-    //  {
-    //    Vector2 t = p1 + maxFraction * (p2 - p1);
-    //    Vector2.Min(ref p1, ref t, out segmentAABB.LowerBound);
-    //    Vector2.Max(ref p1, ref t, out segmentAABB.UpperBound);
-    //  }
-
-    //  _raycastStack.Clear();
-    //  _raycastStack.Push(this.root);
-
-    //  while (_raycastStack.Count > 0)
-    //  {
-    //    int nodeId = _raycastStack.Pop();
-    //    if (nodeId == DynamicTree<T>.NULL_NODE)
-    //    {
-    //      continue;
-    //    }
-
-    //    TreeNode<T> node = this.nodes[nodeId];
-
-    //    if (AABB.TestOverlap(ref node.AABB, ref segmentAABB) == false)
-    //    {
-    //      continue;
-    //    }
-
-    //    // Separating axis for segment (Gino, p80).
-    //    // |dot(v, p1 - c)| > dot(|v|, h)
-    //    Vector2 c = node.AABB.Center;
-    //    Vector2 h = node.AABB.Extents;
-    //    float separation = Math.Abs(Vector2.Dot(new Vector2(-r.Y, r.X), p1 - c)) - Vector2.Dot(absV, h);
-    //    if (separation > 0.0f)
-    //    {
-    //      continue;
-    //    }
-
-    //    if (node.IsLeaf())
-    //    {
-    //      RayCastInput subInput;
-    //      subInput.Point1 = input.Point1;
-    //      subInput.Point2 = input.Point2;
-    //      subInput.MaxFraction = maxFraction;
-
-    //      float value = callback(subInput, nodeId);
-
-    //      if (value == 0.0f)
-    //      {
-    //        // the client has terminated the raycast.
-    //        return;
-    //      }
-
-    //      if (value > 0.0f)
-    //      {
-    //        // Update segment bounding box.
-    //        maxFraction = value;
-    //        Vector2 t = p1 + maxFraction * (p2 - p1);
-    //        segmentAABB.LowerBound = Vector2.Min(p1, t);
-    //        segmentAABB.UpperBound = Vector2.Max(p1, t);
-    //      }
-    //    }
-    //    else
-    //    {
-    //      _raycastStack.Push(node.left);
-    //      _raycastStack.Push(node.right);
-    //    }
-    //  }
-    //}
+        if (node.AABB.RayCast(ref ray))
+        {
+          if (node.IsLeaf)
+          {
+            Body body = node.body;
+            if (Body.Filter(body, filter) == true)
+              body.RayCast(ref ray, ref result);
+          }
+          else
+          {
+            this.testStack.Push(node.leftId);
+            this.testStack.Push(node.rightId);
+          }
+        }
+      }
+    }
     #endregion
 
     #region Internals
+
+    #region Free List
     /// <summary>
-    /// Allocates a free space for a node in the buffer.
+    /// Allocates a free space from the buffer for a node.
     /// </summary>
     private int AllocateNode()
     {
@@ -330,7 +268,7 @@ namespace Volatile
     }
 
     /// <summary>
-    /// Allocates more space for storing tree nodes.
+    /// Allocates more space on the heap for storing tree nodes.
     /// </summary>
     private void Expand()
     {
@@ -353,6 +291,9 @@ namespace Volatile
       this.freeList = this.nodeCount;
     }
 
+    /// <summary>
+    /// Returns a node to the buffer to be used later.
+    /// </summary>
     private void FreeNode(int nodeId)
     {
       Debug.Assert((0 <= nodeId) && (nodeId < this.nodeCapacity));
@@ -363,7 +304,9 @@ namespace Volatile
       this.freeList = nodeId;
       this.nodeCount--;
     }
+    #endregion
 
+    #region AABB Tree
     private void InsertLeaf(int nodeId)
     {
       if (this.rootId == AABBTree.NULL_NODE_ID)
@@ -409,6 +352,63 @@ namespace Volatile
 
       // Walk back up the tree fixing heights and AABBs
       this.UpdateTreeRoots(this.nodes[nodeId].parentOrNextId);
+
+      //Validate();
+    }
+
+    /// <summary>
+    /// Removes a leaf from the tree
+    /// </summary>
+    private void RemoveLeaf(int nodeId)
+    {
+      if (nodeId == this.rootId)
+      {
+        this.rootId = AABBTree.NULL_NODE_ID;
+        return;
+      }
+
+      int parent = this.nodes[nodeId].parentOrNextId;
+      int grandParent = this.nodes[parent].parentOrNextId;
+
+      int sibling;
+      if (this.nodes[parent].leftId == nodeId)
+        sibling = this.nodes[parent].rightId;
+      else
+        sibling = this.nodes[parent].leftId;
+
+      if (grandParent != AABBTree.NULL_NODE_ID)
+      {
+        // Destroy parent and connect sibling to grandParent
+        if (this.nodes[grandParent].leftId == parent)
+          this.nodes[grandParent].leftId = sibling;
+        else
+          this.nodes[grandParent].rightId = sibling;
+        this.nodes[sibling].parentOrNextId = grandParent;
+        this.FreeNode(parent);
+
+        // Adjust ancestor bounds
+        int index = grandParent;
+        while (index != AABBTree.NULL_NODE_ID)
+        {
+          index = this.Balance(index);
+
+          int left = this.nodes[index].leftId;
+          int right = this.nodes[index].rightId;
+
+          this.nodes[index].AABB =
+            AABB.CreateMerged(this.nodes[left].AABB, this.nodes[right].AABB);
+          this.nodes[index].height =
+            Math.Max(this.nodes[left].height, this.nodes[right].height) + 1;
+
+          index = this.nodes[index].parentOrNextId;
+        }
+      }
+      else
+      {
+        this.rootId = sibling;
+        this.nodes[sibling].parentOrNextId = AABBTree.NULL_NODE_ID;
+        this.FreeNode(parent);
+      }
 
       //Validate();
     }
@@ -477,63 +477,6 @@ namespace Volatile
       }
 
       return index;
-    }
-
-    /// <summary>
-    /// Removes a leaf from the tree
-    /// </summary>
-    private void RemoveLeaf(int nodeId)
-    {
-      if (nodeId == this.rootId)
-      {
-        this.rootId = AABBTree.NULL_NODE_ID;
-        return;
-      }
-
-      int parent = this.nodes[nodeId].parentOrNextId;
-      int grandParent = this.nodes[parent].parentOrNextId;
-
-      int sibling;
-      if (this.nodes[parent].leftId == nodeId)
-        sibling = this.nodes[parent].rightId;
-      else
-        sibling = this.nodes[parent].leftId;
-
-      if (grandParent != AABBTree.NULL_NODE_ID)
-      {
-        // Destroy parent and connect sibling to grandParent
-        if (this.nodes[grandParent].leftId == parent)
-          this.nodes[grandParent].leftId = sibling;
-        else
-          this.nodes[grandParent].rightId = sibling;
-        this.nodes[sibling].parentOrNextId = grandParent;
-        this.FreeNode(parent);
-
-        // Adjust ancestor bounds
-        int index = grandParent;
-        while (index != AABBTree.NULL_NODE_ID)
-        {
-          index = this.Balance(index);
-
-          int left = this.nodes[index].leftId;
-          int right = this.nodes[index].rightId;
-
-          this.nodes[index].AABB =
-            AABB.CreateMerged(this.nodes[left].AABB, this.nodes[right].AABB);
-          this.nodes[index].height =
-            Math.Max(this.nodes[left].height, this.nodes[right].height) + 1;
-
-          index = this.nodes[index].parentOrNextId;
-        }
-      }
-      else
-      {
-        this.rootId = sibling;
-        this.nodes[sibling].parentOrNextId = AABBTree.NULL_NODE_ID;
-        this.FreeNode(parent);
-      }
-
-      //Validate();
     }
 
     private float ComputeNodeCost(int index, AABB leafAABB)
@@ -646,6 +589,24 @@ namespace Volatile
 
       return iX;
     }
+
+    /// <summary>
+    /// Compute the height of a subtree.
+    /// </summary>
+    public int ComputeHeight(int nodeId)
+    {
+      Debug.Assert((0 <= nodeId) && (nodeId < this.nodeCapacity));
+
+      TreeNode node = this.nodes[nodeId];
+      if (node.IsLeaf)
+        return 0;
+
+      int heightLeft = ComputeHeight(node.leftId);
+      int heightRight = ComputeHeight(node.rightId);
+      return Mathf.Max(heightLeft, heightRight) + 1;
+    }
+    #endregion
+
     #endregion
 
     #region Debug
@@ -719,22 +680,6 @@ namespace Volatile
       Debug.Assert(expectedheight == this.ComputeHeight());
 
       Debug.Assert(this.nodeCount + freeCount == this.nodeCapacity);
-    }
-
-    /// <summary>
-    /// Compute the height of a sub-tree.
-    /// </summary>
-    public int ComputeHeight(int nodeId)
-    {
-      Debug.Assert((0 <= nodeId) && (nodeId < this.nodeCapacity));
-
-      TreeNode node = this.nodes[nodeId];
-      if (node.IsLeaf)
-        return 0;
-
-      int heightLeft = ComputeHeight(node.leftId);
-      int heightRight = ComputeHeight(node.rightId);
-      return Mathf.Max(heightLeft, heightRight) + 1;
     }
 
     /// <summary>

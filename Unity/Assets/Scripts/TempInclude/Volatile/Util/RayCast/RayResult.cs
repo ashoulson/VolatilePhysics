@@ -45,7 +45,12 @@ namespace Volatile
 
     private Shape shape;
     private float distance;
-    private Vector2 normal;
+    internal Vector2 normal;
+
+    public Vector2 ComputePoint(ref RayCast cast)
+    {
+      return cast.origin + (cast.direction * this.distance);
+    }
 
     internal void Set(
       Shape shape,
@@ -70,17 +75,6 @@ namespace Volatile
       this.shape = shape;
       this.distance = 0.0f;
       this.normal = Vector2.zero;
-    }
-
-    internal void ConvertToWorldSpace(ref Image record)
-    {
-      if (this.normal != Vector2.zero)
-        this.normal = record.BodyToWorldDirection(this.normal);
-    }
-
-    public Vector2 ComputePoint(ref RayCast cast)
-    {
-      return cast.origin + (cast.direction * this.distance);
     }
   }
 }

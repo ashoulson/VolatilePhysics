@@ -9,14 +9,10 @@ public class SimpleForce : MonoBehaviour
   private VolatileBody body;
 
   [SerializeField]
-  private float intensity;
+  private Vector2 force;
 
   void FixedUpdate() 
   {
-    if (Input.GetKeyDown(KeyCode.F) == true)
-    {
-      Vector2 force = transform.up * this.intensity * Time.fixedDeltaTime;
-      this.body.Body.AddForce(force, transform.position);
-    }
+    this.body.Body.AddForce(force, transform.position);
   }
 }
