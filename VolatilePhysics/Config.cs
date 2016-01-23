@@ -21,7 +21,7 @@
 using System;
 using System.Collections.Generic;
 
-#if !NO_UNITY
+#if VOLATILE_UNITY
 using UnityEngine;
 #else
 using VolatileEngine;
@@ -36,12 +36,7 @@ namespace Volatile
     public static float AreaMassRatio = 0.01f;
 
     // Defaults
-#if !NO_UNITY
-    internal const float DEFAULT_DELTA_TIME = Time.fixedDeltaTime;
-#else
     internal const float DEFAULT_DELTA_TIME = 0.02f;
-#endif
-
     internal const float DEFAULT_DAMPING = 0.999f;
     internal const float DEFAULT_DENSITY = 1.0f;
     internal const float DEFAULT_RESTITUTION = 0.5f;
@@ -61,6 +56,6 @@ namespace Volatile
 
     // The minimum mass a dynamic object can have before it is
     // converted to a static object
-    internal const float MINIMUM_DYNAMIC_MASS = 0.05f;
+    internal const float MINIMUM_DYNAMIC_MASS = 0.00001f;
   }
 }

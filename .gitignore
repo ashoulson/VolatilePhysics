@@ -25,10 +25,6 @@ Unity/Assets/UnityVS.meta
 Unity/Assets/UnityVS/*
 Unity/UnityVS.*
 
-# Resources
-Unity/Assets/Resources/*
-Unity/Assets/Resources.meta
-
 # Build Files
 VolatilePhysics/bin/*
 VolatilePhysics/obj/*

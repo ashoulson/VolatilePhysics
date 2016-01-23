@@ -21,7 +21,7 @@
 using System;
 using System.Collections.Generic;
 
-#if !NO_UNITY
+#if VOLATILE_UNITY
 using UnityEngine;
 #else
 using VolatileEngine;
@@ -79,33 +79,36 @@ namespace Volatile
     }
 
     #region Debug
-#if !NO_UNITY
+#if VOLATILE_UNITY
     public static void Draw(Body body)
     {
       body.GizmoDraw(
-        new Color(1.0f, 1.0f, 0.0f, 1.0f), // Edge Color
-        new Color(1.0f, 0.0f, 1.0f, 1.0f), // Normal Color
-        new Color(1.0f, 0.0f, 0.0f, 1.0f), // Body Origin Color
-        new Color(0.0f, 0.0f, 0.0f, 1.0f), // Shape Origin Color
-        new Color(0.1f, 0.0f, 0.5f, 1.0f), // Body AABB Color
-        new Color(0.7f, 0.0f, 0.3f, 0.5f), // Shape AABB Color
+        new Color(1.0f, 1.0f, 0.0f, 1.0f),  // Edge Color
+        new Color(1.0f, 0.0f, 1.0f, 1.0f),  // Normal Color
+        new Color(1.0f, 0.0f, 0.0f, 1.0f),  // Body Origin Color
+        new Color(0.0f, 0.0f, 0.0f, 1.0f),  // Shape Origin Color
+        new Color(0.1f, 0.0f, 0.5f, 1.0f),  // Body AABB Color
+        new Color(0.7f, 0.0f, 0.3f, 0.5f),  // Shape AABB Color
         0.25f);
+
+      body.GizmoDrawHistory(
+        new Color(0.0f, 0.0f, 1.0f, 0.3f)); // History AABB Color
     }
 
     public static void Draw(Shape shape)
     {
       shape.GizmoDraw(
-        new Color(1.0f, 1.0f, 0.0f, 1.0f), // Edge Color
-        new Color(1.0f, 0.0f, 1.0f, 1.0f), // Normal Color
-        new Color(0.0f, 0.0f, 0.0f, 1.0f), // Origin Color
-        new Color(0.7f, 0.0f, 0.3f, 1.0f), // AABB Color
+        new Color(1.0f, 1.0f, 0.0f, 1.0f),  // Edge Color
+        new Color(1.0f, 0.0f, 1.0f, 1.0f),  // Normal Color
+        new Color(0.0f, 0.0f, 0.0f, 1.0f),  // Origin Color
+        new Color(0.7f, 0.0f, 0.3f, 1.0f),  // AABB Color
         0.25f);
     }
 
     public static void Draw(AABB aabb)
     {
       aabb.GizmoDraw(
-        new Color(1.0f, 0.0f, 0.5f, 1.0f)); // AABB Color
+        new Color(1.0f, 0.0f, 0.5f, 1.0f));  // AABB Color
     }
 #endif
     #endregion

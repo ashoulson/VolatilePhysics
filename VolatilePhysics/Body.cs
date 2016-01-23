@@ -21,7 +21,7 @@
 using System;
 using System.Collections.Generic;
 
-#if !NO_UNITY
+#if VOLATILE_UNITY
 using UnityEngine;
 #else
 using VolatileEngine;
@@ -33,6 +33,17 @@ namespace Volatile
 
   public class Body
   {
+    /// <summary>
+    /// A predefined filter that disallows collisions between dynamic bodies.
+    /// </summary>
+    public static bool DisallowDynamic(Body a, Body b)
+    {
+      return
+        (a != null) &&
+        (b != null) &&
+        (a.IsStatic || b.IsStatic);
+    }
+
     #region History
     /// <summary>
     /// A stored historical image of a past body state, used for historical
@@ -42,12 +53,20 @@ namespace Volatile
     /// on shapes use the local-space ray (this applies both for current-
     /// time and past-time raycasts and point queries).
     /// </summary>
-    private struct StateRecord
+    private struct State
     {
       internal int frame;
       internal AABB aabb;
       internal Vector2 position;
       internal Vector2 facing;
+
+      internal void Store(ref State other, int validatedFrame)
+      {
+        this.frame = validatedFrame;
+        this.aabb = other.aabb;
+        this.position = other.position;
+        this.facing = other.facing;
+      }
 
       #region World-Space to Body-Space Transformations
       internal Vector2 WorldToBodyPoint(Vector2 vector)
@@ -90,55 +109,65 @@ namespace Volatile
       #endregion
     }
 
-    private StateRecord[] historyStates;
-    private StateRecord currentState;
+    private State[] historyStates;
+    private State currentState;
 
     /// <summary>
     /// Initializes the buffer for storing past body states/spaces.
     /// </summary>
     internal void StartHistory(int length)
     {
-      this.historyStates = new StateRecord[length];
-      for (int i = 0; i < length; i++)
-        this.historyStates[i].frame = History.CURRENT_FRAME;
+      if (this.IsStatic == false)
+      {
+        this.historyStates = new State[length];
+        for (int i = 0; i < length; i++)
+          this.historyStates[i].frame = History.CURRENT_FRAME;
+      }
     }
 
     /// <summary>
     /// Stores a snapshot of this body's current state/space to a frame.
     /// </summary>
-    internal void StoreImage(int frame)
+    internal void StoreState(int validatedFrame)
     {
       if (this.historyStates != null)
       {
         int length = this.historyStates.Length;
         if (length > 0)
         {
-          this.historyStates[frame % length] = this.currentState;
+          this.historyStates[validatedFrame % length].Store(
+            ref this.currentState,
+            validatedFrame);
           return;
         }
       }
-
-      Debug.LogError("Could not store history for frame: " + frame);
     }
 
     /// <summary>
     /// Retrieves a snapshot of the body's state/space at a frame.
     /// Logs an error and defaults to the current state if it can't be found.
     /// </summary>
-    private StateRecord GetRecord(int frame)
+    private State GetState(int validatedFrame)
     {
-      if (frame == History.CURRENT_FRAME)
+      if (validatedFrame == History.CURRENT_FRAME)
         return this.currentState;
 
-      int length = this.historyStates.Length;
-      if ((this.historyStates != null) && (length > 0))
+      if (this.historyStates != null)
       {
-        StateRecord image = this.historyStates[frame % length];
-        if (image.frame == frame)
-          return image;
+        int length = this.historyStates.Length;
+        if (length > 0)
+        {
+          State image = this.historyStates[validatedFrame % length];
+          if (image.frame == validatedFrame)
+            return image;
+
+          Debug.LogWarning(
+            "Wrong frame history access! Expected " + 
+            validatedFrame +
+            ", but got " + image.frame);
+        }
       }
 
-      Debug.LogError("No stored history image for frame: " + frame);
       return this.currentState;
     }
     #endregion
@@ -259,12 +288,12 @@ namespace Volatile
     /// Checks if a point is contained in this body. 
     /// Begins with AABB checks.
     /// </summary>
-    public bool Query(
+    internal bool Query(
       Vector2 point, 
-      int frame = History.CURRENT_FRAME)
+      int validatedFrame = History.CURRENT_FRAME)
     {
       // AABB check done in world space (because it keeps changing)
-      StateRecord record = this.GetRecord(frame);
+      State record = this.GetState(validatedFrame);
       if (record.aabb.Query(point) == false)
         return false;
 
@@ -280,13 +309,13 @@ namespace Volatile
     /// Checks if a circle overlaps with this body. 
     /// Begins with AABB checks.
     /// </summary>
-    public bool Query(
+    internal bool Query(
       Vector2 point, 
       float radius,
-      int frame = History.CURRENT_FRAME)
+      int validatedFrame = History.CURRENT_FRAME)
     {
       // AABB check done in world space (because it keeps changing)
-      StateRecord record = this.GetRecord(frame);
+      State record = this.GetState(validatedFrame);
       if (record.aabb.Query(point, radius) == false)
         return false;
 
@@ -302,12 +331,12 @@ namespace Volatile
     /// Performs a ray cast check on this body. 
     /// Begins with AABB checks.
     /// </summary>
-    public bool RayCast(
+    internal bool RayCast(
       ref RayCast ray, 
       ref RayResult result,
-      int frame = History.CURRENT_FRAME)
+      int validatedFrame = History.CURRENT_FRAME)
     {
-      StateRecord record = this.GetRecord(frame);
+      State record = this.GetState(validatedFrame);
       if (record.aabb.RayCast(ref ray) == false)
         return false;
 
@@ -329,13 +358,13 @@ namespace Volatile
     /// Performs a circle cast check on this body. 
     /// Begins with AABB checks.
     /// </summary>
-    public bool CircleCast(
+    internal bool CircleCast(
       ref RayCast ray,
       float radius,
       ref RayResult result,
-      int frame = History.CURRENT_FRAME)
+      int validatedFrame = History.CURRENT_FRAME)
     {
-      StateRecord record = this.GetRecord(frame);
+      State record = this.GetState(validatedFrame);
       if (record.aabb.CircleCast(ref ray, radius) == false)
         return false;
 
@@ -383,12 +412,12 @@ namespace Volatile
     }
 
     #region Collision
-    internal bool CanCollide(Body other, bool allowDynamic)
+    internal bool CanCollide(Body other)
     {
       // Ignore self and static-static collisions
       if ((this == other) || (this.IsStatic && other.IsStatic))
         return false;
-      return (allowDynamic || (this.IsStatic || this.IsStatic));
+      return true;
     }
 
     internal void ApplyImpulse(Vector2 j, Vector2 r)
@@ -551,7 +580,7 @@ namespace Volatile
     #endregion
 
     #region Debug
-#if !NO_UNITY
+#if VOLATILE_UNITY
     public void GizmoDraw(
       Color edgeColor,
       Color normalColor,
@@ -582,6 +611,25 @@ namespace Volatile
           shapeOriginColor,
           shapeAabbColor,
           normalLength);
+
+      Gizmos.color = current;
+    }
+
+    public void GizmoDrawHistory(Color aabbColor)
+    {
+      Color current = Gizmos.color;
+
+      if (this.historyStates != null)
+      {
+        for (int i = 0; i < this.historyStates.Length; i++)
+        {
+          State state = this.historyStates[i];
+          if (state.frame != History.CURRENT_FRAME)
+          {
+            state.aabb.GizmoDraw(aabbColor);
+          }
+        }
+      }
 
       Gizmos.color = current;
     }

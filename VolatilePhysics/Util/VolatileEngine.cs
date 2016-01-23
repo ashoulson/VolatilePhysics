@@ -21,7 +21,7 @@
 using System;
 using System.Collections.Generic;
 
-#if NO_UNITY
+#if !VOLATILE_UNITY
 // Standalone functions equivalent to Unity's functions, for using Volatile
 // outside of the Unity Engine
 namespace VolatileEngine
@@ -148,6 +148,7 @@ namespace VolatileEngine
     public static event Action<object> Logged;
     public static event Action<object> LoggedWarning;
     public static event Action<object> LoggedError;
+    public static event Action AssertFailed;
 
     internal static void Log(object obj) 
     {
@@ -165,6 +166,13 @@ namespace VolatileEngine
     {
       if (Debug.LoggedError != null)
         Debug.LoggedError.Invoke(obj);
+    }
+
+    internal static void Assert(bool condition)
+    {
+      if (condition == false)
+        if (Debug.AssertFailed != null)
+          Debug.AssertFailed.Invoke();
     }
   }
 }

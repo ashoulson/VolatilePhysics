@@ -21,7 +21,7 @@
 using System;
 using System.Collections.Generic;
 
-#if !NO_UNITY
+#if VOLATILE_UNITY
 using UnityEngine;
 #else
 using VolatileEngine;
@@ -147,7 +147,7 @@ namespace Volatile
     #endregion
 
     #region Debug
-#if !NO_UNITY
+#if VOLATILE_UNITY
     public override void GizmoDraw(
       Color edgeColor, 
       Color normalColor, 

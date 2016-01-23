@@ -21,7 +21,7 @@
 using System;
 using System.Collections.Generic;
 
-#if !NO_UNITY
+#if VOLATILE_UNITY
 using UnityEngine;
 #else
 using VolatileEngine;
@@ -29,8 +29,43 @@ using VolatileEngine;
 
 namespace Volatile
 {
-  public static class History
+  internal static class History
   {
-    public const int CURRENT_FRAME = -1;
+    internal const int CURRENT_FRAME = -1;
+
+    /// <summary>
+    /// Validates user-input frame numbers for processing internally.
+    /// </summary>
+    internal static bool IsFrameValid(int? frame)
+    {
+      if (frame.HasValue == false)
+        return false;
+
+      if (frame.Value < 0)
+      {
+        Debug.LogError("Invalid frame value: " + frame);
+        return false;
+      }
+
+      return true;
+    }
+
+    /// <summary>
+    /// Validates user-input frame numbers and returns a converted
+    /// true frame value for internal use.
+    /// </summary>
+    internal static int ConvertToValidated(int? frame)
+    {
+      if (frame.HasValue == false)
+        return History.CURRENT_FRAME;
+
+      if (frame.Value < 0)
+      {
+        Debug.LogError("Invalid frame value: " + frame);
+        return History.CURRENT_FRAME;
+      }
+
+      return frame.Value;
+    }
   }
 }
