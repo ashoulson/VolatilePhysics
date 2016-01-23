@@ -18,11 +18,9 @@ public class VolatilePolygon : VolatileShape
     Vector2[] vertices = new Vector2[this.points.Length];
     for (int i = 0; i < this.points.Length; i++)
       vertices[i] = this.points[i].position;
-    this.shape = 
+    this.shape =
       Polygon.FromWorldVertices(
-        this.transform.position,
-        this.transform.right, 
-        vertices, 
+        vertices,
         this.density);
   }
 
@@ -36,14 +34,7 @@ public class VolatilePolygon : VolatileShape
       Vector2 u = this.points[i].position;
       Vector2 v = this.points[(i + 1) % this.points.Length].position;
       Gizmos.DrawLine(u, v);
-
-      Gizmos.color = Color.black;
-      Gizmos.DrawLine(this.points[i].position, this.transform.position);
     }
-
-    // Draw origin
-    Gizmos.color = Color.black;
-    Gizmos.DrawWireSphere(this.transform.position, 0.05f);
 
     Gizmos.color = current;
   }
