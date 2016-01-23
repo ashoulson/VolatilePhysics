@@ -42,3 +42,7 @@ Caveats:
 - Volatile is designed primarily for *dynamic-static* object collisions (like a character colliding with world geometry). *Dynamic-dynamic* object collisions are supported, but resolving them is difficult to synchronize over any network simulation if each body has a different client owner. Volatile provides no explicit support for synchronizing dynamic object collisions over a network.
 - Volatile has low frame coherence compared to most physics engines due to potential network rollbacks and corrections. Because of this, efficient spatial decomposition techniques are non-trivial, and the engine would benefit less from caching techniques like warm starting. In complex systems, Volatile's convergence will be outperformed by more sophisticated physics solvers, but Volatile should still be sufficient for many game applications.
 - Volatile currently does not use broadphase spatial decomposition (like an octree or dynamic tree). Several implementation attempts exist in the commit history, but these data structures failed to significantly improve performance in evaluation. Spatial decomposition is notably more complicated in Volatile than in other engines due to Volatile's built-in support for storing and querying historical world states.
+
+---
+
+By default, Volatile builds with a VOLATILE_UNITY compiler flag that links against UnityEngine.dll and uses Unity data structures (like Vector2). Volatile can be built as a standalone library by removing this flag.
