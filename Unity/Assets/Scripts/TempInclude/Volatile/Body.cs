@@ -29,13 +29,47 @@ namespace Volatile
 
   public class Body
   {
-    #region History Tracking
-    private Record[] history;
-    private Record currentStatus;
+    #region History
+    private Image[] historyStates;
+    private Image currentState;
 
-    private Record GetRecord(int frame)
+    internal void StartHistory(int length)
     {
-      return this.currentStatus;
+      this.historyStates = new Image[length];
+      for (int i = 0; i < length; i++)
+        this.historyStates[i].frame = History.CURRENT_FRAME;
+    }
+
+    internal void StoreImage(int frame)
+    {
+      if (this.historyStates != null)
+      {
+        int length = this.historyStates.Length;
+        if (length > 0)
+        {
+          this.historyStates[frame % length] = this.currentState;
+          return;
+        }
+      }
+
+      Debug.LogError("Could not store history for frame: " + frame);
+    }
+
+    private Image GetRecord(int frame)
+    {
+      if (frame == History.CURRENT_FRAME)
+        return this.currentState;
+
+      int length = this.historyStates.Length;
+      if ((this.historyStates != null) && (length > 0))
+      {
+        Image image = this.historyStates[frame % length];
+        if (image.frame == frame)
+          return image;
+      }
+
+      Debug.LogError("No stored history image for frame: " + frame);
+      return this.currentState;
     }
     #endregion
 
@@ -44,7 +78,8 @@ namespace Volatile
       return ((filter == null) || (filter.Invoke(body) == true));
     }
 
-    internal static Body CreateDynamic(
+    #region Factory Functions
+    public static Body CreateDynamic(
       Vector2 position,
       float radians,
       IEnumerable<Shape> shapesToAdd)
@@ -54,7 +89,7 @@ namespace Volatile
       return body;
     }
 
-    internal static Body CreateStatic(
+    public static Body CreateStatic(
       Vector2 position,
       float radians,
       IEnumerable<Shape> shapesToAdd)
@@ -63,6 +98,7 @@ namespace Volatile
       body.SetStatic();
       return body;
     }
+    #endregion
 
     /// <summary>
     /// For attaching arbitrary data to this body.
@@ -81,20 +117,20 @@ namespace Volatile
     // record to avoid code redundancy when performing conversions
     public Vector2 Position
     {
-      get { return this.currentStatus.position; }
-      private set { this.currentStatus.position = value; }
+      get { return this.currentState.position; }
+      private set { this.currentState.position = value; }
     }
 
     public Vector2 Facing
     {
-      get { return this.currentStatus.facing; }
-      private set { this.currentStatus.facing = value; }
+      get { return this.currentState.facing; }
+      private set { this.currentState.facing = value; }
     }
 
     public AABB AABB
     {
-      get { return this.currentStatus.aabb; }
-      private set { this.currentStatus.aabb = value; }
+      get { return this.currentState.aabb; }
+      private set { this.currentState.aabb = value; }
     }
 
     public float Angle { get; private set; }
@@ -122,7 +158,7 @@ namespace Volatile
 
     internal List<Shape> shapes;
 
-    #region Force and Impulse Application
+    #region Manipulation
     public void AddTorque(float torque)
     {
       this.Torque += torque;
@@ -138,50 +174,13 @@ namespace Volatile
       this.Force += force;
       this.Torque += VolatileUtil.Cross(this.Position - point, force);
     }
-    #endregion
 
-    #region Position and Orientation
-    public void SetWorld(Vector2 position, float radians)
+    public void Set(Vector2 position, float radians)
     {
       this.Position = position;
       this.Angle = radians;
       this.Facing = VolatileUtil.Polar(radians);
       this.OnPositionUpdated();
-    }
-
-    internal Vector2 WorldToBodyPoint(
-      Vector2 vector,
-      int frame = History.CURRENT_FRAME)
-    {
-      return this.GetRecord(frame).WorldToBodyPoint(vector);
-    }
-
-    internal Vector2 BodyToWorldPoint(
-      Vector2 vector,
-      int frame = History.CURRENT_FRAME)
-    {
-      return this.GetRecord(frame).BodyToWorldPoint(vector);
-    }
-
-    internal Vector2 WorldToBodyDirection(
-      Vector2 vector,
-      int frame = History.CURRENT_FRAME)
-    {
-      return this.GetRecord(frame).WorldToBodyDirection(vector);
-    }
-
-    internal Vector2 BodyToWorldDirection(
-      Vector2 vector,
-      int frame = History.CURRENT_FRAME)
-    {
-      return this.GetRecord(frame).BodyToWorldDirection(vector);
-    }
-
-    internal Axis BodyToWorldAxis(
-      Axis axis,
-      int frame = History.CURRENT_FRAME)
-    {
-      return this.GetRecord(frame).BodyToWorldAxis(axis);
     }
     #endregion
 
@@ -194,13 +193,16 @@ namespace Volatile
       Vector2 point, 
       int frame = History.CURRENT_FRAME)
     {
-      if (this.AABB.Query(point))
-      {
-        Vector2 bodySpacePoint = this.WorldToBodyPoint(point);
-        for (int i = 0; i < this.shapes.Count; i++)
-          if (this.shapes[i].Query(bodySpacePoint))
-            return true;
-      }
+      // AABB check done in world space (because it keeps changing)
+      Image record = this.GetRecord(frame);
+      if (record.aabb.Query(point) == false)
+        return false;
+
+      // Actual query on shapes done in body space
+      Vector2 bodySpacePoint = record.WorldToBodyPoint(point);
+      for (int i = 0; i < this.shapes.Count; i++)
+        if (this.shapes[i].Query(bodySpacePoint))
+          return true;
       return false;
     }
 
@@ -213,13 +215,16 @@ namespace Volatile
       float radius,
       int frame = History.CURRENT_FRAME)
     {
-      if (this.AABB.Query(point, radius))
-      {
-        Vector2 bodySpacePoint = this.WorldToBodyPoint(point);
-        for (int i = 0; i < this.shapes.Count; i++)
-          if (this.shapes[i].Query(bodySpacePoint, radius))
-            return true;
-      }
+      // AABB check done in world space (because it keeps changing)
+      Image record = this.GetRecord(frame);
+      if (record.aabb.Query(point, radius) == false)
+        return false;
+
+      // Actual query on shapes done in body space
+      Vector2 bodySpacePoint = record.WorldToBodyPoint(point);
+      for (int i = 0; i < this.shapes.Count; i++)
+        if (this.shapes[i].Query(bodySpacePoint, radius))
+          return true;
       return false;
     }
 
@@ -232,21 +237,20 @@ namespace Volatile
       ref RayResult result,
       int frame = History.CURRENT_FRAME)
     {
-      Record record = this.GetRecord(frame);
+      Image record = this.GetRecord(frame);
       if (record.aabb.RayCast(ref ray) == false)
         return false;
 
-      // Once we clear the body's AABB, all subsequent checks 
-      // on the shapes are done in body-space
+      // Actual tests on shapes done in body space
       RayCast bodySpaceRay = ray.ConvertSpace(ref record);
       for (int i = 0; i < this.shapes.Count; i++)
         if (this.shapes[i].RayCast(ref bodySpaceRay, ref result))
           if (result.IsContained)
             return true;
 
-      // Unless we were contained, we need to convert the results
-      // back to world space to be any use
-      if (result.IsValid && (result.Body == this))
+      // We need to convert the results back to world space to be any use
+      // (Doesn't matter if we were contained since there will be no normal)
+      if (result.Body == this)
         result.ConvertToWorldSpace(ref record);
       return result.IsValid;
     }
@@ -261,21 +265,20 @@ namespace Volatile
       ref RayResult result,
       int frame = History.CURRENT_FRAME)
     {
-      Record record = this.GetRecord(frame);
+      Image record = this.GetRecord(frame);
       if (record.aabb.CircleCast(ref ray, radius) == false)
         return false;
 
-      // Once we clear the body's AABB, all subsequent checks 
-      // on the shapes are done in body-space
+      // Actual tests on shapes done in body space
       RayCast bodySpaceRay = ray.ConvertSpace(ref record);
       for (int i = 0; i < this.shapes.Count; i++)
         if (this.shapes[i].CircleCast(ref bodySpaceRay, radius, ref result))
           if (result.IsContained)
             return true;
 
-      // Unless we were contained, we need to convert the results
-      // back to world space to be any use
-      if (result.IsValid && (result.Body == this))
+      // We need to convert the results back to world space to be any use
+      // (Doesn't matter if we were contained since there will be no normal)
+      if (result.Body == this)
         result.ConvertToWorldSpace(ref record);
       return result.IsValid;
     }
@@ -286,8 +289,8 @@ namespace Volatile
       float radians, 
       IEnumerable<Shape> shapesToAdd)
     {
-      this.history = null;
-      this.currentStatus.frame = History.CURRENT_FRAME;
+      this.historyStates = null;
+      this.currentState.frame = History.CURRENT_FRAME;
       this.Position = position;
       this.Angle = radians;
       this.Facing = VolatileUtil.Polar(radians);
@@ -307,12 +310,6 @@ namespace Volatile
     internal void AssignWorld(World world)
     {
       this.World = world;
-    }
-
-    private void AddShape(Shape shape)
-    {
-      this.shapes.Add(shape);
-      shape.AssignBody(this);
     }
 
     #region Collision
@@ -337,11 +334,37 @@ namespace Volatile
     }
     #endregion
 
-    #region Helper Functions
+    #region Transformation Shortcuts
+    internal Vector2 WorldToBodyPointCurrent(Vector2 vector)
+    {
+      return this.currentState.WorldToBodyPoint(vector);
+    }
+
+    internal Vector2 BodyToWorldPointCurrent(Vector2 vector)
+    {
+      return this.currentState.BodyToWorldPoint(vector);
+    }
+
+    internal Axis BodyToWorldAxisCurrent(Axis axis)
+    {
+      return this.currentState.BodyToWorldAxis(axis);
+    }
+    #endregion
+
+    #region Helpers
+    /// <summary>
+    /// Adds a shape and notifies it that it has a new body.
+    /// </summary>
+    private void AddShape(Shape shape)
+    {
+      this.shapes.Add(shape);
+      shape.AssignBody(this);
+    }
+
     /// <summary>
     /// Applies the current position and angle to shapes and the AABB.
     /// </summary>
-    internal void OnPositionUpdated()
+    private void OnPositionUpdated()
     {
       for (int i = 0; i < this.shapes.Count; i++)
         this.shapes[i].OnBodyPositionUpdated();

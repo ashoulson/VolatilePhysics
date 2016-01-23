@@ -56,7 +56,7 @@ public class VolatileBody : MonoBehaviour
     }
     else
     {
-      this.body.SetWorld(
+      this.body.Set(
         this.transform.position, 
         Mathf.Deg2Rad * this.transform.rotation.eulerAngles.z);
     }
@@ -124,6 +124,6 @@ public class VolatileBody : MonoBehaviour
 
   public void Set(Vector2 position, float radians)
   {
-    this.body.SetWorld(position, radians);
+    this.body.Set(position, radians);
   }
 }

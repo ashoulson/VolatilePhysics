@@ -34,7 +34,12 @@ namespace Volatile
     }
 
     public Shape Shape { get { return this.shape; } }
-    public Body Body { get { return this.shape.Body; } }
+
+    public Body Body 
+    { 
+      get { return (this.shape == null) ? null : this.shape.Body; } 
+    }
+
     public float Distance { get { return this.distance; } }
     public Vector2 Normal { get { return this.normal; } }
 
@@ -67,7 +72,7 @@ namespace Volatile
       this.normal = Vector2.zero;
     }
 
-    internal void ConvertToWorldSpace(ref Record record)
+    internal void ConvertToWorldSpace(ref Image record)
     {
       if (this.normal != Vector2.zero)
         this.normal = record.BodyToWorldDirection(this.normal);

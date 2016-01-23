@@ -64,7 +64,7 @@ namespace Volatile
     /// <summary>
     /// Creates a copy of a world-space raycast in a body's local space.
     /// </summary>
-    internal RayCast ConvertSpace(ref Record record)
+    internal RayCast ConvertSpace(ref Image record)
     {
       return new RayCast(
         record.WorldToBodyPoint(this.origin),
