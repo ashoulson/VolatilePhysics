@@ -37,16 +37,16 @@ public class SimpleCast : MonoBehaviour
           transform.position,
           transform.position + (transform.up * 100.0f));
 
-      int? frame;
+      int frame = Volatile.History.CURRENT_FRAME;
       if (this.frameOffset < 0)
       {
         frame = world.CurrentFrame + this.frameOffset;
         if (frame < 0)
-          frame = null;
+          frame = Volatile.History.CURRENT_FRAME; ;
       }
       else
       {
-        frame = null;
+        frame = Volatile.History.CURRENT_FRAME; ;
       }
 
       if (this.radius > 0.0f)

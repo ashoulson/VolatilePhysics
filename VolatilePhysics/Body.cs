@@ -117,6 +117,10 @@ namespace Volatile
     /// </summary>
     internal void StartHistory(int length)
     {
+      Debug.Assert(
+        length >= 0,
+        "StartHistory(): Length value must be >= 0");
+
       if (this.IsStatic == false)
       {
         this.historyStates = new State[length];
@@ -128,16 +132,20 @@ namespace Volatile
     /// <summary>
     /// Stores a snapshot of this body's current state/space to a frame.
     /// </summary>
-    internal void StoreState(int validatedFrame)
+    internal void StoreState(int frame)
     {
+      Debug.Assert(
+        frame >= 0, 
+        "StoreState(): Frame value must be >= 0");
+
       if (this.historyStates != null)
       {
         int length = this.historyStates.Length;
         if (length > 0)
         {
-          this.historyStates[validatedFrame % length].Store(
+          this.historyStates[frame % length].Store(
             ref this.currentState,
-            validatedFrame);
+            frame);
           return;
         }
       }
@@ -147,23 +155,27 @@ namespace Volatile
     /// Retrieves a snapshot of the body's state/space at a frame.
     /// Logs an error and defaults to the current state if it can't be found.
     /// </summary>
-    private State GetState(int validatedFrame)
+    private State GetState(int frame)
     {
-      if (validatedFrame == History.CURRENT_FRAME)
+      if (frame == History.CURRENT_FRAME)
         return this.currentState;
+
+      Debug.Assert(
+        frame >= 0, 
+        "GetState(): Frame value must be -1, or >= 0");
 
       if (this.historyStates != null)
       {
         int length = this.historyStates.Length;
         if (length > 0)
         {
-          State image = this.historyStates[validatedFrame % length];
-          if (image.frame == validatedFrame)
+          State image = this.historyStates[frame % length];
+          if (image.frame == frame)
             return image;
 
           Debug.LogWarning(
             "Wrong frame history access! Expected " + 
-            validatedFrame +
+            frame +
             ", but got " + image.frame);
         }
       }
