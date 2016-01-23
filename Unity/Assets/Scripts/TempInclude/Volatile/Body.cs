@@ -30,16 +30,78 @@ namespace Volatile
   public class Body
   {
     #region History
-    private Image[] historyStates;
-    private Image currentState;
+    /// <summary>
+    /// A stored historical image of a past body state, used for historical
+    /// queries and raycasts. Rather than actually rolling the body back to
+    /// its old position (expensive), we transform the ray into the body's
+    /// local space based on the body's old position/axis. Then all casts
+    /// on shapes use the local-space ray (this applies both for current-
+    /// time and past-time raycasts and point queries).
+    /// </summary>
+    private struct StateRecord
+    {
+      internal int frame;
+      internal AABB aabb;
+      internal Vector2 position;
+      internal Vector2 facing;
 
+      #region World-Space to Body-Space Transformations
+      internal Vector2 WorldToBodyPoint(Vector2 vector)
+      {
+        return (vector - this.position).InvRotate(this.facing);
+      }
+
+      internal Vector2 WorldToBodyDirection(Vector2 vector)
+      {
+        return vector.InvRotate(this.facing);
+      }
+
+      internal RayCast WorldToBodyRay(ref RayCast rayCast)
+      {
+        return new RayCast(
+          this.WorldToBodyPoint(rayCast.origin),
+          this.WorldToBodyDirection(rayCast.direction),
+          rayCast.distance);
+      }
+      #endregion
+
+      #region Body-Space to World-Space Transformations
+      internal Vector2 BodyToWorldPoint(Vector2 vector)
+      {
+        return vector.Rotate(this.facing) + this.position;
+      }
+
+
+      internal Vector2 BodyToWorldDirection(Vector2 vector)
+      {
+        return vector.Rotate(this.facing);
+      }
+
+      internal Axis BodyToWorldAxis(Axis axis)
+      {
+        Vector2 normal = axis.Normal.Rotate(this.facing);
+        float width = Vector2.Dot(normal, this.position) + axis.Width;
+        return new Axis(normal, width);
+      }
+      #endregion
+    }
+
+    private StateRecord[] historyStates;
+    private StateRecord currentState;
+
+    /// <summary>
+    /// Initializes the buffer for storing past body states/spaces.
+    /// </summary>
     internal void StartHistory(int length)
     {
-      this.historyStates = new Image[length];
+      this.historyStates = new StateRecord[length];
       for (int i = 0; i < length; i++)
         this.historyStates[i].frame = History.CURRENT_FRAME;
     }
 
+    /// <summary>
+    /// Stores a snapshot of this body's current state/space to a frame.
+    /// </summary>
     internal void StoreImage(int frame)
     {
       if (this.historyStates != null)
@@ -55,7 +117,11 @@ namespace Volatile
       Debug.LogError("Could not store history for frame: " + frame);
     }
 
-    private Image GetRecord(int frame)
+    /// <summary>
+    /// Retrieves a snapshot of the body's state/space at a frame.
+    /// Logs an error and defaults to the current state if it can't be found.
+    /// </summary>
+    private StateRecord GetRecord(int frame)
     {
       if (frame == History.CURRENT_FRAME)
         return this.currentState;
@@ -63,7 +129,7 @@ namespace Volatile
       int length = this.historyStates.Length;
       if ((this.historyStates != null) && (length > 0))
       {
-        Image image = this.historyStates[frame % length];
+        StateRecord image = this.historyStates[frame % length];
         if (image.frame == frame)
           return image;
       }
@@ -194,7 +260,7 @@ namespace Volatile
       int frame = History.CURRENT_FRAME)
     {
       // AABB check done in world space (because it keeps changing)
-      Image record = this.GetRecord(frame);
+      StateRecord record = this.GetRecord(frame);
       if (record.aabb.Query(point) == false)
         return false;
 
@@ -216,7 +282,7 @@ namespace Volatile
       int frame = History.CURRENT_FRAME)
     {
       // AABB check done in world space (because it keeps changing)
-      Image record = this.GetRecord(frame);
+      StateRecord record = this.GetRecord(frame);
       if (record.aabb.Query(point, radius) == false)
         return false;
 
@@ -237,12 +303,12 @@ namespace Volatile
       ref RayResult result,
       int frame = History.CURRENT_FRAME)
     {
-      Image record = this.GetRecord(frame);
+      StateRecord record = this.GetRecord(frame);
       if (record.aabb.RayCast(ref ray) == false)
         return false;
 
       // Actual tests on shapes done in body space
-      RayCast bodySpaceRay = ray.ConvertSpace(ref record);
+      RayCast bodySpaceRay = record.WorldToBodyRay(ref ray);
       for (int i = 0; i < this.shapes.Count; i++)
         if (this.shapes[i].RayCast(ref bodySpaceRay, ref result))
           if (result.IsContained)
@@ -250,8 +316,8 @@ namespace Volatile
 
       // We need to convert the results back to world space to be any use
       // (Doesn't matter if we were contained since there will be no normal)
-      if (result.Body == this)
-        result.ConvertToWorldSpace(ref record);
+      if ((result.Body == this) && (result.normal != Vector2.zero))
+        result.normal = record.BodyToWorldDirection(result.normal);
       return result.IsValid;
     }
 
@@ -265,12 +331,12 @@ namespace Volatile
       ref RayResult result,
       int frame = History.CURRENT_FRAME)
     {
-      Image record = this.GetRecord(frame);
+      StateRecord record = this.GetRecord(frame);
       if (record.aabb.CircleCast(ref ray, radius) == false)
         return false;
 
       // Actual tests on shapes done in body space
-      RayCast bodySpaceRay = ray.ConvertSpace(ref record);
+      RayCast bodySpaceRay = record.WorldToBodyRay(ref ray);
       for (int i = 0; i < this.shapes.Count; i++)
         if (this.shapes[i].CircleCast(ref bodySpaceRay, radius, ref result))
           if (result.IsContained)
@@ -278,8 +344,8 @@ namespace Volatile
 
       // We need to convert the results back to world space to be any use
       // (Doesn't matter if we were contained since there will be no normal)
-      if (result.Body == this)
-        result.ConvertToWorldSpace(ref record);
+      if ((result.Body == this) && (result.normal != Vector2.zero))
+        result.normal = record.BodyToWorldDirection(result.normal);
       return result.IsValid;
     }
     #endregion

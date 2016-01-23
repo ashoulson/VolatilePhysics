@@ -60,16 +60,5 @@ namespace Volatile
       this.invDirection = 
         new Vector2(1.0f / direction.x, 1.0f / direction.y);
     }
-
-    /// <summary>
-    /// Creates a copy of a world-space raycast in a body's local space.
-    /// </summary>
-    internal RayCast ConvertSpace(ref Image record)
-    {
-      return new RayCast(
-        record.WorldToBodyPoint(this.origin),
-        record.WorldToBodyDirection(this.direction),
-        this.distance);
-    }
   }
 }

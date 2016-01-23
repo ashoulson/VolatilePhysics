@@ -33,8 +33,7 @@ public class SimpleRayCast : MonoBehaviour
       //if (this.frame >= 0)
       //  world.world.RayCast(this.frame, ref cast, ref result, this.Filter);
       //else
-      if (world.world.RayCast(ref cast, ref result, this.Filter))
-        Debug.Log("Hit");
+      world.world.RayCast(ref cast, ref result, this.Filter);
 
       Gizmos.color = Color.green;
       Gizmos.DrawLine(transform.position, transform.position + (transform.up * 100.0f));
