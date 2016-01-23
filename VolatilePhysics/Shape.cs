@@ -21,7 +21,11 @@
 using System;
 using System.Collections.Generic;
 
+#if !NO_UNITY
 using UnityEngine;
+#else
+using VolatileEngine;
+#endif
 
 namespace Volatile
 {
@@ -52,41 +56,62 @@ namespace Volatile
 
     public abstract ShapeType Type { get; }
 
-    public abstract Vector2 Position { get; }
-    public abstract float Angle { get; }
-    public abstract Vector2 Facing { get; }
+    public Body Body { get; private set; }
 
-    public Body Body { get; internal set; }
+    internal float Density { get; private set; }
+    internal float Friction { get; private set; }
+    internal float Restitution { get; private set; }
+
+    /// <summary>
+    /// The world-space bounding AABB for this shape.
+    /// </summary>
     public AABB AABB { get; protected set; }
 
+    /// <summary>
+    /// Total area of the shape.
+    /// </summary>
     public float Area { get; protected set; }
-    public float Density { get; private set; }
-    public float Friction { get; private set; }
-    public float Restitution { get; private set; }
+
+    /// <summary>
+    /// Total mass of the shape (area * density).
+    /// </summary>
+    public float Mass { get; protected set; }
+
+    /// <summary>
+    /// Total inertia of the shape relative to the body's origin.
+    /// </summary>
+    public float Inertia { get; protected set; }
+
+    // Body-space bounding AABB for pre-checks during queries/casts
+    internal AABB bodySpaceAABB;
 
     // TODO: Remove static here (for threading)
     internal static int nextId = 0;
     internal int id;
 
-    internal Volatile.History.ShapeLogger shapeLogger = null;
-
-    #region Tests
-    /// <summary>
-    /// Returns true iff an area overlaps with our AABB.
-    /// </summary>
-    public bool Query(AABB area)
+    #region Body-Related
+    internal void AssignBody(Body body)
     {
-      return this.AABB.Intersect(area);
+      this.Body = body;
+      this.ComputeMetrics();
     }
 
+    internal void OnBodyPositionUpdated()
+    {
+      this.ApplyBodyPosition();
+    }
+    #endregion
+
+    #region Tests
     /// <summary>
     /// Checks if a point is contained in this shape. 
     /// Begins with an AABB check.
     /// </summary>
-    public bool Query(Vector2 point)
+    internal bool Query(Vector2 bodySpacePoint)
     {
-      if (this.AABB.Query(point) == true)
-        return this.ShapeQuery(point);
+      // Queries and casts on shapes are always done in body space
+      if (this.bodySpaceAABB.Query(bodySpacePoint) == true)
+        return this.ShapeQuery(bodySpacePoint);
       return false;
     }
 
@@ -94,10 +119,11 @@ namespace Volatile
     /// Checks if a circle overlaps with this shape. 
     /// Begins with an AABB check.
     /// </summary>
-    public bool Query(Vector2 point, float radius)
+    internal bool Query(Vector2 bodySpacePoint, float radius)
     {
-      if (this.AABB.Query(point, radius) == true)
-        return this.ShapeQuery(point, radius);
+      // Queries and casts on shapes are always done in body space
+      if (this.bodySpaceAABB.Query(bodySpacePoint, radius) == true)
+        return this.ShapeQuery(bodySpacePoint, radius);
       return false;
     }
 
@@ -105,12 +131,13 @@ namespace Volatile
     /// Performs a raycast check on this shape. 
     /// Begins with an AABB check.
     /// </summary>
-    public bool RayCast(ref RayCast ray, ref RayResult result)
+    internal bool RayCast(
+      ref RayCast bodySpaceRay, 
+      ref RayResult result)
     {
-      Debug.Assert(ray.IsLocalSpace == false);
-
-      if (this.AABB.RayCast(ref ray) == true)
-        return this.ShapeRayCast(ref ray, ref result);
+      // Queries and casts on shapes are always done in body space
+      if (this.bodySpaceAABB.RayCast(ref bodySpaceRay) == true)
+        return this.ShapeRayCast(ref bodySpaceRay, ref result);
       return false;
     }
 
@@ -118,15 +145,14 @@ namespace Volatile
     /// Performs a circlecast check on this shape. 
     /// Begins with an AABB check.
     /// </summary>
-    public bool CircleCast(
-      ref RayCast ray,
-      float radius,
+    internal bool CircleCast(
+      ref RayCast bodySpaceRay, 
+      float radius, 
       ref RayResult result)
     {
-      Debug.Assert(ray.IsLocalSpace == false);
-
-      if (this.AABB.CircleCast(ref ray, radius) == true)
-        return this.ShapeCircleCast(ref ray, radius, ref result);
+      // Queries and casts on shapes are always done in body space
+      if (this.bodySpaceAABB.CircleCast(ref bodySpaceRay, radius) == true)
+        return this.ShapeCircleCast(ref bodySpaceRay, radius, ref result);
       return false;
     }
     #endregion
@@ -139,49 +165,38 @@ namespace Volatile
       this.Restitution = restitution;
     }
 
-    public void SetWorld(Vector2 position, float radians)
-    {
-      this.SetWorld(position, VolatileUtil.Polar(radians));
-    }
-
-    public abstract void SetWorld(Vector2 position, Vector2 facing);
-
-    #region Internals
-    internal float ComputeMass()
-    {
-      return this.Area * this.Density * Config.AreaMassRatio;
-    }
-
-    internal abstract float ComputeInertia(Vector2 offset);
+    #region Functionality Overrides
+    protected abstract void ComputeMetrics();
+    protected abstract void ApplyBodyPosition();
     #endregion
 
     #region Test Overrides
-    internal abstract bool ShapeQuery(
-      Vector2 point,
-      bool useLocalSpace = false);
+    protected abstract bool ShapeQuery(
+      Vector2 bodySpacePoint);
 
-    internal abstract bool ShapeQuery(
-      Vector2 point,
-      float radius,
-      bool useLocalSpace = false);
+    protected abstract bool ShapeQuery(
+      Vector2 bodySpacePoint,
+      float radius);
 
-    internal abstract bool ShapeRayCast(
-      ref RayCast ray,
+    protected abstract bool ShapeRayCast(
+      ref RayCast bodySpaceRay,
       ref RayResult result);
 
-    internal abstract bool ShapeCircleCast(
-      ref RayCast ray,
+    protected abstract bool ShapeCircleCast(
+      ref RayCast bodySpaceRay,
       float radius,
       ref RayResult result);
     #endregion
 
     #region Debug
+#if !NO_UNITY
     public abstract void GizmoDraw(
       Color edgeColor,
       Color normalColor,
       Color originColor,
       Color aabbColor,
       float normalLength);
+#endif
     #endregion
   }
 }

@@ -21,7 +21,11 @@
 using System;
 using System.Collections.Generic;
 
+#if !NO_UNITY
 using UnityEngine;
+#else
+using VolatileEngine;
+#endif
 
 namespace Volatile
 {
@@ -74,93 +78,8 @@ namespace Volatile
       return a * a;
     }
 
-    public static void TransformRay(
-      ref RayCast cast, 
-      Vector2 localOrigin,
-      Vector2 localFacing,
-      out Vector2 origin, 
-      out Vector2 direction)
-    {
-      Vector2 rayOrigin = cast.Origin;
-      Vector2 rayDirection = cast.Direction;
-
-      float sin = localFacing.y;
-      float cos = localFacing.x;
-
-      // Our shape's transform matrix (counter-clockwise rotation)
-      //  ⌈  cos Θ    -sin Θ     t_x  ⌉ ⌈ x ⌉ 
-      //  |  sin Θ     cos Θ     t_y  | | y |
-      //  ⌊    0         0        1   ⌋ ⌊ 1 ⌋ 
-      //
-      //  When inverting, we reverse the matrix order (TR -> R^{-1} T^{-1})
-
-      // First invert the transposition
-      Vector2 newOrigin = rayOrigin - localOrigin;
-
-      // Now invert the rotations, where R^{-1} =
-      //  ⌈  cos Θ     sin Θ      0   ⌉ ⌈ x ⌉ 
-      //  | -sin Θ     cos Θ      0   | | y |
-      //  ⌊    0         0        1   ⌋ ⌊ 1 ⌋ 
-
-      origin = new Vector2(
-        cos * newOrigin.x + sin * newOrigin.y,
-        -sin * newOrigin.x + cos * newOrigin.y);
-
-      direction = new Vector2(
-        cos * rayDirection.x + sin * rayDirection.y,
-        -sin * rayDirection.x + cos * rayDirection.y);
-    }
-
-    public static Vector2 WorldToLocalPoint(
-      Vector2 point,
-      Vector2 shapeOrigin,
-      Vector2 shapeFacing)
-    {
-      float sin = shapeFacing.y;
-      float cos = shapeFacing.x;
-
-      Vector2 newOrigin = point - shapeOrigin;
-
-      return
-        new Vector2(
-          cos * newOrigin.x + sin * newOrigin.y,
-          -sin * newOrigin.x + cos * newOrigin.y);
-    }
-
-    public static Vector2 WorldToLocalVector(
-      Vector2 vector,
-      Vector2 shapeOrigin,
-      Vector2 shapeFacing)
-    {
-      float sin = shapeFacing.y;
-      float cos = shapeFacing.x;
-
-      return
-        new Vector2(
-          cos * vector.x + sin * vector.y,
-          -sin * vector.x + cos * vector.y);
-    }
-
-    public static Vector2 WorldToLocalVector(this Shape shape, Vector2 vector)
-    {
-      return
-        VolatileUtil.WorldToLocalVector(
-          vector,
-          shape.Position,
-          shape.Facing);
-    }
-
-
-    public static Vector2 WorldToLocalPoint(this Shape shape, Vector2 point)
-    {
-      return
-        VolatileUtil.WorldToLocalPoint(
-          point,
-          shape.Position,
-          shape.Facing);
-    }
-
     #region Debug
+#if !NO_UNITY
     public static void Draw(Body body)
     {
       body.GizmoDraw(
@@ -188,6 +107,7 @@ namespace Volatile
       aabb.GizmoDraw(
         new Color(1.0f, 0.0f, 0.5f, 1.0f)); // AABB Color
     }
+#endif
     #endregion
   }
 }

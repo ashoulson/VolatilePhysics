@@ -21,7 +21,11 @@
 using System;
 using System.Collections.Generic;
 
+#if !NO_UNITY
 using UnityEngine;
+#else
+using VolatileEngine;
+#endif
 
 namespace Volatile
 {
@@ -58,18 +62,18 @@ namespace Volatile
       float right)
     {
       float txmin =
-        ((ray.SignX ? right : left) - ray.Origin.x) *
-        ray.InvDirection.x;
+        ((ray.signX ? right : left) - ray.origin.x) *
+        ray.invDirection.x;
       float txmax =
-        ((ray.SignX ? left : right) - ray.Origin.x) *
-        ray.InvDirection.x;
+        ((ray.signX ? left : right) - ray.origin.x) *
+        ray.invDirection.x;
 
       float tymin =
-        ((ray.SignY ? top : bottom) - ray.Origin.y) *
-        ray.InvDirection.y;
+        ((ray.signY ? top : bottom) - ray.origin.y) *
+        ray.invDirection.y;
       float tymax =
-        ((ray.SignY ? bottom : top) - ray.Origin.y) *
-        ray.InvDirection.y;
+        ((ray.signY ? bottom : top) - ray.origin.y) *
+        ray.invDirection.y;
 
       if ((txmin > tymax) || (tymin > txmax))
         return false;
@@ -77,7 +81,7 @@ namespace Volatile
         txmin = tymin;
       if (tymax < txmax)
         txmax = tymax;
-      return (txmax > 0.0f) && (txmin < ray.Distance);
+      return (txmax > 0.0f) && (txmin < ray.distance);
     }
     #endregion
 
@@ -246,6 +250,7 @@ namespace Volatile
     }
 
     #region Debug
+#if !NO_UNITY
     public void GizmoDraw(Color aabbColor)
     {
       Color current = Gizmos.color;
@@ -263,6 +268,7 @@ namespace Volatile
 
       Gizmos.color = current;
     }
+#endif
     #endregion
   }
 }

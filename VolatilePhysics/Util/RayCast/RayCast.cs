@@ -21,148 +21,48 @@
 using System;
 using System.Collections.Generic;
 
+#if !NO_UNITY
 using UnityEngine;
+#else
+using VolatileEngine;
+#endif
 
 namespace Volatile
 {
   /// <summary>
-  /// A semi-precomputed ray optimized for fast AABB tests. Supports the
-  /// application of a temporary "local mask" for transforming the ray into 
-  /// a shape's local space on a short-term basis.
+  /// A semi-precomputed ray optimized for fast AABB tests.
   /// </summary>
   public struct RayCast
   {
-    internal bool IsLocalSpace { get { return this.hasLocalMask; } }
-    internal float Distance { get { return this.distance; } }
-
-    internal Vector2 Origin 
-    {
-      get { return this.hasLocalMask ? this.localOrigin : this.origin; }
-    }
-
-    internal Vector2 Direction 
-    {
-      get { return this.hasLocalMask ? this.localDirection : this.direction; }
-    }
-
-    internal Vector2 Destination 
-    { 
-      get 
-      {
-        this.FailIfMasked();
-        return this.destination; 
-      } 
-    }
-
-    internal Vector2 InvDirection 
-    {
-      get 
-      {
-        this.FailIfMasked();
-        return this.invDirection; 
-      } 
-    }
-
-    internal bool SignX 
-    { 
-      get 
-      {
-        this.FailIfMasked();
-        return this.signX; 
-      } 
-    }
-
-    internal bool SignY 
-    { 
-      get 
-      {
-        this.FailIfMasked();
-        return this.signY; 
-      } 
-    }
-
-    private readonly Vector2 origin;
-    private readonly Vector2 destination;
-    private readonly Vector2 direction;
-    private readonly Vector2 invDirection;
-    private readonly float distance;
-    private readonly bool signX;
-    private readonly bool signY;
-
-    // When performing historical raycasts, we create a "local mask" on the
-    // ray. When the ray is masked, it temporarily reports a different origin
-    // and direction -- that of the ray when transformed into the local space
-    // of the current shape.
-    private bool hasLocalMask;
-    private Vector2 localOrigin;
-    private Vector2 localDirection;
+    internal readonly Vector2 origin;
+    internal readonly Vector2 direction;
+    internal readonly Vector2 invDirection;
+    internal readonly float distance;
+    internal readonly bool signX;
+    internal readonly bool signY;
 
     public RayCast(Vector2 origin, Vector2 destination)
     {
       Vector2 delta = destination - origin;
 
       this.origin = origin;
-      this.destination = destination;
       this.direction = delta.normalized;
       this.distance = delta.magnitude;
-      this.invDirection = new Vector2(1.0f / direction.x, 1.0f / direction.y);
-      this.signX = invDirection.x < 0.0f;
-      this.signY = invDirection.y < 0.0f;
-
-      this.hasLocalMask = false;
-      this.localOrigin = Vector2.zero;
-      this.localDirection = Vector2.zero;
+      this.signX = direction.x < 0.0f;
+      this.signY = direction.y < 0.0f;
+      this.invDirection = 
+        new Vector2(1.0f / direction.x, 1.0f / direction.y);
     }
 
     public RayCast(Vector2 origin, Vector2 direction, float distance)
     {
-      Vector2 delta = direction * distance;
-
       this.origin = origin;
-      this.destination = origin + delta;
       this.direction = direction;
       this.distance = distance;
-      this.invDirection = new Vector2(1.0f / direction.x, 1.0f / direction.y);
-      this.signX = invDirection.x < 0.0f;
-      this.signY = invDirection.y < 0.0f;
-
-      this.hasLocalMask = false;
-      this.localOrigin = Vector2.zero;
-      this.localDirection = Vector2.zero;
-    }
-
-    public void CreateMask(Vector2 shapeOrigin, Vector2 shapeFacing)
-    {
-      VolatileUtil.TransformRay(
-        ref this, 
-        shapeOrigin, 
-        shapeFacing, 
-        out this.localOrigin, 
-        out this.localDirection);
-      this.hasLocalMask = true;
-    }
-
-    public void ClearMask()
-    {
-      this.hasLocalMask = false;
-      this.localOrigin = Vector2.zero;
-      this.localDirection = Vector2.zero;
-    }
-
-    public void EnableMask()
-    {
-      this.hasLocalMask = true;
-    }
-
-    public void DisableMask()
-    {
-      this.hasLocalMask = false;
-    }
-
-    private void FailIfMasked()
-    {
-      if (this.hasLocalMask == true)
-        throw new InvalidOperationException("Invalid when ray has local mask");
+      this.signX = direction.x < 0.0f;
+      this.signY = direction.y < 0.0f;
+      this.invDirection = 
+        new Vector2(1.0f / direction.x, 1.0f / direction.y);
     }
   }
 }
