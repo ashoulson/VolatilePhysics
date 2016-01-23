@@ -148,7 +148,7 @@ namespace VolatileEngine
     public static event Action<object> Logged;
     public static event Action<object> LoggedWarning;
     public static event Action<object> LoggedError;
-    public static event Action AssertFailed;
+    public static event Action<string> AssertFailed;
 
     internal static void Log(object obj) 
     {
@@ -172,7 +172,14 @@ namespace VolatileEngine
     {
       if (condition == false)
         if (Debug.AssertFailed != null)
-          Debug.AssertFailed.Invoke();
+          Debug.AssertFailed.Invoke(null);
+    }
+
+    internal static void Assert(bool condition, string message)
+    {
+      if (condition == false)
+        if (Debug.AssertFailed != null)
+          Debug.AssertFailed.Invoke(message);
     }
   }
 }

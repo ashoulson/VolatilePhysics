@@ -103,14 +103,14 @@ namespace Volatile
     /// If a frame number is provided, all dynamic bodies will store their
     /// state for that frame for later testing.
     /// </summary>
-    public void Update(int? frame = null)
+    public void Update(int frame = History.CURRENT_FRAME)
     {
       for (int i = 0; i < this.bodies.Count; i++)
       {
         Body body = this.bodies[i];
         body.Update();
-        if (History.IsFrameValid(frame))
-          body.StoreState(frame.Value);
+        if (History.ShouldStoreOnFrame(frame))
+          body.StoreState(frame);
       }
       this.BroadPhase();
 
@@ -129,11 +129,11 @@ namespace Volatile
     /// multiple dynamic bodies, using this function on each individual body 
     /// may result in collisions being resolved twice with double the force.
     /// </summary>
-    public void Update(Body body, int? frame = null)
+    public void Update(Body body, int frame = History.CURRENT_FRAME)
     {
       body.Update();
-      if (History.IsFrameValid(frame))
-        body.StoreState(frame.Value);
+      if (History.ShouldStoreOnFrame(frame))
+        body.StoreState(frame);
       this.BroadPhase(body);
 
       this.UpdateCollision();
@@ -146,14 +146,16 @@ namespace Volatile
     public IEnumerable<Body> Query(
       Vector2 point,
       BodyFilter filter = null,
-      int? frame = null)
+      int frame = History.CURRENT_FRAME)
     {
+      // Validate user input
+      frame = History.ValidateTestFrame(frame);
 
       for (int i = 0; i < this.bodies.Count; i++)
       {
         Body body = this.bodies[i];
         if (Body.Filter(body, filter))
-          if (body.Query(point, History.ConvertToValidated(frame)))
+          if (body.Query(point, frame))
           yield return body;
       }
     }
@@ -165,13 +167,16 @@ namespace Volatile
       Vector2 point,
       float radius,
       BodyFilter filter = null,
-      int? frame = null)
+      int frame = History.CURRENT_FRAME)
     {
+      // Validate user input
+      frame = History.ValidateTestFrame(frame);
+
       for (int i = 0; i < this.bodies.Count; i++)
       {
         Body body = this.bodies[i];
         if (Body.Filter(body, filter))
-          if (body.Query(point, radius, History.ConvertToValidated(frame)))
+          if (body.Query(point, radius, frame))
            yield return body;
       }
     }
@@ -183,17 +188,17 @@ namespace Volatile
       ref RayCast ray,
       ref RayResult result,
       BodyFilter filter = null,
-      int? frame = null)
+      int frame = History.CURRENT_FRAME)
     {
+      // Validate user input
+      frame = History.ValidateTestFrame(frame);
+
       for (int i = 0; i < this.bodies.Count; i++)
       {
         Body body = this.bodies[i];
         if (Body.Filter(body, filter) == true)
         {
-          body.RayCast(
-            ref ray, 
-            ref result, 
-            History.ConvertToValidated(frame));
+          body.RayCast(ref ray, ref result, frame);
           if (result.IsContained == true)
             return true;
         }
@@ -210,18 +215,17 @@ namespace Volatile
       float radius,
       ref RayResult result,
       BodyFilter filter = null,
-      int? frame = null)
+      int frame = History.CURRENT_FRAME)
     {
+      // Validate user input
+      frame = History.ValidateTestFrame(frame);
+
       for (int i = 0; i < this.bodies.Count; i++)
       {
         Body body = this.bodies[i];
         if (Body.Filter(body, filter) == true)
         {
-          body.CircleCast(
-            ref ray, 
-            radius, 
-            ref result, 
-            History.ConvertToValidated(frame));
+          body.CircleCast(ref ray, radius, ref result, frame);
           if (result.IsContained == true)
             return true;
         }

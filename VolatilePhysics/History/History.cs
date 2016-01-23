@@ -29,19 +29,19 @@ using VolatileEngine;
 
 namespace Volatile
 {
-  internal static class History
+  public static class History
   {
-    internal const int CURRENT_FRAME = -1;
+    public const int CURRENT_FRAME = -1;
 
     /// <summary>
     /// Validates user-input frame numbers for processing internally.
     /// </summary>
-    internal static bool IsFrameValid(int? frame)
+    internal static bool ShouldStoreOnFrame(int frame)
     {
-      if (frame.HasValue == false)
+      if (frame == History.CURRENT_FRAME)
         return false;
 
-      if (frame.Value < 0)
+      if (frame < 0)
       {
         Debug.LogError("Invalid frame value: " + frame);
         return false;
@@ -51,21 +51,17 @@ namespace Volatile
     }
 
     /// <summary>
-    /// Validates user-input frame numbers and returns a converted
-    /// true frame value for internal use.
+    /// Validates a frame number for performing casts and queries.
     /// </summary>
-    internal static int ConvertToValidated(int? frame)
+    internal static int ValidateTestFrame(int frame)
     {
-      if (frame.HasValue == false)
-        return History.CURRENT_FRAME;
-
-      if (frame.Value < 0)
+      if ((frame != History.CURRENT_FRAME) && (frame < 0))
       {
-        Debug.LogError("Invalid frame value: " + frame);
+        Debug.LogError("Invalid frame value " + frame);
         return History.CURRENT_FRAME;
       }
 
-      return frame.Value;
+      return frame;
     }
   }
 }
