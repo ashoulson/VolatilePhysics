@@ -105,7 +105,7 @@ public class RollbackController : MonoBehaviour
     if (this.body != null && this.pause == false)
     {
       Command first = this.commands[0];
-      this.body.Body.SetWorld(first.position, first.angle);
+      this.body.Body.Set(first.position, first.angle);
       this.body.Body.LinearVelocity = first.velocity;
       this.body.Body.AngularVelocity = first.angVelocity;
 

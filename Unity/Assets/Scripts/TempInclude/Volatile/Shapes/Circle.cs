@@ -75,7 +75,7 @@ namespace Volatile
     protected override void ComputeMetrics()
     {
       this.bodySpacePosition =
-        this.Body.WorldToBodyPoint(this.worldSpaceOrigin);
+        this.Body.WorldToBodyPointCurrent(this.worldSpaceOrigin);
       this.bodySpaceAABB = new AABB(this.bodySpacePosition, this.radius);
 
       this.Area = this.sqrRadius * Mathf.PI;
@@ -87,7 +87,7 @@ namespace Volatile
     protected override void ApplyBodyPosition()
     {
       this.worldSpaceOrigin =
-        this.Body.BodyToWorldPoint(this.bodySpacePosition);
+        this.Body.BodyToWorldPointCurrent(this.bodySpacePosition);
       this.AABB = new AABB(this.worldSpaceOrigin, this.radius);
     }
     #endregion

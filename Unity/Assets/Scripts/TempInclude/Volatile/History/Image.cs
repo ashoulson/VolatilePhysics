@@ -9,7 +9,7 @@ namespace Volatile
   /// A stored historical image of past body states, used for historical
   /// queries and raycasts (without having to do a full rollback).
   /// </summary>
-  internal struct Record
+  internal struct Image
   {
     internal int frame;
     internal AABB aabb;
