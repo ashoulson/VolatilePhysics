@@ -21,7 +21,11 @@
 using System;
 using System.Collections.Generic;
 
+#if VOLATILE_UNITY
 using UnityEngine;
+#else
+using VolatileEngine;
+#endif
 
 namespace Volatile
 {
@@ -32,8 +36,12 @@ namespace Volatile
     public static float AreaMassRatio = 0.01f;
 
     // Defaults
+    internal const float DEFAULT_DELTA_TIME = 0.02f;
+    internal const float DEFAULT_DAMPING = 0.999f;
+    internal const float DEFAULT_DENSITY = 1.0f;
     internal const float DEFAULT_RESTITUTION = 0.5f;
     internal const float DEFAULT_FRICTION = 0.8f;
+
     internal const int DEFAULT_ITERATION_COUNT = 20;
 
     // Maximum contacts for collision resolution.
@@ -45,5 +53,9 @@ namespace Volatile
     // AABBTree Settings
     internal const float AABB_PADDING = 0.1f;
     internal const float AABB_MULTIPLIER = 2.0f;
+
+    // The minimum mass a dynamic object can have before it is
+    // converted to a static object
+    internal const float MINIMUM_DYNAMIC_MASS = 0.00001f;
   }
 }

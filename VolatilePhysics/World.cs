@@ -19,10 +19,13 @@
 */
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
 
+#if VOLATILE_UNITY
 using UnityEngine;
+#else
+using VolatileEngine;
+#endif
 
 namespace Volatile
 {
@@ -30,7 +33,7 @@ namespace Volatile
   {
     /// <summary>
     /// Fixed update delta time for body integration. 
-    /// Defaults to Time.fixedDeltaTime.
+    /// Defaults to Config.DEFAULT_DELTA_TIME.
     /// </summary>
     public float DeltaTime { get; set; }
 
@@ -40,240 +43,236 @@ namespace Volatile
     /// </summary>
     public int IterationCount { get; set; }
 
+    /// <summary>
+    /// How many frames of history this world is recording.
+    /// </summary>
+    public int HistoryLength { get; private set; }
+
     internal float Elasticity { get; private set; }
+    internal float Damping { get; private set; }
 
-    // The World makes a distinction between static and dynamic bodies.
-    // Static bodies are stored in a broadphase decomposition structure,
-    // while dynamic bodies are just kept in a list. This is for historical
-    // rollback and past-state raycasts.
-    internal List<Body> dynamicBodies;
-    internal IBroadPhase staticBroad;
-
-    internal float damping = 0.999f;
+    private List<Body> bodies;
 
     // Each World instance should own its own object pools, in case
     // you want to run multiple World instances simultaneously.
     private Manifold.Pool manifoldPool;
     private Contact.Pool contactPool;
+
+    // TODO: Could convert to a linked list using the pool pointers
     private List<Manifold> manifolds;
 
-    public World(float damping = 0.999f)
+    public World(
+      int historyLength = 0,
+      float damping = Config.DEFAULT_DAMPING)
     {
-      this.DeltaTime = Time.fixedDeltaTime;
+      this.HistoryLength = historyLength;
+
+      this.Damping = damping;
+
       this.IterationCount = Config.DEFAULT_ITERATION_COUNT;
+      this.DeltaTime = Config.DEFAULT_DELTA_TIME;
 
-      this.dynamicBodies = new List<Body>();
-      this.staticBroad = new NaiveBroadphase();
-
-      this.damping = damping;
-
+      this.bodies = new List<Body>();
       this.contactPool = new Contact.Pool();
       this.manifoldPool = new Manifold.Pool(this.contactPool);
       this.manifolds = new List<Manifold>();
     }
 
     /// <summary>
-    /// Adds a body to the world, dynamic or static.
+    /// Adds a body to the world.
     /// </summary>
-    /// <param name="body"></param>
     public void AddBody(Body body)
     {
-      if (body.IsStatic == true)
-        this.staticBroad.Add(body);
-      else
-        this.dynamicBodies.Add(body);
-      body.World = this;
+      this.bodies.Add(body);
+      body.AssignWorld(this);
+      if (this.HistoryLength > 0)
+        body.StartHistory(this.HistoryLength);
     }
 
     /// <summary>
-    /// Removes a body from the world. Dynamic bodies only.
+    /// Removes a body from the world.
     /// </summary>
-    /// <param name="body"></param>
     public void RemoveBody(Body body)
     {
-      if (body.IsStatic == true)
-        this.staticBroad.Remove(body);
-      else
-        this.dynamicBodies.Remove(body);
-      body.World = null;
+      this.bodies.Remove(body);
+      body.AssignWorld(null);
     }
 
     /// <summary>
     /// Ticks the world, updating all dynamic bodies and resolving collisions.
-    /// Does not allow dynamic-dynamic collisions.
+    /// If a frame number is provided, all dynamic bodies will store their
+    /// state for that frame for later testing.
     /// </summary>
-    public void Update()
+    public void Update(int? frame = null)
     {
-      foreach (Body body in this.dynamicBodies)
+      for (int i = 0; i < this.bodies.Count; i++)
+      {
+        Body body = this.bodies[i];
         body.Update();
-
+        if (History.IsFrameValid(frame))
+          body.StoreState(frame.Value);
+      }
       this.BroadPhase();
+
       this.UpdateCollision();
       this.CleanupManifolds();
     }
 
     /// <summary>
-    /// Updates a single body. Does not allow dynamic-dynamic collisions.
+    /// Updates a single body, resolving only collisions with that body.
+    /// If a frame number is provided, all dynamic bodies will store their
+    /// state for that frame for later testing.
+    /// 
+    /// Note: This function is more efficient to use if you have only a single
+    /// body in your world surrounded by static geometry (as is common for 
+    /// client-side controller prediction in networked games). If you have 
+    /// multiple dynamic bodies, using this function on each individual body 
+    /// may result in collisions being resolved twice with double the force.
     /// </summary>
-    public void Update(Body body)
+    public void Update(Body body, int? frame = null)
     {
       body.Update();
-
+      if (History.IsFrameValid(frame))
+        body.StoreState(frame.Value);
       this.BroadPhase(body);
+
       this.UpdateCollision();
       this.CleanupManifolds();
     }
 
-    #region Tests
-    public IEnumerable<Body> Query(
-      AABB area,
-      BodyFilter filter = null)
-    {
-      return
-        this.QueryDynamic(area, filter).Concat(
-          this.staticBroad.Query(area, filter));
-    }
-
+    /// <summary>
+    /// Finds all bodies containing a given point.
+    /// </summary>
     public IEnumerable<Body> Query(
       Vector2 point,
-      BodyFilter filter = null)
+      BodyFilter filter = null,
+      int? frame = null)
     {
-      return
-        this.QueryDynamic(point, filter).Concat(
-          this.staticBroad.Query(point, filter));
+
+      for (int i = 0; i < this.bodies.Count; i++)
+      {
+        Body body = this.bodies[i];
+        if (Body.Filter(body, filter))
+          if (body.Query(point, History.ConvertToValidated(frame)))
+          yield return body;
+      }
     }
 
+    /// <summary>
+    /// Finds all bodies intersecting with a given circle.
+    /// </summary>
     public IEnumerable<Body> Query(
       Vector2 point,
       float radius,
-      BodyFilter filter = null)
+      BodyFilter filter = null,
+      int? frame = null)
     {
-      return
-        this.QueryDynamic(point, radius, filter).Concat(
-          this.staticBroad.Query(point, radius, filter));
+      for (int i = 0; i < this.bodies.Count; i++)
+      {
+        Body body = this.bodies[i];
+        if (Body.Filter(body, filter))
+          if (body.Query(point, radius, History.ConvertToValidated(frame)))
+           yield return body;
+      }
     }
 
+    /// <summary>
+    /// Performs a raycast on all world bodies.
+    /// </summary>
     public bool RayCast(
       ref RayCast ray,
       ref RayResult result,
-      BodyFilter filter = null)
+      BodyFilter filter = null,
+      int? frame = null)
     {
-      bool dynamicHit = this.RayCastDynamic(ref ray, ref result, filter);
-      bool staticHit = this.staticBroad.RayCast(ref ray, ref result, filter);
-      return dynamicHit || staticHit;
+      for (int i = 0; i < this.bodies.Count; i++)
+      {
+        Body body = this.bodies[i];
+        if (Body.Filter(body, filter) == true)
+        {
+          body.RayCast(
+            ref ray, 
+            ref result, 
+            History.ConvertToValidated(frame));
+          if (result.IsContained == true)
+            return true;
+        }
+      }
+
+      return result.IsValid;
     }
 
+    /// <summary>
+    /// Performs a circle cast on all world bodies.
+    /// </summary>
     public bool CircleCast(
       ref RayCast ray,
       float radius,
       ref RayResult result,
-      BodyFilter filter = null)
+      BodyFilter filter = null,
+      int? frame = null)
     {
-      bool dynamicHit =
-        this.CircleCastDynamic(ref ray, radius, ref result, filter);
-      bool staticHit = 
-        this.staticBroad.CircleCast(ref ray, radius, ref result, filter);
-      return dynamicHit || staticHit;
-    }
-
-    #region Dynamic
-    internal IEnumerable<Body> QueryDynamic(
-      AABB area,
-      BodyFilter filter = null)
-    {
-      for (int i = 0; i < this.dynamicBodies.Count; i++)
+      for (int i = 0; i < this.bodies.Count; i++)
       {
-        Body body = this.dynamicBodies[i];
-        if (Body.Filter(body, filter) && body.Query(area))
-          yield return body;
-      }
-    }
-
-    internal IEnumerable<Body> QueryDynamic(
-      Vector2 point,
-      BodyFilter filter = null)
-    {
-      for (int i = 0; i < this.dynamicBodies.Count; i++)
-      {
-        Body body = this.dynamicBodies[i];
-        if (Body.Filter(body, filter) && body.Query(point))
-          yield return body;
-      }
-    }
-
-    internal IEnumerable<Body> QueryDynamic(
-      Vector2 point,
-      float radius,
-      BodyFilter filter = null)
-    {
-      for (int i = 0; i < this.dynamicBodies.Count; i++)
-      {
-        Body body = this.dynamicBodies[i];
-        if (Body.Filter(body, filter) && body.Query(point, radius))
-          yield return body;
-      }
-    }
-
-    internal bool RayCastDynamic(
-      ref RayCast ray,
-      ref RayResult result,
-      BodyFilter filter = null)
-    {
-      for (int i = 0; i < this.dynamicBodies.Count; i++)
-      {
-        Body body = this.dynamicBodies[i];
+        Body body = this.bodies[i];
         if (Body.Filter(body, filter) == true)
         {
-          body.RayCast(ref ray, ref result);
+          body.CircleCast(
+            ref ray, 
+            radius, 
+            ref result, 
+            History.ConvertToValidated(frame));
           if (result.IsContained == true)
             return true;
         }
       }
       return result.IsValid;
     }
-
-    internal bool CircleCastDynamic(
-      ref RayCast ray,
-      float radius,
-      ref RayResult result,
-      BodyFilter filter = null)
-    {
-      for (int i = 0; i < this.dynamicBodies.Count; i++)
-      {
-        Body body = this.dynamicBodies[i];
-        if (Body.Filter(body, filter) == true)
-        {
-          body.CircleCast(ref ray, radius, ref result);
-          if (result.IsContained == true)
-            return true;
-        }
-      }
-      return result.IsValid;
-    }
-    #endregion
-
-    #endregion
 
     #region Internals
+    /// <summary>
+    /// Identifies collisions for all bodies, ignoring symmetrical duplicates.
+    /// </summary>
     private void BroadPhase()
     {
-      for (int i = 0; i < this.dynamicBodies.Count; i++)
-        this.staticBroad.Collision(
-          this.dynamicBodies[i],
-          this.NarrowPhase);
+      for (int i = 0; i < this.bodies.Count; i++)
+      {
+        for (int j = i + 1; j < this.bodies.Count; j++)
+        {
+          Body ba = this.bodies[i];
+          Body bb = this.bodies[j];
+
+          if (ba.CanCollide(bb) && ba.AABB.Intersect(bb.AABB))
+            for (int i_s = 0; i_s < ba.shapes.Count; i_s++)
+              for (int j_s = 0; j_s < bb.shapes.Count; j_s++)
+                this.NarrowPhase(ba.shapes[i_s], bb.shapes[j_s]);
+        }
+      }
     }
 
-    private void BroadPhase(Body body)
+    /// <summary>
+    /// Identifies collisions for a single body. Does not keep track of 
+    /// symmetrical duplicates (they could be counted twice).
+    /// </summary>
+    private void BroadPhase(Body bb)
     {
-      this.staticBroad.Collision(body, this.NarrowPhase);
+      for (int i = 0; i < this.bodies.Count; i++)
+      {
+          Body ba = this.bodies[i];
+          if (ba.CanCollide(bb) && ba.AABB.Intersect(bb.AABB))
+            for (int i_s = 0; i_s < ba.shapes.Count; i_s++)
+              for (int j_s = 0; j_s < bb.shapes.Count; j_s++)
+                this.NarrowPhase(ba.shapes[i_s], bb.shapes[j_s]);
+      }
     }
 
+    /// <summary>
+    /// Creates a manifold for two shapes if they collide.
+    /// </summary>
     private void NarrowPhase(
       Shape sa,
       Shape sb)
     {
-      if (sa.Body.CanCollide(sb.Body) == false)
-        return;
       if (sa.AABB.Intersect(sb.AABB) == false)
         return;
 

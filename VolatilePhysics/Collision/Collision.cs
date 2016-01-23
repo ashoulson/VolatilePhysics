@@ -21,7 +21,11 @@
 using System;
 using System.Collections.Generic;
 
+#if VOLATILE_UNITY
 using UnityEngine;
+#else
+using VolatileEngine;
+#endif
 
 namespace Volatile
 {
@@ -90,9 +94,9 @@ namespace Volatile
       return 
         TestCircles(
           circA, 
-          circB, 
-          circB.Position, 
-          circB.Radius, 
+          circB,
+          circB.worldSpaceOrigin, 
+          circB.radius, 
           pool);
     }
 
@@ -103,24 +107,24 @@ namespace Volatile
     {
       // Get the axis on the polygon closest to the circle's origin
       float penetration;
-      int ix = 
+      int ix =
         Collision.FindAxisMaxPenetration(
-          circ.Position, 
-          circ.Radius, 
-          poly.worldAxes, 
+          circ.worldSpaceOrigin,
+          circ.radius,
+          poly.worldSpaceAxes,
           out penetration);
 
       if (ix < 0)
         return null;
 
-      int length = poly.worldAxes.Length;
-      Vector2 a = poly.worldVertices[ix];
-      Vector2 b = poly.worldVertices[(ix + 1) % length];
-      Axis axis = poly.worldAxes[ix];
+      int length = poly.worldSpaceAxes.Length;
+      Vector2 a = poly.worldSpaceVertices[ix];
+      Vector2 b = poly.worldSpaceVertices[(ix + 1) % length];
+      Axis axis = poly.worldSpaceAxes[ix];
 
       // If the circle is past one of the two vertices, check it like
       // a circle-circle intersection where the vertex has radius 0
-      float d = VolatileUtil.Cross(axis.Normal, circ.Position);
+      float d = VolatileUtil.Cross(axis.Normal, circ.worldSpaceOrigin);
       if (d > VolatileUtil.Cross(axis.Normal, a))
         return Collision.TestCircles(circ, poly, a, 0.0f, pool);
       if (d < VolatileUtil.Cross(axis.Normal, b))
@@ -129,7 +133,7 @@ namespace Volatile
       // Build the collision Manifold
       Manifold manifold = pool.Acquire().Assign(circ, poly);
       Vector2 pos =
-        circ.Position - (circ.Radius + penetration / 2) * axis.Normal;
+        circ.worldSpaceOrigin - (circ.radius + penetration / 2) * axis.Normal;
       manifold.AddContact(pos, -axis.Normal, penetration);
       return manifold;
     }
@@ -195,7 +199,7 @@ namespace Volatile
       ref RayCast ray,
       ref RayResult result)
     {
-      Vector2 toOrigin = shapeOrigin - ray.Origin;
+      Vector2 toOrigin = shapeOrigin - ray.origin;
 
       if (toOrigin.sqrMagnitude < sqrRadius)
       {
@@ -203,7 +207,7 @@ namespace Volatile
         return true;
       }
 
-      float slope = Vector2.Dot(toOrigin, ray.Direction);
+      float slope = Vector2.Dot(toOrigin, ray.direction);
       if (slope < 0)
         return false;
 
@@ -213,12 +217,12 @@ namespace Volatile
         return false;
 
       float dist = slope - Mathf.Sqrt(d);
-      if (dist < 0 || dist > ray.Distance)
+      if (dist < 0 || dist > ray.distance)
         return false;
 
       // N.B.: For historical raycasts this normal will be wrong!
       // Must be either transformed back to world or invalidated later.
-      Vector2 normal = (dist * ray.Direction - toOrigin).normalized;
+      Vector2 normal = (dist * ray.direction - toOrigin).normalized;
       result.Set(shape, dist, normal);
       return true;
     }
@@ -307,8 +311,8 @@ namespace Volatile
       float overrideBRadius,
       ObjectPool<Manifold> pool)
     {
-      Vector2 r = overrideBCenter - shapeA.Position;
-      float min = shapeA.Radius + overrideBRadius;
+      Vector2 r = overrideBCenter - shapeA.worldSpaceOrigin;
+      float min = shapeA.radius + overrideBRadius;
       float distSq = r.sqrMagnitude;
 
       if (distSq >= min * min)
@@ -318,8 +322,8 @@ namespace Volatile
       float distInv = 1.0f / dist;
 
       Vector2 pos =
-        shapeA.Position +
-        (0.5f + distInv * (shapeA.Radius - min / 2.0f)) * r;
+        shapeA.worldSpaceOrigin +
+        (0.5f + distInv * (shapeA.radius - min / 2.0f)) * r;
 
       // Build the collision Manifold
       Manifold manifold = pool.Acquire().Assign(shapeA, shapeB);
@@ -333,10 +337,10 @@ namespace Volatile
       out Axis axis)
     {
       axis = new Axis(Vector2.zero, float.NegativeInfinity);
-      foreach (Axis a in poly1.worldAxes)
+      foreach (Axis a in poly1.worldSpaceAxes)
       {
         float min = float.PositiveInfinity;
-        foreach (Vector2 v in poly2.worldVertices)
+        foreach (Vector2 v in poly2.worldSpaceVertices)
           min = Mathf.Min(min, Vector2.Dot(a.Normal, v));
         min -= a.Width;
 
@@ -365,7 +369,7 @@ namespace Volatile
     {
       bool found = false;
 
-      foreach (Vector2 vertex in poly1.worldVertices)
+      foreach (Vector2 vertex in poly1.worldSpaceVertices)
       {
         if (poly2.ContainsPoint(vertex) == true)
         {
@@ -375,7 +379,7 @@ namespace Volatile
         }
       }
 
-      foreach (Vector2 vertex in poly2.worldVertices)
+      foreach (Vector2 vertex in poly2.worldSpaceVertices)
       {
         if (poly1.ContainsPoint(vertex) == true)
         {
@@ -400,14 +404,14 @@ namespace Volatile
       float penetration,
       Manifold manifold)
     {
-      foreach (Vector2 vertex in poly1.worldVertices)
+      foreach (Vector2 vertex in poly1.worldSpaceVertices)
       {
         if (poly2.ContainsPointPartial(vertex, normal) == true)
           if (manifold.AddContact(vertex, normal, penetration) == false)
             return;
       }
 
-      foreach (Vector2 vertex in poly2.worldVertices)
+      foreach (Vector2 vertex in poly2.worldSpaceVertices)
       {
         if (poly1.ContainsPointPartial(vertex, -normal) == true)
           if (manifold.AddContact(vertex, normal, penetration) == false)

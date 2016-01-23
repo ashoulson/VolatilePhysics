@@ -15,7 +15,8 @@ public class VolatileBody : MonoBehaviour
   [SerializeField]
   private bool isStatic = false;
 
-  public Body body;
+  public Body Body { get { return this.body; } }
+  private Body body;
 
   private Vector2 lastPosition;
   private Vector2 nextPosition;
@@ -55,7 +56,7 @@ public class VolatileBody : MonoBehaviour
     }
     else
     {
-      this.body.SetWorld(
+      this.body.Set(
         this.transform.position, 
         Mathf.Deg2Rad * this.transform.rotation.eulerAngles.z);
     }
@@ -123,6 +124,6 @@ public class VolatileBody : MonoBehaviour
 
   public void Set(Vector2 position, float radians)
   {
-    this.body.SetWorld(position, radians);
+    this.body.Set(position, radians);
   }
 }
