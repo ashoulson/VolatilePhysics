@@ -28,12 +28,6 @@ namespace Volatile
 {
   public sealed class World
   {
-    // TEMP DEBUG
-    private long[] windowUpdate = new long[100];
-    private int windowUpdateIdx = 0;
-    private long[] windowRay = new long[100];
-    private int windowRayIdx = 0;
-
     /// <summary>
     /// Fixed update delta time for body integration. 
     /// Defaults to Time.fixedDeltaTime.
@@ -48,7 +42,6 @@ namespace Volatile
 
     internal float Elasticity { get; private set; }
 
-    internal AABBTree bodyTree;
     internal List<Body> bodies;
 
     internal float damping = 0.999f;
@@ -63,21 +56,10 @@ namespace Volatile
 
     public World(float damping = 0.999f)
     {
-      // DEBUG
-      this.windowUpdate = new long[1000];
-      for (int i = 0; i < this.windowUpdate.Length; i++)
-        this.windowUpdate[i] = 0;
-      this.windowUpdateIdx = 0;
-      this.windowRay = new long[1000];
-      for (int i = 0; i < this.windowRay.Length; i++)
-        this.windowRay[i] = 0;
-      this.windowRayIdx = 0;
-
       this.DeltaTime = Time.fixedDeltaTime;
       this.IterationCount = Config.DEFAULT_ITERATION_COUNT;
       this.damping = damping;
 
-      this.bodyTree = new AABBTree();
       this.bodies = new List<Body>();
       this.contactPool = new Contact.Pool();
       this.manifoldPool = new Manifold.Pool(this.contactPool);
@@ -90,7 +72,6 @@ namespace Volatile
     public void AddBody(Body body)
     {
       this.bodies.Add(body);
-      this.bodyTree.AddBody(body);
       body.AssignWorld(this);
     }
 
@@ -100,7 +81,6 @@ namespace Volatile
     public void RemoveBody(Body body)
     {
       this.bodies.Remove(body);
-      this.bodyTree.RemoveBody(body);
       body.AssignWorld(null);
     }
 
@@ -110,29 +90,12 @@ namespace Volatile
     /// </summary>
     public void Update()
     {
-      // Debug
-      System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
-      stopwatch.Start();
-
       for (int i = 0; i < this.bodies.Count; i++)
         this.bodies[i].Update();
 
       this.BroadPhase(true);
       this.UpdateCollision();
       this.CleanupManifolds();
-
-      for (int i = 0; i < this.bodies.Count; i++)
-        this.bodyTree.UpdateBody(this.bodies[i]);
-
-      // Debug
-      stopwatch.Stop();
-      long elapsed = stopwatch.ElapsedTicks;
-      this.windowUpdate[(windowUpdateIdx++) % this.windowUpdate.Length] = elapsed;
-      double sum = 0.0f;
-      for (int i = 0; i < this.windowUpdate.Length; i++)
-        sum += this.windowUpdate[i];
-      double avg = sum / (double)this.windowUpdate.Length;
-      Debug.Log("Update: " + elapsed + " " + avg);
     }
 
     /// <summary>
@@ -145,8 +108,6 @@ namespace Volatile
       this.BroadPhase(false);
       this.UpdateCollision();
       this.CleanupManifolds();
-
-      this.bodyTree.UpdateBody(body);
     }
 
     #region Tests
@@ -180,10 +141,6 @@ namespace Volatile
       ref RayResult result,
       BodyFilter filter = null)
     {
-      // Debug
-      System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
-      stopwatch.Start();
-
       for (int i = 0; i < this.bodies.Count; i++)
       {
         Body body = this.bodies[i];
@@ -194,18 +151,6 @@ namespace Volatile
             return true;
         }
       }
-
-      //this.bodyTree.RayCast(ref ray, ref result, filter);
-
-      // Debug
-      stopwatch.Stop();
-      long elapsed = stopwatch.ElapsedTicks;
-      this.windowRay[(windowRayIdx++) % this.windowRay.Length] = elapsed;
-      double sum = 0.0f;
-      for (int i = 0; i < this.windowRay.Length; i++)
-        sum += this.windowRay[i];
-      double avg = sum / (double)this.windowRay.Length;
-      Debug.Log("Ray: " + elapsed + " " + avg);
 
       return result.IsValid;
     }
@@ -246,25 +191,6 @@ namespace Volatile
                 this.NarrowPhase(ba.shapes[i_s], bb.shapes[j_s]);
         }
       }
-
-      //List<Body> foundBodies = new List<Body>(256);
-
-      //for (int idxBodies = 0; idxBodies < this.bodies.Count; idxBodies++)
-      //{
-
-      //  foundBodies.Clear();
-      //  Body current = this.bodies[idxBodies];
-      //  this.bodyTree.Query(current.AABB, foundBodies);
-
-      //  for (int idxFound = 0; idxFound < foundBodies.Count; idxFound++)
-      //  {
-      //    Body found = foundBodies[idxFound];
-      //    if (found.CanCollide(current, allowDynamic) && found.AABB.Intersect(current.AABB))
-      //      for (int i_s = 0; i_s < found.shapes.Count; i_s++)
-      //        for (int j_s = 0; j_s < current.shapes.Count; j_s++)
-      //          this.NarrowPhase(found.shapes[i_s], current.shapes[j_s]);
-      //  }
-      //}
     }
 
     private void NarrowPhase(
