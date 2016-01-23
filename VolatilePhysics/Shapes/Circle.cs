@@ -21,7 +21,11 @@
 using System;
 using System.Collections.Generic;
 
+#if !NO_UNITY
 using UnityEngine;
+#else
+using VolatileEngine;
+#endif
 
 namespace Volatile
 {
@@ -30,8 +34,8 @@ namespace Volatile
     #region Factory Functions
     public static Circle FromWorldPosition(
       Vector2 origin, 
-      float radius, 
-      float density = 1.0f,
+      float radius,
+      float density = Config.DEFAULT_DENSITY,
       float friction = Config.DEFAULT_FRICTION,
       float restitution = Config.DEFAULT_RESTITUTION)
     {
@@ -39,121 +43,111 @@ namespace Volatile
     }
     #endregion
 
-    #region Static Methods    
-    private static float ComputeArea(float sqrRadius)
-    {
-      return sqrRadius * Mathf.PI;
-    }
-
-    private static float ComputeInertia(Vector2 originOffset, float sqrRadius)
-    {
-      return sqrRadius / 2.0f + originOffset.sqrMagnitude;
-    }
-
-    private static AABB ComputeBounds(Vector2 center, float radius)
-    {
-      return new AABB(center, new Vector2(radius, radius));
-    }
-    #endregion
-
+    #region Properties
     public override Shape.ShapeType Type { get { return ShapeType.Circle; } }
 
-    public override Vector2 Position { get { return this.origin; } }
-    public override Vector2 Facing { get { return new Vector2(1.0f, 0.0f); } }
-    public override float Angle { get { return 0.0f; } }
-
+    public Vector2 Origin { get { return this.worldSpaceOrigin; } }
     public float Radius { get { return this.radius; } }
-
-    private float radius;
-    private float sqrRadius;
-    private Vector2 origin;
-
-    #region Tests
-    internal override bool ShapeQuery(
-      Vector2 point, 
-      bool useLocalSpace = false)
-    {
-      return 
-        Collision.TestPointCircleSimple(
-          (useLocalSpace ? Vector2.zero : this.Position), 
-          point, 
-          this.radius);
-    }
-
-    internal override bool ShapeQuery(
-      Vector2 point, 
-      float radius,
-      bool useLocalSpace = false)
-    {
-      return 
-        Collision.TestCircleCircleSimple(
-          (useLocalSpace ? Vector2.zero : this.Position),
-          point, 
-          this.radius, 
-          radius);
-    }
-
-    internal override bool ShapeRayCast(
-      ref RayCast ray, 
-      ref RayResult result)
-    {
-      return Collision.CircleRayCast(
-        this, 
-        (ray.IsLocalSpace ? Vector2.zero : this.origin), 
-        this.sqrRadius, 
-        ref ray, 
-        ref result);
-    }
-
-    internal override bool ShapeCircleCast(
-      ref RayCast ray, 
-      float radius,
-      ref RayResult result)
-    {
-      float totalRadius = this.radius + radius;
-      return Collision.CircleRayCast(
-        this,
-        (ray.IsLocalSpace ? Vector2.zero : this.origin),
-        totalRadius * totalRadius,
-        ref ray,
-        ref result);
-    }
     #endregion
 
-    /// <summary>
-    /// Creates a cache of the origin in world space. This should be called
-    /// every time the world updates or the shape/body is moved externally.
-    /// </summary>
-    public override void SetWorld(Vector2 position, Vector2 facing)
-    {
-      this.origin = position;
-      this.AABB = Circle.ComputeBounds(this.origin, this.radius);
-    }
+    #region Fields
+    internal Vector2 worldSpaceOrigin;
+    internal float radius;
+    internal float sqrRadius;
 
-    #region Internals
+    // Precomputed body-space values (these should never change unless we
+    // want to support moving shapes relative to their body root later on)
+    private Vector2 bodySpacePosition;
+    #endregion
+
     private Circle(
-      Vector2 origin,
+      Vector2 worldSpaceOrigin,
       float radius,
       float density,
       float friction,
       float restitution)
       : base(density, friction, restitution)
     {
-      this.origin = origin;
       this.radius = radius;
       this.sqrRadius = radius * radius;
 
-      // Defined in Shape class
-      this.Area = Circle.ComputeArea(this.sqrRadius);
+      this.worldSpaceOrigin = worldSpaceOrigin;
+      this.AABB = new AABB(worldSpaceOrigin, radius);
     }
 
-    internal override float ComputeInertia(Vector2 offset)
+    #region Functionality Overrides
+    protected override void ComputeMetrics()
     {
-      return Circle.ComputeInertia(offset, this.sqrRadius);
+      this.bodySpacePosition =
+        this.Body.WorldToBodyPointCurrent(this.worldSpaceOrigin);
+      this.bodySpaceAABB = new AABB(this.bodySpacePosition, this.radius);
+
+      this.Area = this.sqrRadius * Mathf.PI;
+      this.Mass = this.Area * this.Density * Config.AreaMassRatio;
+      this.Inertia =
+        this.sqrRadius / 2.0f + this.bodySpacePosition.sqrMagnitude;
+    }
+
+    protected override void ApplyBodyPosition()
+    {
+      this.worldSpaceOrigin =
+        this.Body.BodyToWorldPointCurrent(this.bodySpacePosition);
+      this.AABB = new AABB(this.worldSpaceOrigin, this.radius);
+    }
+    #endregion
+
+    #region Test Overrides
+    protected override bool ShapeQuery(
+      Vector2 bodySpacePoint)
+    {
+      return 
+        Collision.TestPointCircleSimple(
+          this.bodySpacePosition,
+          bodySpacePoint, 
+          this.radius);
+    }
+
+    protected override bool ShapeQuery(
+      Vector2 bodySpacePoint, 
+      float radius)
+    {
+      return 
+        Collision.TestCircleCircleSimple(
+          this.bodySpacePosition,
+          bodySpacePoint, 
+          this.radius, 
+          radius);
+    }
+
+    protected override bool ShapeRayCast(
+      ref RayCast bodySpaceRay, 
+      ref RayResult result)
+    {
+      return Collision.CircleRayCast(
+        this,
+        this.bodySpacePosition,
+        this.sqrRadius,
+        ref bodySpaceRay, 
+        ref result);
+    }
+
+    protected override bool ShapeCircleCast(
+      ref RayCast bodySpaceRay, 
+      float radius,
+      ref RayResult result)
+    {
+      float totalRadius = this.radius + radius;
+      return Collision.CircleRayCast(
+        this,
+        this.bodySpacePosition,
+        totalRadius * totalRadius,
+        ref bodySpaceRay,
+        ref result);
     }
     #endregion
 
     #region Debug
+#if !NO_UNITY
     public override void GizmoDraw(
       Color edgeColor, 
       Color normalColor, 
@@ -164,12 +158,13 @@ namespace Volatile
       Color current = Gizmos.color;
 
       Gizmos.color = edgeColor;
-      Gizmos.DrawWireSphere(this.Position, this.Radius);
+      Gizmos.DrawWireSphere(this.worldSpaceOrigin, this.radius);
 
       this.AABB.GizmoDraw(aabbColor);
 
       Gizmos.color = current;
     }
+#endif
     #endregion
   }
 }
