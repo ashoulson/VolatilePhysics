@@ -17,7 +17,7 @@ With influences from:
 
 Supported Physics Tasks:
 - Convex polygon and circle shapes
-- Multiple shapes per body
+- Multiple shapes per body with arbitrary center of mass
 - Raycasts and circle sweep tests
 - Point and circle queries
 - Historical ray/circle tests on past world state
