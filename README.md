@@ -33,7 +33,7 @@ Not Supported:
 - Determinism (Volatile uses floating-point values, and is not deterministic across hardware configurations)
 
 Primary Design Features of Volatile:
-- **Safe Repositioning.** Bodies and individual shapes can be moved to arbitrary positions by an external process without compromising the integrity of the physics simulation. Volatile is largely stateless -- very little trajectory data is preserved between frames aside from the position, orientation, and angular/linear velocity of each body.
+- **Safe Repositioning.** Bodies and individual shapes can be moved to arbitrary positions by an external process without compromising the integrity of the physics simulation. This occurs frequently when clients correct for prediction errors and must move a player controller to match the authoritative server's position. Volatile is largely stateless -- very little trajectory data is preserved between frames aside from the position, orientation, and angular/linear velocity of each body.
 - **Individual Object Ticking.** Objects can be ticked individually without forcing a tick on the entire physics world. This is useful for client-side prediction in networked games. Ticking objects individually is more efficient, but may cause duplicate collisions if more than one object is handled this way.
 - **History Tracking.** Volatile can store historical state for dynamic objects and perform tests on an object's past world position. This is useful for lag compensation with raycast weapons in networked shooters.
 - **Simplicity.** Volatile is designed to be simple to read and debug. This library offers as minimal a feature set as possible to keep the total source small and readable.
