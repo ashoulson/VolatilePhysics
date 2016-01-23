@@ -1,6 +1,6 @@
 **VolatilePhysics: A 2D Physics Library for Networked Games**
 
-Alexander Shoulson - http://ashoulson.com
+Alexander Shoulson, Ph.D. - http://ashoulson.com
 
 ![Example 1](https://raw.githubusercontent.com/ashoulson/VolatilePhysics/master/Images/example1.gif) &nbsp; ![Example 2](https://raw.githubusercontent.com/ashoulson/VolatilePhysics/master/Images/example2.gif) &nbsp; ![Example 3](https://raw.githubusercontent.com/ashoulson/VolatilePhysics/master/Images/example3.gif)
 
