@@ -21,7 +21,7 @@
 using System;
 using System.Collections.Generic;
 
-#if !NO_UNITY
+#if VOLATILE_UNITY
 using UnityEngine;
 #else
 using VolatileEngine;
@@ -250,7 +250,7 @@ namespace Volatile
     }
 
     #region Debug
-#if !NO_UNITY
+#if VOLATILE_UNITY
     public void GizmoDraw(Color aabbColor)
     {
       Color current = Gizmos.color;

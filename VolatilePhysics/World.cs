@@ -21,7 +21,7 @@
 using System;
 using System.Collections.Generic;
 
-#if !NO_UNITY
+#if VOLATILE_UNITY
 using UnityEngine;
 #else
 using VolatileEngine;
@@ -33,7 +33,7 @@ namespace Volatile
   {
     /// <summary>
     /// Fixed update delta time for body integration. 
-    /// Defaults to Time.fixedDeltaTime.
+    /// Defaults to Config.DEFAULT_DELTA_TIME.
     /// </summary>
     public float DeltaTime { get; set; }
 
@@ -43,27 +43,34 @@ namespace Volatile
     /// </summary>
     public int IterationCount { get; set; }
 
+    /// <summary>
+    /// How many frames of history this world is recording.
+    /// </summary>
+    public int HistoryLength { get; private set; }
+
     internal float Elasticity { get; private set; }
     internal float Damping { get; private set; }
 
-    internal List<Body> bodies;
+    private List<Body> bodies;
 
     // Each World instance should own its own object pools, in case
     // you want to run multiple World instances simultaneously.
     private Manifold.Pool manifoldPool;
     private Contact.Pool contactPool;
 
-    // TODO: Could convert to a linked list using the pool pointers, maybe?
+    // TODO: Could convert to a linked list using the pool pointers
     private List<Manifold> manifolds;
 
     public World(
-      int iterationCount = Config.DEFAULT_ITERATION_COUNT,
-      float deltaTime = Config.DEFAULT_DELTA_TIME,
+      int historyLength = 0,
       float damping = Config.DEFAULT_DAMPING)
     {
-      this.IterationCount = iterationCount;
-      this.DeltaTime = deltaTime;
+      this.HistoryLength = historyLength;
+
       this.Damping = damping;
+
+      this.IterationCount = Config.DEFAULT_ITERATION_COUNT;
+      this.DeltaTime = Config.DEFAULT_DELTA_TIME;
 
       this.bodies = new List<Body>();
       this.contactPool = new Contact.Pool();
@@ -78,6 +85,8 @@ namespace Volatile
     {
       this.bodies.Add(body);
       body.AssignWorld(this);
+      if (this.HistoryLength > 0)
+        body.StartHistory(this.HistoryLength);
     }
 
     /// <summary>
@@ -91,67 +100,100 @@ namespace Volatile
 
     /// <summary>
     /// Ticks the world, updating all dynamic bodies and resolving collisions.
-    /// Does not allow dynamic-dynamic collisions.
+    /// If a frame number is provided, all dynamic bodies will store their
+    /// state for that frame for later testing.
     /// </summary>
-    public void Update()
+    public void Update(int? frame = null)
     {
       for (int i = 0; i < this.bodies.Count; i++)
-        this.bodies[i].Update();
+      {
+        Body body = this.bodies[i];
+        body.Update();
+        if (History.IsFrameValid(frame))
+          body.StoreState(frame.Value);
+      }
+      this.BroadPhase();
 
-      this.BroadPhase(true);
       this.UpdateCollision();
       this.CleanupManifolds();
     }
 
     /// <summary>
-    /// Updates a single body. Does not allow dynamic-dynamic collisions.
+    /// Updates a single body, resolving only collisions with that body.
+    /// If a frame number is provided, all dynamic bodies will store their
+    /// state for that frame for later testing.
+    /// 
+    /// Note: This function is more efficient to use if you have only a single
+    /// body in your world surrounded by static geometry (as is common for 
+    /// client-side controller prediction in networked games). If you have 
+    /// multiple dynamic bodies, using this function on each individual body 
+    /// may result in collisions being resolved twice with double the force.
     /// </summary>
-    public void Update(Body body)
+    public void Update(Body body, int? frame = null)
     {
       body.Update();
+      if (History.IsFrameValid(frame))
+        body.StoreState(frame.Value);
+      this.BroadPhase(body);
 
-      this.BroadPhase(false);
       this.UpdateCollision();
       this.CleanupManifolds();
     }
 
-    #region Tests
+    /// <summary>
+    /// Finds all bodies containing a given point.
+    /// </summary>
     public IEnumerable<Body> Query(
       Vector2 point,
-      BodyFilter filter = null)
+      BodyFilter filter = null,
+      int? frame = null)
     {
+
       for (int i = 0; i < this.bodies.Count; i++)
       {
         Body body = this.bodies[i];
-        if (Body.Filter(body, filter) && body.Query(point))
+        if (Body.Filter(body, filter))
+          if (body.Query(point, History.ConvertToValidated(frame)))
           yield return body;
       }
     }
 
+    /// <summary>
+    /// Finds all bodies intersecting with a given circle.
+    /// </summary>
     public IEnumerable<Body> Query(
       Vector2 point,
       float radius,
-      BodyFilter filter = null)
+      BodyFilter filter = null,
+      int? frame = null)
     {
       for (int i = 0; i < this.bodies.Count; i++)
       {
         Body body = this.bodies[i];
-        if (Body.Filter(body, filter) && body.Query(point, radius))
-          yield return body;
+        if (Body.Filter(body, filter))
+          if (body.Query(point, radius, History.ConvertToValidated(frame)))
+           yield return body;
       }
     }
 
+    /// <summary>
+    /// Performs a raycast on all world bodies.
+    /// </summary>
     public bool RayCast(
       ref RayCast ray,
       ref RayResult result,
-      BodyFilter filter = null)
+      BodyFilter filter = null,
+      int? frame = null)
     {
       for (int i = 0; i < this.bodies.Count; i++)
       {
         Body body = this.bodies[i];
         if (Body.Filter(body, filter) == true)
         {
-          body.RayCast(ref ray, ref result);
+          body.RayCast(
+            ref ray, 
+            ref result, 
+            History.ConvertToValidated(frame));
           if (result.IsContained == true)
             return true;
         }
@@ -160,28 +202,38 @@ namespace Volatile
       return result.IsValid;
     }
 
+    /// <summary>
+    /// Performs a circle cast on all world bodies.
+    /// </summary>
     public bool CircleCast(
       ref RayCast ray,
       float radius,
       ref RayResult result,
-      BodyFilter filter = null)
+      BodyFilter filter = null,
+      int? frame = null)
     {
       for (int i = 0; i < this.bodies.Count; i++)
       {
         Body body = this.bodies[i];
         if (Body.Filter(body, filter) == true)
         {
-          body.CircleCast(ref ray, radius, ref result);
+          body.CircleCast(
+            ref ray, 
+            radius, 
+            ref result, 
+            History.ConvertToValidated(frame));
           if (result.IsContained == true)
             return true;
         }
       }
       return result.IsValid;
     }
-    #endregion
 
     #region Internals
-    private void BroadPhase(bool allowDynamic)
+    /// <summary>
+    /// Identifies collisions for all bodies, ignoring symmetrical duplicates.
+    /// </summary>
+    private void BroadPhase()
     {
       for (int i = 0; i < this.bodies.Count; i++)
       {
@@ -190,7 +242,7 @@ namespace Volatile
           Body ba = this.bodies[i];
           Body bb = this.bodies[j];
 
-          if (ba.CanCollide(bb, allowDynamic) && ba.AABB.Intersect(bb.AABB))
+          if (ba.CanCollide(bb) && ba.AABB.Intersect(bb.AABB))
             for (int i_s = 0; i_s < ba.shapes.Count; i_s++)
               for (int j_s = 0; j_s < bb.shapes.Count; j_s++)
                 this.NarrowPhase(ba.shapes[i_s], bb.shapes[j_s]);
@@ -198,6 +250,25 @@ namespace Volatile
       }
     }
 
+    /// <summary>
+    /// Identifies collisions for a single body. Does not keep track of 
+    /// symmetrical duplicates (they could be counted twice).
+    /// </summary>
+    private void BroadPhase(Body bb)
+    {
+      for (int i = 0; i < this.bodies.Count; i++)
+      {
+          Body ba = this.bodies[i];
+          if (ba.CanCollide(bb) && ba.AABB.Intersect(bb.AABB))
+            for (int i_s = 0; i_s < ba.shapes.Count; i_s++)
+              for (int j_s = 0; j_s < bb.shapes.Count; j_s++)
+                this.NarrowPhase(ba.shapes[i_s], bb.shapes[j_s]);
+      }
+    }
+
+    /// <summary>
+    /// Creates a manifold for two shapes if they collide.
+    /// </summary>
     private void NarrowPhase(
       Shape sa,
       Shape sb)
