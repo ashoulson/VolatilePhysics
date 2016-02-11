@@ -117,7 +117,7 @@ namespace Volatile
     /// </summary>
     internal void StartHistory(int length)
     {
-      Debug.Assert(
+      System.Diagnostics.Debug.Assert(
         length >= 0,
         "StartHistory(): Length value must be >= 0");
 
@@ -134,7 +134,7 @@ namespace Volatile
     /// </summary>
     internal void StoreState(int frame)
     {
-      Debug.Assert(
+      System.Diagnostics.Debug.Assert(
         frame >= 0, 
         "StoreState(): Frame value must be >= 0");
 
@@ -160,7 +160,7 @@ namespace Volatile
       if (frame == History.CURRENT_FRAME)
         return this.currentState;
 
-      Debug.Assert(
+      System.Diagnostics.Debug.Assert(
         frame >= 0, 
         "GetState(): Frame value must be -1, or >= 0");
 
@@ -304,6 +304,12 @@ namespace Volatile
       Vector2 point, 
       int validatedFrame = History.CURRENT_FRAME)
     {
+      return QueryPoint(point, validatedFrame);
+    }
+    internal bool QueryPoint(
+      Vector2 point, 
+      int validatedFrame = History.CURRENT_FRAME)
+    {
       // AABB check done in world space (because it keeps changing)
       State record = this.GetState(validatedFrame);
       if (record.aabb.Query(point) == false)
@@ -322,6 +328,13 @@ namespace Volatile
     /// Begins with AABB checks.
     /// </summary>
     internal bool Query(
+      Vector2 point, 
+      float radius,
+      int validatedFrame = History.CURRENT_FRAME)
+    {
+      return QueryCircle(point, radius, validatedFrame);
+    }
+    internal bool QueryCircle(
       Vector2 point, 
       float radius,
       int validatedFrame = History.CURRENT_FRAME)
