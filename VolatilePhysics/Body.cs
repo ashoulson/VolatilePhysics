@@ -117,7 +117,7 @@ namespace Volatile
     /// </summary>
     internal void StartHistory(int length)
     {
-      Debug.Assert(
+      System.Diagnostics.Debug.Assert(
         length >= 0,
         "StartHistory(): Length value must be >= 0");
 
@@ -134,7 +134,7 @@ namespace Volatile
     /// </summary>
     internal void StoreState(int frame)
     {
-      Debug.Assert(
+      System.Diagnostics.Debug.Assert(
         frame >= 0, 
         "StoreState(): Frame value must be >= 0");
 
@@ -160,7 +160,7 @@ namespace Volatile
       if (frame == History.CURRENT_FRAME)
         return this.currentState;
 
-      Debug.Assert(
+      System.Diagnostics.Debug.Assert(
         frame >= 0, 
         "GetState(): Frame value must be -1, or >= 0");
 
