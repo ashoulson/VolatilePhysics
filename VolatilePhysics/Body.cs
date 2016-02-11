@@ -304,6 +304,12 @@ namespace Volatile
       Vector2 point, 
       int validatedFrame = History.CURRENT_FRAME)
     {
+      return QueryPoint(point, validatedFrame);
+    }
+    internal bool QueryPoint(
+      Vector2 point, 
+      int validatedFrame = History.CURRENT_FRAME)
+    {
       // AABB check done in world space (because it keeps changing)
       State record = this.GetState(validatedFrame);
       if (record.aabb.Query(point) == false)
@@ -322,6 +328,13 @@ namespace Volatile
     /// Begins with AABB checks.
     /// </summary>
     internal bool Query(
+      Vector2 point, 
+      float radius,
+      int validatedFrame = History.CURRENT_FRAME)
+    {
+      return QueryCircle(point, radius, validatedFrame);
+    }
+    internal bool QueryCircle(
       Vector2 point, 
       float radius,
       int validatedFrame = History.CURRENT_FRAME)

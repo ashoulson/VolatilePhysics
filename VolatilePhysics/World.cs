@@ -155,7 +155,7 @@ namespace Volatile
       {
         Body body = this.bodies[i];
         if (Body.Filter(body, filter))
-          if (body.Query(point, frame))
+          if (body.QueryPoint(point, frame))
           yield return body;
       }
     }
@@ -176,7 +176,7 @@ namespace Volatile
       {
         Body body = this.bodies[i];
         if (Body.Filter(body, filter))
-          if (body.Query(point, radius, frame))
+          if (body.QueryCircle(point, radius, frame))
            yield return body;
       }
     }
