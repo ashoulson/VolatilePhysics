@@ -37,7 +37,8 @@ namespace Volatile
       b = a;
       a = temp;
     }
-
+		
+#if !VOLATILE_UNITY
     public static Vector2 Right(this Vector2 v)
     {
       return new Vector2(v.y, -v.x);
@@ -57,6 +58,7 @@ namespace Volatile
     {
       return new Vector2(v.x * b.x + v.y * b.y, v.y * b.x - v.x * b.y);
     }
+#endif
 
     public static float Angle(this Vector2 v)
     {
