@@ -57,7 +57,7 @@ namespace Volatile
 
     // Precomputed body-space values (these should never change unless we
     // want to support moving shapes relative to their body root later on)
-    private Vector2 bodySpacePosition;
+    private Vector2 bodySpaceOrigin;
     #endregion
 
     private Circle(
@@ -78,43 +78,43 @@ namespace Volatile
     #region Functionality Overrides
     protected override void ComputeMetrics()
     {
-      this.bodySpacePosition =
+      this.bodySpaceOrigin =
         this.Body.WorldToBodyPointCurrent(this.worldSpaceOrigin);
-      this.bodySpaceAABB = new AABB(this.bodySpacePosition, this.radius);
+      this.bodySpaceAABB = new AABB(this.bodySpaceOrigin, this.radius);
 
       this.Area = this.sqrRadius * Mathf.PI;
       this.Mass = this.Area * this.Density * Config.AreaMassRatio;
       this.Inertia =
-        this.sqrRadius / 2.0f + this.bodySpacePosition.sqrMagnitude;
+        this.sqrRadius / 2.0f + this.bodySpaceOrigin.sqrMagnitude;
     }
 
     protected override void ApplyBodyPosition()
     {
       this.worldSpaceOrigin =
-        this.Body.BodyToWorldPointCurrent(this.bodySpacePosition);
+        this.Body.BodyToWorldPointCurrent(this.bodySpaceOrigin);
       this.AABB = new AABB(this.worldSpaceOrigin, this.radius);
     }
     #endregion
 
     #region Test Overrides
-    protected override bool ShapeQuery(
+    protected override bool ShapeQueryPoint(
       Vector2 bodySpacePoint)
     {
       return 
         Collision.TestPointCircleSimple(
-          this.bodySpacePosition,
+          this.bodySpaceOrigin,
           bodySpacePoint, 
           this.radius);
     }
 
-    protected override bool ShapeQuery(
-      Vector2 bodySpacePoint, 
+    protected override bool ShapeQueryCircle(
+      Vector2 bodySpaceOrigin, 
       float radius)
     {
       return 
         Collision.TestCircleCircleSimple(
-          this.bodySpacePosition,
-          bodySpacePoint, 
+          this.bodySpaceOrigin,
+          bodySpaceOrigin, 
           this.radius, 
           radius);
     }
@@ -125,7 +125,7 @@ namespace Volatile
     {
       return Collision.CircleRayCast(
         this,
-        this.bodySpacePosition,
+        this.bodySpaceOrigin,
         this.sqrRadius,
         ref bodySpaceRay, 
         ref result);
@@ -139,7 +139,7 @@ namespace Volatile
       float totalRadius = this.radius + radius;
       return Collision.CircleRayCast(
         this,
-        this.bodySpacePosition,
+        this.bodySpaceOrigin,
         totalRadius * totalRadius,
         ref bodySpaceRay,
         ref result);

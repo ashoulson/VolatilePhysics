@@ -143,7 +143,7 @@ namespace Volatile
     /// <summary>
     /// Finds all bodies containing a given point.
     /// </summary>
-    public IEnumerable<Body> Query(
+    public IEnumerable<Body> QueryPoint(
       Vector2 point,
       BodyFilter filter = null,
       int frame = History.CURRENT_FRAME)
@@ -155,7 +155,7 @@ namespace Volatile
       {
         Body body = this.bodies[i];
         if (Body.Filter(body, filter))
-          if (body.Query(point, frame))
+          if (body.QueryPoint(point, frame))
           yield return body;
       }
     }
@@ -163,8 +163,8 @@ namespace Volatile
     /// <summary>
     /// Finds all bodies intersecting with a given circle.
     /// </summary>
-    public IEnumerable<Body> Query(
-      Vector2 point,
+    public IEnumerable<Body> QueryCircle(
+      Vector2 origin,
       float radius,
       BodyFilter filter = null,
       int frame = History.CURRENT_FRAME)
@@ -176,7 +176,7 @@ namespace Volatile
       {
         Body body = this.bodies[i];
         if (Body.Filter(body, filter))
-          if (body.Query(point, radius, frame))
+          if (body.QueryCircle(origin, radius, frame))
            yield return body;
       }
     }

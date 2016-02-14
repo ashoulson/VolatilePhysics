@@ -134,7 +134,7 @@ namespace Volatile
     /// <summary>
     /// Performs a point test on the AABB.
     /// </summary>
-    public bool Query(Vector2 point)
+    public bool QueryPoint(Vector2 point)
     {
       return 
         this.left <= point.x && 
@@ -144,15 +144,19 @@ namespace Volatile
     }
 
     /// <summary>
-    /// Performs a point test, expanding the AABB in all directions by a value.
+    /// Performs an approximate circle test by expanding the AABB in all
+    /// directions by the radius and then doing a point test. Note that this
+    /// does not account for rounded edges at the corners of the AABB, which
+    /// can create false positives. For culling, however, this is perfectly
+    /// fine to use without a more accurate approach.
     /// </summary>
-    public bool Query(Vector2 point, float expand)
+    public bool QueryCircleApproximate(Vector2 origin, float radius)
     {
       return
-        (this.left - expand) <= point.x &&
-        (this.right + expand) >= point.x &&
-        (this.bottom - expand) <= point.y &&
-        (this.top + expand) >= point.y;
+        (this.left - radius) <= origin.x &&
+        (this.right + radius) >= origin.x &&
+        (this.bottom - radius) <= origin.y &&
+        (this.top + radius) >= origin.y;
     }
 
     public bool RayCast(ref RayCast ray)

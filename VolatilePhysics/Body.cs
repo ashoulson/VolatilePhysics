@@ -300,19 +300,19 @@ namespace Volatile
     /// Checks if a point is contained in this body. 
     /// Begins with AABB checks.
     /// </summary>
-    internal bool Query(
+    internal bool QueryPoint(
       Vector2 point, 
       int validatedFrame = History.CURRENT_FRAME)
     {
       // AABB check done in world space (because it keeps changing)
       State record = this.GetState(validatedFrame);
-      if (record.aabb.Query(point) == false)
+      if (record.aabb.QueryPoint(point) == false)
         return false;
 
       // Actual query on shapes done in body space
       Vector2 bodySpacePoint = record.WorldToBodyPoint(point);
       for (int i = 0; i < this.shapes.Count; i++)
-        if (this.shapes[i].Query(bodySpacePoint))
+        if (this.shapes[i].QueryPoint(bodySpacePoint))
           return true;
       return false;
     }
@@ -321,20 +321,20 @@ namespace Volatile
     /// Checks if a circle overlaps with this body. 
     /// Begins with AABB checks.
     /// </summary>
-    internal bool Query(
-      Vector2 point, 
+    internal bool QueryCircle(
+      Vector2 origin, 
       float radius,
       int validatedFrame = History.CURRENT_FRAME)
     {
       // AABB check done in world space (because it keeps changing)
       State record = this.GetState(validatedFrame);
-      if (record.aabb.Query(point, radius) == false)
+      if (record.aabb.QueryCircleApproximate(origin, radius) == false)
         return false;
 
       // Actual query on shapes done in body space
-      Vector2 bodySpacePoint = record.WorldToBodyPoint(point);
+      Vector2 bodySpaceOrigin = record.WorldToBodyPoint(origin);
       for (int i = 0; i < this.shapes.Count; i++)
-        if (this.shapes[i].Query(bodySpacePoint, radius))
+        if (this.shapes[i].QueryCircle(bodySpaceOrigin, radius))
           return true;
       return false;
     }
@@ -570,7 +570,8 @@ namespace Volatile
 
       if (this.Mass < Config.MINIMUM_DYNAMIC_MASS)
       {
-        Debug.LogWarning("mass < MINIMUM_DYNAMIC_MASS, setting to static");
+        Debug.LogWarning(
+          "mass < MINIMUM_DYNAMIC_MASS, setting to static");
         this.SetStatic();
       }
       else

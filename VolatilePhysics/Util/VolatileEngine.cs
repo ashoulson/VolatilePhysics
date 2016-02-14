@@ -145,41 +145,29 @@ namespace VolatileEngine
 
   public static class Debug
   {
-    public static event Action<object> Logged;
-    public static event Action<object> LoggedWarning;
-    public static event Action<object> LoggedError;
-    public static event Action<string> AssertFailed;
-
-    internal static void Log(object obj) 
+    internal static void Log(object message) 
     {
-      if (Debug.Logged != null)
-        Debug.Logged.Invoke(obj);
+      System.Diagnostics.Debug.Print(message.ToString());
     }
 
-    internal static void LogWarning(object obj)
+    internal static void LogWarning(object message)
     {
-      if (Debug.LoggedWarning != null)
-        Debug.LoggedWarning.Invoke(obj);
+      System.Diagnostics.Debug.Print("WARNING: " + message.ToString());
     }
 
-    internal static void LogError(object obj) 
+    internal static void LogError(object message) 
     {
-      if (Debug.LoggedError != null)
-        Debug.LoggedError.Invoke(obj);
+      System.Diagnostics.Debug.Print("ERROR: " + message.ToString());
     }
 
     internal static void Assert(bool condition)
     {
-      if (condition == false)
-        if (Debug.AssertFailed != null)
-          Debug.AssertFailed.Invoke(null);
+      System.Diagnostics.Debug.Assert(condition);
     }
 
     internal static void Assert(bool condition, string message)
     {
-      if (condition == false)
-        if (Debug.AssertFailed != null)
-          Debug.AssertFailed.Invoke(message);
+      System.Diagnostics.Debug.Assert(condition, message);
     }
   }
 }
