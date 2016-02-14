@@ -152,7 +152,7 @@ namespace Volatile
     #endregion
 
     #region Test Overrides
-    protected override bool ShapeQuery(
+    protected override bool ShapeQueryPoint(
       Vector2 bodySpacePoint)
     {
       foreach (Axis axis in this.bodySpaceAxes)
@@ -161,15 +161,15 @@ namespace Volatile
       return true;
     }
 
-    protected override bool ShapeQuery(
-      Vector2 bodySpacePoint,
+    protected override bool ShapeQueryCircle(
+      Vector2 bodySpaceOrigin,
       float radius)
     {
       // Get the axis on the polygon closest to the circle's origin
       float penetration;
       int foundIndex =
         Collision.FindAxisMaxPenetration(
-          bodySpacePoint,
+          bodySpaceOrigin,
           radius,
           this.bodySpaceAxes,
           out penetration);
@@ -184,11 +184,11 @@ namespace Volatile
 
       // If the circle is past one of the two vertices, check it like
       // a circle-circle intersection where the vertex has radius 0
-      float d = VolatileUtil.Cross(axis.Normal, bodySpacePoint);
+      float d = VolatileUtil.Cross(axis.Normal, bodySpaceOrigin);
       if (d > VolatileUtil.Cross(axis.Normal, a))
-        return Collision.TestPointCircleSimple(a, bodySpacePoint, radius);
+        return Collision.TestPointCircleSimple(a, bodySpaceOrigin, radius);
       if (d < VolatileUtil.Cross(axis.Normal, b))
-        return Collision.TestPointCircleSimple(b, bodySpacePoint, radius);
+        return Collision.TestPointCircleSimple(b, bodySpaceOrigin, radius);
       return true;
     }
 

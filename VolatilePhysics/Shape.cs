@@ -107,11 +107,11 @@ namespace Volatile
     /// Checks if a point is contained in this shape. 
     /// Begins with an AABB check.
     /// </summary>
-    internal bool Query(Vector2 bodySpacePoint)
+    internal bool QueryPoint(Vector2 bodySpacePoint)
     {
       // Queries and casts on shapes are always done in body space
-      if (this.bodySpaceAABB.Query(bodySpacePoint) == true)
-        return this.ShapeQuery(bodySpacePoint);
+      if (this.bodySpaceAABB.QueryPoint(bodySpacePoint))
+        return this.ShapeQueryPoint(bodySpacePoint);
       return false;
     }
 
@@ -119,11 +119,11 @@ namespace Volatile
     /// Checks if a circle overlaps with this shape. 
     /// Begins with an AABB check.
     /// </summary>
-    internal bool Query(Vector2 bodySpacePoint, float radius)
+    internal bool QueryCircle(Vector2 bodySpaceOrigin, float radius)
     {
       // Queries and casts on shapes are always done in body space
-      if (this.bodySpaceAABB.Query(bodySpacePoint, radius) == true)
-        return this.ShapeQuery(bodySpacePoint, radius);
+      if (this.bodySpaceAABB.QueryCircleApproximate(bodySpaceOrigin, radius))
+        return this.ShapeQueryCircle(bodySpaceOrigin, radius);
       return false;
     }
 
@@ -136,7 +136,7 @@ namespace Volatile
       ref RayResult result)
     {
       // Queries and casts on shapes are always done in body space
-      if (this.bodySpaceAABB.RayCast(ref bodySpaceRay) == true)
+      if (this.bodySpaceAABB.RayCast(ref bodySpaceRay))
         return this.ShapeRayCast(ref bodySpaceRay, ref result);
       return false;
     }
@@ -151,7 +151,7 @@ namespace Volatile
       ref RayResult result)
     {
       // Queries and casts on shapes are always done in body space
-      if (this.bodySpaceAABB.CircleCast(ref bodySpaceRay, radius) == true)
+      if (this.bodySpaceAABB.CircleCast(ref bodySpaceRay, radius))
         return this.ShapeCircleCast(ref bodySpaceRay, radius, ref result);
       return false;
     }
@@ -171,11 +171,11 @@ namespace Volatile
     #endregion
 
     #region Test Overrides
-    protected abstract bool ShapeQuery(
+    protected abstract bool ShapeQueryPoint(
       Vector2 bodySpacePoint);
 
-    protected abstract bool ShapeQuery(
-      Vector2 bodySpacePoint,
+    protected abstract bool ShapeQueryCircle(
+      Vector2 bodySpaceOrigin,
       float radius);
 
     protected abstract bool ShapeRayCast(
