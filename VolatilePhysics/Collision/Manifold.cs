@@ -21,42 +21,16 @@
 using System;
 using System.Collections.Generic;
 
+using CommonTools;
 using UnityEngine;
 
 namespace Volatile
 {
-  internal sealed class Manifold : IPoolable<Manifold>
+  internal sealed class Manifold : IPoolable
   {
-    #region Pool Class
-    internal sealed class Pool : ObjectPool<Manifold>
-    {
-      private Contact.Pool contactPool;
-
-      public Pool(Contact.Pool contactPool)
-      {
-        this.contactPool = contactPool;
-      }
-
-      protected override Manifold Create()
-      {
-        return new Manifold(this.contactPool);
-      }
-    }
-    #endregion
-
     #region IPoolable Members
-    private bool isValid = false;
-    Manifold IPoolable<Manifold>.Next { get; set; }
-
-    bool IPoolable<Manifold>.IsValid
-    {
-      get { return this.isValid; }
-    }
-
-    void IPoolable<Manifold>.Invalidate()
-    {
-      this.isValid = false;
-    }
+    public Pool Pool { get; set; }
+    void IPoolable.Reset() { this.Reset(); }
     #endregion
 
     internal Shape ShapeA { get; private set; }
@@ -66,33 +40,28 @@ namespace Volatile
 
     private int used = 0;
     private Contact[] contacts;
-    private ObjectPool<Contact> contactPool;
+    private World world;
 
-    internal Manifold(ObjectPool<Contact> contactPool)
+    public Manifold()
     {
-      this.contactPool = contactPool;
-
-      this.ShapeA = null;
-      this.ShapeB = null;
-      this.Restitution = 0.0f;
-      this.Friction = 0.0f;
       this.contacts = new Contact[Config.MAX_CONTACTS];
       this.used = 0;
-
-      this.isValid = false;
+      this.Reset();
     }
 
     internal Manifold Assign(
+      World world,
       Shape shapeA,
       Shape shapeB)
     {
+      this.world = world;
       this.ShapeA = shapeA;
       this.ShapeB = shapeB;
+
       this.Restitution = Mathf.Sqrt(shapeA.Restitution * shapeB.Restitution);
       this.Friction = Mathf.Sqrt(shapeA.Friction * shapeB.Friction);
       this.used = 0;
 
-      this.isValid = true;
       return this;
     }
 
@@ -104,7 +73,7 @@ namespace Volatile
       if (this.used >= contacts.Length)
         return false;
       this.contacts[this.used++] =
-        this.contactPool.Acquire().Assign(position, normal, penetration);
+        this.world.AllocateContact().Assign(position, normal, penetration);
       return true;
     }
 
@@ -126,10 +95,24 @@ namespace Volatile
         this.contacts[i].SolveCached(this);
     }
 
-    internal void ReleaseContacts()
+    private void ClearContacts()
     {
       for (int i = 0; i < this.used; i++)
-        this.contactPool.Release(this.contacts[i]);
+        Pool.Free(this.contacts[i]);
+      for (int i = 0; i < this.contacts.Length; i++)
+        this.contacts[i] = null;
+      this.used = 0;
+    }
+
+    private void Reset()
+    {
+      this.ShapeA = null;
+      this.ShapeB = null;
+      this.Restitution = 0.0f;
+      this.Friction = 0.0f;
+
+      this.ClearContacts();
+      this.world = null;
     }
   }
 }

@@ -21,35 +21,16 @@
 using System;
 using System.Collections.Generic;
 
+using CommonTools;
 using UnityEngine;
 
 namespace Volatile
 {
-  internal sealed class Contact : IPoolable<Contact>
+  internal sealed class Contact : IPoolable
   {
-    #region Pool Class
-    internal sealed class Pool : ObjectPool<Contact>
-    {
-      protected override Contact Create()
-      {
-        return new Contact();
-      }
-    }
-    #endregion
-
     #region IPoolable Members
-    private bool isValid = false;
-    Contact IPoolable<Contact>.Next { get; set; }
-
-    bool IPoolable<Contact>.IsValid
-    {
-      get { return this.isValid; }
-    }
-
-    void IPoolable<Contact>.Invalidate()
-    {
-      this.isValid = false;
-    }
+    public Pool Pool { get; set; }
+    void IPoolable.Reset() { this.Reset(); }
     #endregion
 
     #region Static Methods
@@ -75,25 +56,9 @@ namespace Volatile
     private float cachedNormalImpulse;
     private float cachedTangentImpulse;
 
-    internal Contact()
+    public Contact()
     {
-      this.position = Vector2.zero;
-      this.normal = Vector2.zero;
-      this.penetration = 0.0f;
-
-      this.toA = Vector2.zero;
-      this.toB = Vector2.zero;
-
-      this.nMass = 0.0f;
-      this.tMass = 0.0f;
-      this.restitution = 0.0f;
-      this.bias = 0.0f;
-      this.jBias = 0.0f;
-
-      this.cachedNormalImpulse = 0.0f;
-      this.cachedTangentImpulse = 0.0f;
-
-      this.isValid = false;
+      this.Reset();
     }
 
     internal Contact Assign(
@@ -101,23 +66,12 @@ namespace Volatile
       Vector2 normal,
       float penetration)
     {
+      this.Reset();
+
       this.position = position;
       this.normal = normal;
       this.penetration = penetration;
 
-      this.toA = Vector2.zero;
-      this.toB = Vector2.zero;
-
-      this.nMass = 0.0f;
-      this.tMass = 0.0f;
-      this.restitution = 0.0f;
-      this.bias = 0.0f;
-      this.jBias = 0.0f;
-
-      this.cachedNormalImpulse = 0.0f;
-      this.cachedTangentImpulse = 0.0f;
-
-      this.isValid = true;
       return this;
     }
 
@@ -196,6 +150,25 @@ namespace Volatile
     }
 
     #region Internals
+    private void Reset()
+    {
+      this.position = Vector2.zero;
+      this.normal = Vector2.zero;
+      this.penetration = 0.0f;
+
+      this.toA = Vector2.zero;
+      this.toB = Vector2.zero;
+
+      this.nMass = 0.0f;
+      this.tMass = 0.0f;
+      this.restitution = 0.0f;
+      this.bias = 0.0f;
+      this.jBias = 0.0f;
+
+      this.cachedNormalImpulse = 0.0f;
+      this.cachedTangentImpulse = 0.0f;
+    }
+
     private float KScalar(
       Body bodyA,
       Body bodyB,
@@ -203,9 +176,9 @@ namespace Volatile
     {
       float massSum = bodyA.InvMass + bodyB.InvMass;
       float r1cnSqr =
-        VolatileUtil.Square(VolatileUtil.Cross(this.toA, normal));
+        VolatileMath.Square(VolatileMath.Cross(this.toA, normal));
       float r2cnSqr =
-        VolatileUtil.Square(VolatileUtil.Cross(this.toB, normal));
+        VolatileMath.Square(VolatileMath.Cross(this.toB, normal));
       return
         massSum +
         bodyA.InvInertia * r1cnSqr +

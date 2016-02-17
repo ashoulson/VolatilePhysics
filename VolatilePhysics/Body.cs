@@ -279,14 +279,14 @@ namespace Volatile
     public void AddForce(Vector2 force, Vector2 point)
     {
       this.Force += force;
-      this.Torque += VolatileUtil.Cross(this.Position - point, force);
+      this.Torque += VolatileMath.Cross(this.Position - point, force);
     }
 
     public void Set(Vector2 position, float radians)
     {
       this.Position = position;
       this.Angle = radians;
-      this.Facing = VolatileUtil.Polar(radians);
+      this.Facing = VolatileMath.Polar(radians);
       this.OnPositionUpdated();
     }
     #endregion
@@ -400,7 +400,7 @@ namespace Volatile
       this.currentState.frame = History.CURRENT_FRAME;
       this.Position = position;
       this.Angle = radians;
-      this.Facing = VolatileUtil.Polar(radians);
+      this.Facing = VolatileMath.Polar(radians);
 
       this.shapes = new List<Shape>();
       foreach (Shape shape in shapesToAdd)
@@ -431,13 +431,13 @@ namespace Volatile
     internal void ApplyImpulse(Vector2 j, Vector2 r)
     {
       this.LinearVelocity += this.InvMass * j;
-      this.AngularVelocity -= this.InvInertia * VolatileUtil.Cross(j, r);
+      this.AngularVelocity -= this.InvInertia * VolatileMath.Cross(j, r);
     }
 
     internal void ApplyBias(Vector2 j, Vector2 r)
     {
       this.BiasVelocity += this.InvMass * j;
-      this.BiasRotation -= this.InvInertia * VolatileUtil.Cross(j, r);
+      this.BiasRotation -= this.InvInertia * VolatileMath.Cross(j, r);
     }
     #endregion
 
@@ -536,7 +536,7 @@ namespace Volatile
         this.World.DeltaTime * this.LinearVelocity + this.BiasVelocity;
       this.Angle +=
         this.World.DeltaTime * this.AngularVelocity + this.BiasRotation;
-      this.Facing = VolatileUtil.Polar(this.Angle);
+      this.Facing = VolatileMath.Polar(this.Angle);
     }
 
     private void ClearForces()

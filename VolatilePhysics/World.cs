@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 
+using CommonTools;
 using UnityEngine;
 
 namespace Volatile
@@ -51,8 +52,8 @@ namespace Volatile
 
     // Each World instance should own its own object pools, in case
     // you want to run multiple World instances simultaneously.
-    private Manifold.Pool manifoldPool;
-    private Contact.Pool contactPool;
+    private GenericPool<Contact> contactPool;
+    private GenericPool<Manifold> manifoldPool;
 
     // TODO: Could convert to a linked list using the pool pointers
     private List<Manifold> manifolds;
@@ -69,8 +70,8 @@ namespace Volatile
       this.DeltaTime = Config.DEFAULT_DELTA_TIME;
 
       this.bodies = new List<Body>();
-      this.contactPool = new Contact.Pool();
-      this.manifoldPool = new Manifold.Pool(this.contactPool);
+      this.contactPool = new GenericPool<Contact>();
+      this.manifoldPool = new GenericPool<Manifold>();
       this.manifolds = new List<Manifold>();
     }
 
@@ -229,6 +230,16 @@ namespace Volatile
       return result.IsValid;
     }
 
+    internal Contact AllocateContact()
+    {
+      return this.contactPool.Allocate();
+    }
+
+    internal Manifold AllocateManifold()
+    {
+      return this.manifoldPool.Allocate();
+    }
+
     #region Internals
     /// <summary>
     /// Identifies collisions for all bodies, ignoring symmetrical duplicates.
@@ -277,7 +288,7 @@ namespace Volatile
         return;
 
       Shape.OrderShapes(ref sa, ref sb);
-      Manifold manifold = Collision.Dispatch(sa, sb, this.manifoldPool);
+      Manifold manifold = Collision.Dispatch(this, sa, sb);
       if (manifold != null)
         this.manifolds.Add(manifold);
     }
@@ -286,9 +297,10 @@ namespace Volatile
     {
       for (int i = 0; i < this.manifolds.Count; i++)
       {
-        this.manifolds[i].ReleaseContacts();
-        this.manifoldPool.Release(this.manifolds[i]);
+        Pool.Free(this.manifolds[i]);
+        this.manifolds[i] = null;
       }
+
       this.manifolds.Clear();
     }
 
