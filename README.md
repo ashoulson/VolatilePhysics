@@ -45,4 +45,4 @@ Caveats:
 
 ---
 
-By default, Volatile builds with a VOLATILE_UNITY compiler flag that links against UnityEngine.dll and uses Unity data structures (like Vector2). Volatile can be built as a standalone library by removing this flag.
+By default, Volatile builds against the official UnityEngine.dll and uses Unity data structures (like Vector2). Volatile includes a separate "FakeUnity" project that emulates Unity's functionality to the extent Volatile needs. You can add this project as a reference and remove the UnityEngine.dll reference to build Volatile as a standalone library. It is safe to delete FakeUnity if you are not interested in using Volatile outside of Unity.

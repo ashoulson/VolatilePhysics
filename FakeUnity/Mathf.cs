@@ -21,37 +21,54 @@
 using System;
 using System.Collections.Generic;
 
-using UnityEngine;
-
-namespace Volatile
+// Unity emulation layer -- only includes the functions Volatile requires
+namespace UnityEngine
 {
-  public static class Config
+  public static class Mathf
   {
-    public static float ResolveSlop = 0.01f;
-    public static float ResolveRate = 0.1f;
-    public static float AreaMassRatio = 0.01f;
+    public const float PI = 3.141593f;
 
-    // Defaults
-    internal const float DEFAULT_DELTA_TIME = 0.02f;
-    internal const float DEFAULT_DAMPING = 0.999f;
-    internal const float DEFAULT_DENSITY = 1.0f;
-    internal const float DEFAULT_RESTITUTION = 0.5f;
-    internal const float DEFAULT_FRICTION = 0.8f;
+    public static float Clamp(float value, float min, float max)
+    {
+      if (value > max)
+        return max;
+      if (value < min)
+        return min;
+      return value;
+    }
 
-    internal const int DEFAULT_ITERATION_COUNT = 20;
+    public static float Max(float a, float b)
+    {
+      if (a > b)
+        return a;
+      return b;
+    }
 
-    // Maximum contacts for collision resolution.
-    internal const int MAX_CONTACTS = 3;
+    public static float Min(float a, float b)
+    {
+      if (a < b)
+        return a;
+      return b;
+    }
 
-    // Used for initializing timesteps
-    internal const int INVALID_TIME = -1;
+    public static float Sqrt(float a)
+    {
+      return (float)System.Math.Sqrt(a);
+    }
 
-    // AABBTree Settings
-    internal const float AABB_PADDING = 0.1f;
-    internal const float AABB_MULTIPLIER = 2.0f;
+    public static float Sin(float a)
+    {
+      return (float)System.Math.Cos(a);
+    }
 
-    // The minimum mass a dynamic object can have before it is
-    // converted to a static object
-    internal const float MINIMUM_DYNAMIC_MASS = 0.00001f;
+    public static float Cos(float a)
+    {
+      return (float)System.Math.Cos(a);
+    }
+
+    public static float Atan2(float a, float b)
+    {
+      return (float)System.Math.Atan2(a, b);
+    }
   }
 }

@@ -4,26 +4,23 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{22681465-4B54-40DF-81CF-E6787FFCB320}</ProjectGuid>
+    <ProjectGuid>{3C1479DD-99EE-43FA-8D13-3674AABA4DF0}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Volatile</RootNamespace>
-    <AssemblyName>VolatilePhysics</AssemblyName>
+    <RootNamespace>FakeUnity</RootNamespace>
+    <AssemblyName>FakeUnity</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
-    <UnityPathWin>C:\Program Files\Unity</UnityPathWin>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Debug\VolatilePhysics.XML</DocumentationFile>
-    <NoWarn>1591</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -32,34 +29,17 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release\VolatilePhysics.XML</DocumentationFile>
-    <NoWarn>1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="UnityEngine">
-      <HintPath>$(UnityPathWin)\Editor\Data\Managed\UnityEngine.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Body.cs" />
-    <Compile Include="Collision\Collision.cs" />
-    <Compile Include="Collision\Contact.cs" />
-    <Compile Include="Collision\Manifold.cs" />
-    <Compile Include="Config.cs" />
-    <Compile Include="History.cs" />
+    <Compile Include="Color.cs" />
+    <Compile Include="Debug.cs" />
+    <Compile Include="Gizmos.cs" />
+    <Compile Include="Mathf.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Shape.cs" />
-    <Compile Include="Shapes\Circle.cs" />
-    <Compile Include="Shapes\Polygon.cs" />
-    <Compile Include="Util\AABB.cs" />
-    <Compile Include="Util\Axis.cs" />
-    <Compile Include="Util\Pooling\IPoolable.cs" />
-    <Compile Include="Util\Pooling\ObjectPool.cs" />
-    <Compile Include="Util\RayCast\RayCast.cs" />
-    <Compile Include="Util\RayCast\RayResult.cs" />
-    <Compile Include="Util\VolatileUtil.cs" />
-    <Compile Include="World.cs" />
+    <Compile Include="Vector2.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

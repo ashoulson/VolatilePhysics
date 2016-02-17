@@ -21,11 +21,7 @@
 using System;
 using System.Collections.Generic;
 
-#if VOLATILE_UNITY
 using UnityEngine;
-#else
-using VolatileEngine;
-#endif
 
 namespace Volatile
 {
@@ -189,14 +185,12 @@ namespace Volatile
     #endregion
 
     #region Debug
-#if VOLATILE_UNITY
     public abstract void GizmoDraw(
       Color edgeColor,
       Color normalColor,
       Color originColor,
       Color aabbColor,
       float normalLength);
-#endif
     #endregion
   }
 }
