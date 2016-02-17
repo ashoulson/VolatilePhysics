@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 
+using CommonTools;
 using UnityEngine;
 
 namespace Volatile
@@ -29,9 +30,9 @@ namespace Volatile
   {
     #region Dispatch
     private delegate Manifold Test(
+      World world,
       Shape sa, 
-      Shape sb, 
-      ObjectPool<Manifold> pool);
+      Shape sb);
 
     private readonly static Test[,] tests = new Test[,]
       {
@@ -40,66 +41,66 @@ namespace Volatile
       };
 
     internal static Manifold Dispatch(
+      World world,
       Shape sa, 
-      Shape sb, 
-      ObjectPool<Manifold> pool)
+      Shape sb)
     {
       Test test = Collision.tests[(int)sa.Type, (int)sb.Type];
-      return test(sa, sb, pool);
+      return test(world, sa, sb);
     }
 
     private static Manifold __Circle_Circle(
+      World world,
       Shape sa, 
-      Shape sb, 
-      ObjectPool<Manifold> pool)
+      Shape sb)
     {
-      return Circle_Circle((Circle)sa, (Circle)sb, pool);
+      return Circle_Circle(world, (Circle)sa, (Circle)sb);
     }
 
     private static Manifold __Circle_Polygon(
+      World world,
       Shape sa, 
-      Shape sb, 
-      ObjectPool<Manifold> pool)
+      Shape sb)
     {
-      return Circle_Polygon((Circle)sa, (Polygon)sb, pool);
+      return Circle_Polygon(world, (Circle)sa, (Polygon)sb);
     }
 
     private static Manifold __Polygon_Circle(
+      World world,
       Shape sa, 
-      Shape sb, 
-      ObjectPool<Manifold> pool)
+      Shape sb)
     {
-      return Circle_Polygon((Circle)sb, (Polygon)sa, pool);
+      return Circle_Polygon(world, (Circle)sb, (Polygon)sa);
     }
 
     private static Manifold __Polygon_Polygon(
+      World world,
       Shape sa, 
-      Shape sb, 
-      ObjectPool<Manifold> pool)
+      Shape sb)
     {
-      return Polygon_Polygon((Polygon)sa, (Polygon)sb, pool);
+      return Polygon_Polygon(world, (Polygon)sa, (Polygon)sb);
     }
     #endregion
 
     #region Collision Tests
     private static Manifold Circle_Circle(
+      World world,
       Circle circA,
-      Circle circB,
-      ObjectPool<Manifold> pool)
+      Circle circB)
     {
       return 
         TestCircles(
+          world,
           circA, 
           circB,
           circB.worldSpaceOrigin, 
-          circB.radius, 
-          pool);
+          circB.radius);
     }
 
     private static Manifold Circle_Polygon(
+      World world,
       Circle circ,
-      Polygon poly,
-      ObjectPool<Manifold> pool)
+      Polygon poly)
     {
       // Get the axis on the polygon closest to the circle's origin
       float penetration;
@@ -120,14 +121,14 @@ namespace Volatile
 
       // If the circle is past one of the two vertices, check it like
       // a circle-circle intersection where the vertex has radius 0
-      float d = VolatileUtil.Cross(axis.Normal, circ.worldSpaceOrigin);
-      if (d > VolatileUtil.Cross(axis.Normal, a))
-        return Collision.TestCircles(circ, poly, a, 0.0f, pool);
-      if (d < VolatileUtil.Cross(axis.Normal, b))
-        return Collision.TestCircles(circ, poly, b, 0.0f, pool);
+      float d = VolatileMath.Cross(axis.Normal, circ.worldSpaceOrigin);
+      if (d > VolatileMath.Cross(axis.Normal, a))
+        return Collision.TestCircles(world, circ, poly, a, 0.0f);
+      if (d < VolatileMath.Cross(axis.Normal, b))
+        return Collision.TestCircles(world, circ, poly, b, 0.0f);
 
       // Build the collision Manifold
-      Manifold manifold = pool.Acquire().Assign(circ, poly);
+      Manifold manifold = world.AllocateManifold().Assign(world, circ, poly);
       Vector2 pos =
         circ.worldSpaceOrigin - (circ.radius + penetration / 2) * axis.Normal;
       manifold.AddContact(pos, -axis.Normal, penetration);
@@ -135,9 +136,9 @@ namespace Volatile
     }
 
     private static Manifold Polygon_Polygon(
+      World world,
       Polygon polyA,
-      Polygon polyB,
-      ObjectPool<Manifold> pool)
+      Polygon polyB)
     {
       Axis a1, a2;
       if (Collision.FindMinSepAxis(polyA, polyB, out a1) == false)
@@ -148,12 +149,13 @@ namespace Volatile
       // We will use poly1's axis, so we may need to swap
       if (a2.Width > a1.Width)
       {
-        VolatileUtil.Swap(ref polyA, ref polyB);
-        VolatileUtil.Swap(ref a1, ref a2);
+        CommonUtil.Swap(ref polyA, ref polyB);
+        CommonUtil.Swap(ref a1, ref a2);
       }
 
       // Build the collision Manifold
-      Manifold manifold = pool.Acquire().Assign(polyA, polyB);
+      Manifold manifold = 
+        world.AllocateManifold().Assign(world, polyA, polyB);
       Collision.FindVerts(polyA, polyB, a1.Normal, a1.Width, manifold);
       return manifold;
     }
@@ -301,11 +303,11 @@ namespace Volatile
     /// </summary>
     /// 
     private static Manifold TestCircles(
+      World world,
       Circle shapeA,
       Shape shapeB,
       Vector2 overrideBCenter, // For testing vertices in circles
-      float overrideBRadius,
-      ObjectPool<Manifold> pool)
+      float overrideBRadius)
     {
       Vector2 r = overrideBCenter - shapeA.worldSpaceOrigin;
       float min = shapeA.radius + overrideBRadius;
@@ -322,7 +324,8 @@ namespace Volatile
         (0.5f + distInv * (shapeA.radius - min / 2.0f)) * r;
 
       // Build the collision Manifold
-      Manifold manifold = pool.Acquire().Assign(shapeA, shapeB);
+      Manifold manifold = 
+        world.AllocateManifold().Assign(world, shapeA, shapeB);
       manifold.AddContact(pos, distInv * r, dist - min);
       return manifold;
     }

@@ -180,10 +180,10 @@ namespace Volatile
 
       // If the circle is past one of the two vertices, check it like
       // a circle-circle intersection where the vertex has radius 0
-      float d = VolatileUtil.Cross(axis.Normal, bodySpaceOrigin);
-      if (d > VolatileUtil.Cross(axis.Normal, a))
+      float d = VolatileMath.Cross(axis.Normal, bodySpaceOrigin);
+      if (d > VolatileMath.Cross(axis.Normal, a))
         return Collision.TestPointCircleSimple(a, bodySpaceOrigin, radius);
-      if (d < VolatileUtil.Cross(axis.Normal, b))
+      if (d < VolatileMath.Cross(axis.Normal, b))
         return Collision.TestPointCircleSimple(b, bodySpaceOrigin, radius);
       return true;
     }
@@ -345,7 +345,7 @@ namespace Volatile
         Vector2 v = this.bodySpaceVertices[i];
         Vector2 u = this.bodySpaceVertices[(i + 1) % numVertices];
 
-        float a = VolatileUtil.Cross(u, v);
+        float a = VolatileMath.Cross(u, v);
         float b = v.sqrMagnitude + u.sqrMagnitude + Vector2.Dot(v, u);
         s1 += a * b;
         s2 += a;
@@ -393,10 +393,10 @@ namespace Volatile
           else if (proj > 0.0f)
           {
             // See if the point is within the center Vornoi region of the edge
-            float d = VolatileUtil.Cross(curAxis.Normal, bodySpaceRay.origin);
-            if (d > VolatileUtil.Cross(curAxis.Normal, a))
+            float d = VolatileMath.Cross(curAxis.Normal, bodySpaceRay.origin);
+            if (d > VolatileMath.Cross(curAxis.Normal, a))
               couldBeContained = false;
-            if (d < VolatileUtil.Cross(curAxis.Normal, b))
+            if (d < VolatileMath.Cross(curAxis.Normal, b))
               couldBeContained = false;
           }
         }
@@ -411,7 +411,7 @@ namespace Volatile
         Vector2 v2 = b - a;
 
         float denominator = Vector2.Dot(v2, v3);
-        float t1 = VolatileUtil.Cross(v2, v1) / denominator;
+        float t1 = VolatileMath.Cross(v2, v1) / denominator;
         float t2 = Vector2.Dot(v1, v3) / denominator;
 
         if ((t2 >= 0.0f) && (t2 <= 1.0f) && (t1 > 0.0f) && (t1 < shortestDist))

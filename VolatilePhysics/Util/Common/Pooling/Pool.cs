@@ -1,6 +1,6 @@
 ﻿/*
- *  VolatilePhysics - A 2D Physics Library for Networked Games
- *  Copyright (c) 2015-2016 - Alexander Shoulson - http://ashoulson.com
+ *  Common Utilities for Working with C# and Unity
+ *  Copyright (c) 2016 - Alexander Shoulson - http://ashoulson.com
  *
  *  This software is provided 'as-is', without any express or implied
  *  warranty. In no event will the authors be held liable for any damages
@@ -19,17 +19,43 @@
 */
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 
-using UnityEngine;
-
-namespace Volatile
+namespace CommonTools
 {
-  internal interface IPoolable<T>
+  public abstract class Pool
   {
-    T Next { get; set; }
-    bool IsValid { get; }
+    protected abstract void DeallocateGeneric(object item);
 
-    void Invalidate();
+    public static void Free(IPoolable item)
+    {
+      item.Pool.DeallocateGeneric(item);
+    }
+  }
+
+  public abstract class Pool<T> : Pool
+    where T : IPoolable
+  {
+    protected Stack<T> freeList;
+
+    public Pool()
+    {
+      this.freeList = new Stack<T>();
+    }
+
+    public abstract T Allocate();
+
+    public void Deallocate(T value)
+    {
+      UnityEngine.Debug.Assert(value.Pool == this);
+      value.Reset();
+      this.freeList.Push(value);
+    }
+
+    protected override void DeallocateGeneric(object item)
+    {
+      this.Deallocate((T)item);
+    }
   }
 }

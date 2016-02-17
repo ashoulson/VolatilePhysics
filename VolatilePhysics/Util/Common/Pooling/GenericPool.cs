@@ -1,6 +1,6 @@
 ﻿/*
- *  VolatilePhysics - A 2D Physics Library for Networked Games
- *  Copyright (c) 2015-2016 - Alexander Shoulson - http://ashoulson.com
+ *  Common Utilities for Working with C# and Unity
+ *  Copyright (c) 2016 - Alexander Shoulson - http://ashoulson.com
  *
  *  This software is provided 'as-is', without any express or implied
  *  warranty. In no event will the authors be held liable for any damages
@@ -19,55 +19,22 @@
 */
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 
-using UnityEngine;
-
-namespace Volatile
+namespace CommonTools
 {
-  internal abstract class ObjectPool<T>
-    where T : class, IPoolable<T>
+  public class GenericPool<T> : Pool<T>
+    where T : IPoolable, new()
   {
-    private T first;
-    private T last;
-
-    protected abstract T Create();
-
-    internal ObjectPool()
+    public override T Allocate()
     {
-      this.first = null;
-      this.last = null;
-    }
+      if (this.freeList.Count > 0)
+        return this.freeList.Pop();
 
-    internal void Release(T value)
-    {
-      if (this.first == null)
-      {
-        this.first = value;
-        this.last = value;
-      }
-      else
-      {
-        this.last.Next = value;
-        this.last = value;
-      }
-
-      value.Invalidate();
-    }
-
-    internal T Acquire()
-    {
-      if (this.first == null)
-        return this.Create();
-
-      T toReturn = first;
-      this.first = toReturn.Next;
-      toReturn.Next = null;
-
-      if (this.first == null)
-        this.last = null;
-
-      return toReturn;
+      T value = new T();
+      value.Pool = this;
+      return value;
     }
   }
 }

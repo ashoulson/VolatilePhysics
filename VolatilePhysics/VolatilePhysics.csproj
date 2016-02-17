@@ -54,10 +54,13 @@
     <Compile Include="Shapes\Polygon.cs" />
     <Compile Include="Util\AABB.cs" />
     <Compile Include="Util\Axis.cs" />
-    <Compile Include="Util\Pooling\IPoolable.cs" />
-    <Compile Include="Util\Pooling\ObjectPool.cs" />
+    <Compile Include="Util\Common\CommonUtil.cs" />
+    <Compile Include="Util\Common\Pooling\GenericPool.cs" />
+    <Compile Include="Util\Common\Pooling\IPoolable.cs" />
+    <Compile Include="Util\Common\Pooling\Pool.cs" />
     <Compile Include="Util\RayCast\RayCast.cs" />
     <Compile Include="Util\RayCast\RayResult.cs" />
+    <Compile Include="Util\VolatileMath.cs" />
     <Compile Include="Util\VolatileUtil.cs" />
     <Compile Include="World.cs" />
   </ItemGroup>

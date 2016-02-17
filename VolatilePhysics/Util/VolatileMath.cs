@@ -25,39 +25,46 @@ using UnityEngine;
 
 namespace Volatile
 {
-  public static class VolatileUtil
+  public static class VolatileMath
   {
-    #region Debug
-    public static void Draw(Body body)
+    public static Vector2 Right(this Vector2 v)
     {
-      body.GizmoDraw(
-        new Color(1.0f, 1.0f, 0.0f, 1.0f),  // Edge Color
-        new Color(1.0f, 0.0f, 1.0f, 1.0f),  // Normal Color
-        new Color(1.0f, 0.0f, 0.0f, 1.0f),  // Body Origin Color
-        new Color(0.0f, 0.0f, 0.0f, 1.0f),  // Shape Origin Color
-        new Color(0.1f, 0.0f, 0.5f, 1.0f),  // Body AABB Color
-        new Color(0.7f, 0.0f, 0.3f, 0.5f),  // Shape AABB Color
-        0.25f);
-
-      body.GizmoDrawHistory(
-        new Color(0.0f, 0.0f, 1.0f, 0.3f)); // History AABB Color
+      return new Vector2(v.y, -v.x);
     }
 
-    public static void Draw(Shape shape)
+    public static Vector2 Left(this Vector2 v)
     {
-      shape.GizmoDraw(
-        new Color(1.0f, 1.0f, 0.0f, 1.0f),  // Edge Color
-        new Color(1.0f, 0.0f, 1.0f, 1.0f),  // Normal Color
-        new Color(0.0f, 0.0f, 0.0f, 1.0f),  // Origin Color
-        new Color(0.7f, 0.0f, 0.3f, 1.0f),  // AABB Color
-        0.25f);
+      return new Vector2(-v.y, v.x);
     }
 
-    public static void Draw(AABB aabb)
+    public static Vector2 Rotate(this Vector2 v, Vector2 b)
     {
-      aabb.GizmoDraw(
-        new Color(1.0f, 0.0f, 0.5f, 1.0f));  // AABB Color
+      return new Vector2(v.x * b.x - v.y * b.y, v.y * b.x + v.x * b.y);
     }
-    #endregion
+
+    public static Vector2 InvRotate(this Vector2 v, Vector2 b)
+    {
+      return new Vector2(v.x * b.x + v.y * b.y, v.y * b.x - v.x * b.y);
+    }
+
+    public static float Angle(this Vector2 v)
+    {
+      return Mathf.Atan2(v.y, v.x);
+    }
+
+    public static Vector2 Polar(float a)
+    {
+      return new Vector2(Mathf.Cos(a), Mathf.Sin(a));
+    }
+
+    public static float Cross(Vector2 a, Vector2 b)
+    {
+      return a.x * b.y - a.y * b.x;
+    }
+
+    public static float Square(float a)
+    {
+      return a * a;
+    }
   }
 }
