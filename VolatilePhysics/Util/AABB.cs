@@ -21,11 +21,7 @@
 using System;
 using System.Collections.Generic;
 
-#if VOLATILE_UNITY
 using UnityEngine;
-#else
-using VolatileEngine;
-#endif
 
 namespace Volatile
 {
@@ -254,7 +250,6 @@ namespace Volatile
     }
 
     #region Debug
-#if VOLATILE_UNITY
     public void GizmoDraw(Color aabbColor)
     {
       Color current = Gizmos.color;
@@ -272,7 +267,6 @@ namespace Volatile
 
       Gizmos.color = current;
     }
-#endif
     #endregion
   }
 }

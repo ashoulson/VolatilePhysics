@@ -21,11 +21,7 @@
 using System;
 using System.Collections.Generic;
 
-#if VOLATILE_UNITY
 using UnityEngine;
-#else
-using VolatileEngine;
-#endif
 
 namespace Volatile
 {
@@ -79,7 +75,6 @@ namespace Volatile
     }
 
     #region Debug
-#if VOLATILE_UNITY
     public static void Draw(Body body)
     {
       body.GizmoDraw(
@@ -110,7 +105,6 @@ namespace Volatile
       aabb.GizmoDraw(
         new Color(1.0f, 0.0f, 0.5f, 1.0f));  // AABB Color
     }
-#endif
     #endregion
   }
 }

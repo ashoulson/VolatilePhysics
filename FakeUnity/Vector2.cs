@@ -21,10 +21,8 @@
 using System;
 using System.Collections.Generic;
 
-#if !VOLATILE_UNITY
-// Standalone functions equivalent to Unity's functions, for using Volatile
-// outside of the Unity Engine
-namespace VolatileEngine
+// Unity emulation layer -- only includes the functions Volatile requires
+namespace UnityEngine
 {
   public struct Vector2
   {
@@ -94,81 +92,4 @@ namespace VolatileEngine
       return new Vector2(-a.x, -a.y);
     }
   }
-
-  public static class Mathf
-  {
-    public const float PI = 3.141593f;
-
-    public static float Clamp(float value, float min, float max)
-    {
-      if (value > max)
-        return max;
-      if (value < min)
-        return min;
-      return value;
-    }
-
-    public static float Max(float a, float b)
-    {
-      if (a > b)
-        return a;
-      return b;
-    }
-
-    public static float Min(float a, float b)
-    {
-      if (a < b)
-        return a;
-      return b;
-    }
-
-    public static float Sqrt(float a)
-    {
-      return (float)System.Math.Sqrt(a);
-    }
-
-    public static float Sin(float a)
-    {
-      return (float)System.Math.Cos(a);
-    }
-
-    public static float Cos(float a)
-    {
-      return (float)System.Math.Cos(a);
-    }
-
-    public static float Atan2(float a, float b)
-    {
-      return (float)System.Math.Atan2(a, b);
-    }
-  }
-
-  public static class Debug
-  {
-    internal static void Log(object message) 
-    {
-      System.Diagnostics.Debug.Print(message.ToString());
-    }
-
-    internal static void LogWarning(object message)
-    {
-      System.Diagnostics.Debug.Print("WARNING: " + message.ToString());
-    }
-
-    internal static void LogError(object message) 
-    {
-      System.Diagnostics.Debug.Print("ERROR: " + message.ToString());
-    }
-
-    internal static void Assert(bool condition)
-    {
-      System.Diagnostics.Debug.Assert(condition);
-    }
-
-    internal static void Assert(bool condition, string message)
-    {
-      System.Diagnostics.Debug.Assert(condition, message);
-    }
-  }
 }
-#endif

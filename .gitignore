@@ -27,5 +27,7 @@ Unity/UnityVS.*
 # Build Files
 VolatilePhysics/bin/*
 VolatilePhysics/obj/*
+FakeUnity/bin/*
+FakeUnity/obj/*
 
 
