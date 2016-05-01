@@ -21,38 +21,39 @@
 using System;
 using System.Collections.Generic;
 
-using CommonTools;
 using UnityEngine;
+using CommonUtil;
 
 namespace Volatile
 {
-  internal sealed class Manifold : IPoolable
+  internal sealed class Manifold
+    : IUtilPoolable<Manifold>
   {
-    #region IPoolable Members
-    public Pool Pool { get; set; }
-    void IPoolable.Reset() { this.Reset(); }
+    #region Interface
+    IUtilPool<Manifold> IUtilPoolable<Manifold>.Pool { get; set; }
+    void IUtilPoolable<Manifold>.Reset() { this.Reset(); }
     #endregion
 
-    internal Shape ShapeA { get; private set; }
-    internal Shape ShapeB { get; private set; }
+    internal VoltShape ShapeA { get; private set; }
+    internal VoltShape ShapeB { get; private set; }
     internal float Restitution { get; private set; }
     internal float Friction { get; private set; }
 
+    private readonly Contact[] contacts;
     private int used = 0;
-    private Contact[] contacts;
-    private World world;
+    private VoltWorld world;
 
     public Manifold()
     {
-      this.contacts = new Contact[Config.MAX_CONTACTS];
+      this.contacts = new Contact[VoltConfig.MAX_CONTACTS];
       this.used = 0;
       this.Reset();
     }
 
     internal Manifold Assign(
-      World world,
-      Shape shapeA,
-      Shape shapeB)
+      VoltWorld world,
+      VoltShape shapeA,
+      VoltShape shapeB)
     {
       this.world = world;
       this.ShapeA = shapeA;
@@ -70,10 +71,16 @@ namespace Volatile
       Vector2 normal,
       float penetration)
     {
-      if (this.used >= contacts.Length)
+      if (this.used >= VoltConfig.MAX_CONTACTS)
         return false;
-      this.contacts[this.used++] =
-        this.world.AllocateContact().Assign(position, normal, penetration);
+
+      this.contacts[this.used] =
+        this.world.AllocateContact().Assign(
+          position, 
+          normal, 
+          penetration);
+      this.used++;
+
       return true;
     }
 
@@ -98,9 +105,7 @@ namespace Volatile
     private void ClearContacts()
     {
       for (int i = 0; i < this.used; i++)
-        Pool.Free(this.contacts[i]);
-      for (int i = 0; i < this.contacts.Length; i++)
-        this.contacts[i] = null;
+        UtilPool.Free(this.contacts[i]);
       this.used = 0;
     }
 

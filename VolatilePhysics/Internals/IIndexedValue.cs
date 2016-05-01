@@ -1,6 +1,6 @@
 ﻿/*
- *  Common Utilities for Working with C# and Unity
- *  Copyright (c) 2016 - Alexander Shoulson - http://ashoulson.com
+ *  VolatilePhysics - A 2D Physics Library for Networked Games
+ *  Copyright (c) 2015-2016 - Alexander Shoulson - http://ashoulson.com
  *
  *  This software is provided 'as-is', without any express or implied
  *  warranty. In no event will the authors be held liable for any damages
@@ -19,18 +19,12 @@
 */
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 
-namespace CommonTools
+namespace Volatile
 {
-  public interface IPoolable
+  internal interface IIndexedValue
   {
-    Pool Pool { get; set; }
-
-    /// <summary>
-    /// Called when this object is deallocated.
-    /// </summary>
-    void Reset();
+    int Index { get; set; }
   }
 }

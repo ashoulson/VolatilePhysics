@@ -21,43 +21,36 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 
+#if UNITY
 using UnityEngine;
+#endif
 
-namespace CommonTools
+namespace CommonUtil
 {
-  public abstract class Pool
+  public static class UtilLogger
   {
-    protected abstract void DeallocateGeneric(object item);
+    public static event Action<string> Message;
+    public static event Action<string> Warning;
+    public static event Action<string> Error;
 
-    public static void Free(IPoolable item)
+    public static void LogMessage(object message)
     {
-      item.Pool.DeallocateGeneric(item);
-    }
-  }
-
-  public abstract class Pool<T> : Pool
-    where T : IPoolable
-  {
-    protected Stack<T> freeList;
-
-    public Pool()
-    {
-      this.freeList = new Stack<T>();
+      if (UtilLogger.Message != null)
+        UtilLogger.Message.Invoke(message.ToString());
     }
 
-    public abstract T Allocate();
-
-    public void Deallocate(T value)
+    public static void LogWarning(object warning)
     {
-      Debug.Assert(value.Pool == this);
-      value.Reset();
-      this.freeList.Push(value);
+      if (UtilLogger.Warning != null)
+        UtilLogger.Warning.Invoke(warning.ToString());
     }
 
-    protected override void DeallocateGeneric(object item)
+    public static void LogError(object error)
     {
-      this.Deallocate((T)item);
+      if (UtilLogger.Error != null)
+        UtilLogger.Error.Invoke(error.ToString());
     }
   }
 }

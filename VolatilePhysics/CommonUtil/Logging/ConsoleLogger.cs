@@ -22,19 +22,38 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace CommonTools
+namespace CommonUtil
 {
-  public class GenericPool<T> : Pool<T>
-    where T : IPoolable, new()
+  public static class ConsoleLogger
   {
-    public override T Allocate()
+    public static void Initialize()
     {
-      if (this.freeList.Count > 0)
-        return this.freeList.Pop();
+      UtilLogger.Message += ConsoleLogger.OnMessage;
+      UtilLogger.Warning += ConsoleLogger.OnWarning;
+      UtilLogger.Error += ConsoleLogger.OnError;
+    }
 
-      T value = new T();
-      value.Pool = this;
-      return value;
+    private static void OnMessage(string message)
+    {
+      Console.WriteLine("LOG: " + message);
+    }
+
+    private static void OnWarning(string warning)
+    {
+      Console.WriteLine(
+        "WARNING: " +
+        warning +
+        "\n" +
+        new System.Diagnostics.StackTrace());
+    }
+
+    private static void OnError(string error)
+    {
+      Console.WriteLine(
+        "ERROR: " +
+        error +
+        "\n" +
+        new System.Diagnostics.StackTrace());
     }
   }
 }

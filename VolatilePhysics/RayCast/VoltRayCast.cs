@@ -25,56 +25,40 @@ using UnityEngine;
 
 namespace Volatile
 {
-  public struct RayResult
+  /// <summary>
+  /// A semi-precomputed ray optimized for fast AABB tests.
+  /// </summary>
+  public struct VoltRayCast
   {
-    public bool IsValid { get { return this.shape != null; } }
-    public bool IsContained
+    internal readonly Vector2 origin;
+    internal readonly Vector2 direction;
+    internal readonly Vector2 invDirection;
+    internal readonly float distance;
+    internal readonly bool signX;
+    internal readonly bool signY;
+
+    public VoltRayCast(Vector2 origin, Vector2 destination)
     {
-      get { return this.IsValid && this.distance == 0.0f; }
+      Vector2 delta = destination - origin;
+
+      this.origin = origin;
+      this.direction = delta.normalized;
+      this.distance = delta.magnitude;
+      this.signX = direction.x < 0.0f;
+      this.signY = direction.y < 0.0f;
+      this.invDirection = 
+        new Vector2(1.0f / direction.x, 1.0f / direction.y);
     }
 
-    public Shape Shape { get { return this.shape; } }
-
-    public Body Body 
-    { 
-      get { return (this.shape == null) ? null : this.shape.Body; } 
-    }
-
-    public float Distance { get { return this.distance; } }
-    public Vector2 Normal { get { return this.normal; } }
-
-    private Shape shape;
-    private float distance;
-    internal Vector2 normal;
-
-    public Vector2 ComputePoint(ref RayCast cast)
+    public VoltRayCast(Vector2 origin, Vector2 direction, float distance)
     {
-      return cast.origin + (cast.direction * this.distance);
-    }
-
-    internal void Set(
-      Shape shape,
-      float distance,
-      Vector2 normal)
-    {
-      if (this.IsValid == false || distance < this.distance)
-      {
-        this.shape = shape;
-        this.distance = distance;
-        this.normal = normal;
-      }
-    }
-
-    internal void Reset()
-    {
-      this.shape = null;
-    }
-
-    internal void SetContained(Shape shape)
-    {
-      this.shape = shape;
-      this.distance = 0.0f;
-      this.normal = Vector2.zero;
+      this.origin = origin;
+      this.direction = direction;
+      this.distance = distance;
+      this.signX = direction.x < 0.0f;
+      this.signY = direction.y < 0.0f;
+      this.invDirection = 
+        new Vector2(1.0f / direction.x, 1.0f / direction.y);
     }
   }
 }

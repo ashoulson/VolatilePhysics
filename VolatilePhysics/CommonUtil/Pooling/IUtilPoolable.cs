@@ -22,26 +22,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-using UnityEngine;
-
-namespace CommonTools
+namespace CommonUtil
 {
-  public static class CommonUtil
+  public interface IUtilPoolable<T>
+    where T : IUtilPoolable<T>
   {
-    public static void Swap<T>(ref T a, ref T b)
-    {
-      T temp = b;
-      b = a;
-      a = temp;
-    }
-
-    internal static void ExpandArray<T>(ref T[] oldArray)
-    {
-      // TODO: Revisit this using next-largest primes like built-in lists do
-      int newCapacity = oldArray.Length * 2;
-      T[] newArray = new T[newCapacity];
-      Array.Copy(oldArray, newArray, oldArray.Length);
-      oldArray = newArray;
-    }
+    IUtilPool<T> Pool { get; set; }
+    void Reset();
   }
 }

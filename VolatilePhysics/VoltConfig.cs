@@ -25,7 +25,7 @@ using UnityEngine;
 
 namespace Volatile
 {
-  public static class Config
+  public static class VoltConfig
   {
     public static float ResolveSlop = 0.01f;
     public static float ResolveRate = 0.1f;
@@ -37,18 +37,16 @@ namespace Volatile
     internal const float DEFAULT_DENSITY = 1.0f;
     internal const float DEFAULT_RESTITUTION = 0.5f;
     internal const float DEFAULT_FRICTION = 0.8f;
-
     internal const int DEFAULT_ITERATION_COUNT = 20;
+
+    // AABB extension for the dynamic tree
+    internal const float AABB_EXTENSION = 0.2f;
 
     // Maximum contacts for collision resolution.
     internal const int MAX_CONTACTS = 3;
 
     // Used for initializing timesteps
     internal const int INVALID_TIME = -1;
-
-    // AABBTree Settings
-    internal const float AABB_PADDING = 0.1f;
-    internal const float AABB_MULTIPLIER = 2.0f;
 
     // The minimum mass a dynamic object can have before it is
     // converted to a static object
