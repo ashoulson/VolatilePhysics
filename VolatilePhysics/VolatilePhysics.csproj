@@ -50,8 +50,6 @@
     <Compile Include="CommonUtil\Pooling\UtilPool.cs" />
     <Compile Include="CommonUtil\UtilTools.cs" />
     <Compile Include="Internals\Axis.cs" />
-    <Compile Include="Internals\Broadphase\DynamicTree.cs" />
-    <Compile Include="Internals\Broadphase\IBroadPhase.cs" />
     <Compile Include="Internals\CheapList.cs" />
     <Compile Include="Internals\Collision\Collision.cs" />
     <Compile Include="Internals\Collision\Contact.cs" />
