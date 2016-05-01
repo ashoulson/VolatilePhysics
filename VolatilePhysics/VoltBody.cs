@@ -201,8 +201,6 @@ namespace Volatile
     internal Vector2 BiasVelocity { get; private set; }
     internal float BiasRotation { get; private set; }
 
-    internal int ProxyId { get; set; }
-
     internal VoltShape[] shapes;
     internal int shapeCount;
 
@@ -349,7 +347,6 @@ namespace Volatile
 
     public VoltBody()
     {
-      this.ProxyId = DynamicTree.NULL_NODE;
       this.Reset();
     }
 
