@@ -50,6 +50,8 @@ using CommonUtil;
 namespace Volatile
 {
   /// <summary>
+  /// NOT CURRENTLY USED -- Performance tests did not beat the baseline
+  /// 
   /// A dynamic tree bounding volume hierarchy used for collision detection.
   /// Does not support raycasts (for now) as they would not be compatible with
   /// Volatile's historical raycast capability -- no past-step data is preserved

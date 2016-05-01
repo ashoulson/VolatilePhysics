@@ -280,6 +280,18 @@ namespace Volatile
     }
 
     /// <summary>
+    /// Checks if an AABB overlaps with our AABB.
+    /// </summary>
+    internal bool QueryOverlap(
+      VoltAABB worldBounds,
+      int ticksBehind)
+    {
+      // AABB check done in world space (because it keeps changing)
+      HistoryRecord record = this.GetState(ticksBehind);
+      return record.aabb.Intersect(worldBounds);
+    }
+
+    /// <summary>
     /// Performs a ray cast check on this body. 
     /// Begins with AABB checks.
     /// </summary>

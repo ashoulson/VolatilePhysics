@@ -25,6 +25,9 @@ using UnityEngine;
 
 namespace Volatile
 {
+  /// <summary>
+  /// NOT CURRENTLY USED -- Performance tests did not beat the baseline
+  /// </summary>
   internal interface IBroadPhase
   {
     void AddBody(VoltBody body);

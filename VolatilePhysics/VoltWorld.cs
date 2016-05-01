@@ -60,6 +60,9 @@ namespace Volatile
     private CheapList<VoltBody> bodies;
     private List<Manifold> manifolds;
 
+    // A pre-allocated reusable output list
+    private Stack<VoltBody> reusableOutput;
+
     // Each World instance should own its own object pools, in case
     // you want to run multiple World instances simultaneously.
     private IUtilPool<VoltBody> bodyPool;
@@ -82,6 +85,8 @@ namespace Volatile
 
       this.bodies = new CheapList<VoltBody>();
       this.manifolds = new List<Manifold>();
+
+      this.reusableOutput = new Stack<VoltBody>();
 
       this.bodyPool = new UtilPool<VoltBody>();
       this.circlePool = new UtilPool<VoltShape, VoltCircle>();
@@ -221,6 +226,9 @@ namespace Volatile
 
     /// <summary>
     /// Finds all bodies containing a given point.
+    /// 
+    /// Subsequent calls to other Query functions (Point, Circle, Bounds) will
+    /// invalidate the resulting enumeration from this function.
     /// </summary>
     public IEnumerable<VoltBody> QueryPoint(
       Vector2 point,
@@ -230,17 +238,23 @@ namespace Volatile
       if (ticksBehind < 0)
         throw new ArgumentOutOfRangeException("ticksBehind");
 
+      this.reusableOutput.Clear();
       for (int i = 0; i < this.bodies.Count; i++)
       {
         VoltBody body = this.bodies[i];
         if (VoltBody.Filter(body, filter))
           if (body.QueryPoint(point, ticksBehind))
-            yield return body;
+            this.reusableOutput.Push(body);
       }
+
+      return this.reusableOutput;
     }
 
     /// <summary>
     /// Finds all bodies intersecting with a given circle.
+    /// 
+    /// Subsequent calls to other Query functions (Point, Circle, Bounds) will
+    /// invalidate the resulting enumeration from this function.
     /// </summary>
     public IEnumerable<VoltBody> QueryCircle(
       Vector2 origin,
@@ -251,13 +265,42 @@ namespace Volatile
       if (ticksBehind < 0)
         throw new ArgumentOutOfRangeException("ticksBehind");
 
+      this.reusableOutput.Clear();
       for (int i = 0; i < this.bodies.Count; i++)
       {
         VoltBody body = this.bodies[i];
         if (VoltBody.Filter(body, filter))
           if (body.QueryCircle(origin, radius, ticksBehind))
-           yield return body;
+            this.reusableOutput.Push(body);
       }
+
+      return this.reusableOutput;
+    }
+
+    /// <summary>
+    /// Finds all bodies intersecting with a given circle.
+    /// 
+    /// Subsequent calls to other Query functions (Point, Circle, Bounds) will
+    /// invalidate the resulting enumeration from this function.
+    /// </summary>
+    public IEnumerable<VoltBody> QueryBounds(
+      VoltAABB worldBounds,
+      VoltBodyFilter filter = null,
+      int ticksBehind = 0)
+    {
+      if (ticksBehind < 0)
+        throw new ArgumentOutOfRangeException("ticksBehind");
+
+      this.reusableOutput.Clear();
+      for (int i = 0; i < this.bodies.Count; i++)
+      {
+        VoltBody body = this.bodies[i];
+        if (VoltBody.Filter(body, filter))
+          if (body.QueryOverlap(worldBounds, ticksBehind))
+            this.reusableOutput.Push(body);
+      }
+
+      return this.reusableOutput;
     }
 
     /// <summary>
