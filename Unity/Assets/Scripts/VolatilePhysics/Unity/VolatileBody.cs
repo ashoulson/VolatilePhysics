@@ -15,8 +15,11 @@ public class VolatileBody : MonoBehaviour
   [SerializeField]
   private bool isStatic = false;
 
-  public Body Body { get { return this.body; } }
-  private Body body;
+  [SerializeField]
+  private bool doSmoothing = true;
+
+  public VoltBody Body { get { return this.body; } }
+  private VoltBody body;
 
   private Vector2 lastPosition;
   private Vector2 nextPosition;
@@ -26,33 +29,37 @@ public class VolatileBody : MonoBehaviour
 
   void Awake()
   {
-    IEnumerable<Shape> shapes = this.shapes.Select((s) => s.Shape);
+    VoltWorld world = VolatileWorld.Instance.World;
+    IEnumerable<VoltShape> shapes = this.shapes.Select((s) => s.PrepareShape(world));
+
     Vector2 position = transform.position;
     float radians = Mathf.Deg2Rad * transform.eulerAngles.z;
 
     if (this.isStatic == true)
-      this.body = Body.CreateStatic(position, radians, shapes);
+      this.body = world.CreateStaticBody(position, radians, shapes.ToArray());
     else
-      this.body = Body.CreateDynamic(position, radians, shapes);
+      this.body = world.CreateDynamicBody(position, radians, shapes.ToArray());
 
     this.lastPosition = this.nextPosition = transform.position;
     this.lastAngle = this.nextAngle = transform.eulerAngles.z;
-  }
-
-  void Start()
-  {
-    VolatileWorld.Instance.AddBody(this.body);
   }
 
   void Update()
   {
     if (Selection.activeGameObject != this.gameObject)
     {
-      float t = (Time.time - Time.fixedTime) / Time.deltaTime;
-
-      transform.position = Vector2.Lerp(this.lastPosition, this.nextPosition, t);
-      float angle = Mathf.LerpAngle(this.lastAngle, this.nextAngle, t);
-      transform.rotation = Quaternion.Euler(0.0f, 0.0f, Mathf.Rad2Deg * angle);
+      if (this.doSmoothing)
+      {
+        float t = (Time.time - Time.fixedTime) / Time.deltaTime;
+        transform.position = Vector2.Lerp(this.lastPosition, this.nextPosition, t);
+        float angle = Mathf.LerpAngle(this.lastAngle, this.nextAngle, t);
+        transform.rotation = Quaternion.Euler(0.0f, 0.0f, Mathf.Rad2Deg * angle);
+      }
+      else
+      {
+        transform.position = this.body.Position;
+        transform.rotation = Quaternion.Euler(0.0f, 0.0f, Mathf.Rad2Deg * this.body.Angle);
+      }
     }
     else
     {
@@ -79,7 +86,7 @@ public class VolatileBody : MonoBehaviour
     {
       if (Application.isPlaying)
       {
-        VolatileUtil.Draw(this.body);
+        VoltDebug.Draw(this.body);
       }
       else
       {

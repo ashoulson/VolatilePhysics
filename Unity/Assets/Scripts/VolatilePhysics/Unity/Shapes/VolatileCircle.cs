@@ -10,15 +10,16 @@ public class VolatileCircle : VolatileShape
   [SerializeField]
   private float radius;
 
-  public override Shape Shape { get { return this.shape; } }
-  private Circle shape;
+  private VoltCircle shape;
 
-  public override void PrepareShape()
+  public override VoltShape PrepareShape(VoltWorld world)
   {
-    this.shape = Circle.FromWorldPosition(
-      transform.position,
-      radius, 
+    this.shape = world.CreateCircle();
+    this.shape.InitializeFromWorldPosition(
+      this.transform.position,
+      this.radius, 
       this.density);
+    return this.shape;
   }
 
   public override void DrawShapeInEditor()

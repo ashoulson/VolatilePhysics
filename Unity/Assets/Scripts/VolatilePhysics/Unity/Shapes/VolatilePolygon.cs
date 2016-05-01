@@ -10,18 +10,16 @@ public class VolatilePolygon : VolatileShape
   [SerializeField]
   private Transform[] points;
 
-  public override Shape Shape { get { return this.shape; } }
-  private Polygon shape;
+  private VoltPolygon shape;
 
-  public override void PrepareShape()
+  public override VoltShape PrepareShape(VoltWorld world)
   {
     Vector2[] vertices = new Vector2[this.points.Length];
     for (int i = 0; i < this.points.Length; i++)
       vertices[i] = this.points[i].position;
-    this.shape =
-      Polygon.FromWorldVertices(
-        vertices,
-        this.density);
+    this.shape = world.CreatePolygon();
+    this.shape.InitializeFromWorldVertices(vertices, this.density);
+    return this.shape;
   }
 
   public override void DrawShapeInEditor()
