@@ -19,13 +19,20 @@ public class SimpleExplode : MonoBehaviour
   [SerializeField]
   private VolatileBody body;
 
+  private List<Vector2> hits;
   private Vector2 lastOrigin;
   private float showDelay;
+
+  void Awake()
+  {
+    this.hits = new List<Vector2>();
+  }
 
 	void Update() 
 	{
 	  if (Input.GetKeyDown(KeyCode.E))
     {
+      this.hits.Clear();
       this.lastOrigin = this.transform.position;
       this.showDelay = Time.time + 0.2f;
 
@@ -45,20 +52,15 @@ public class SimpleExplode : MonoBehaviour
   {
     float force = this.forceMax * (1.0f - normalizedDistance) * increment;
     shape.Body.AddForce(normal * force);
+
+    // Gizmo info
+    this.hits.Add(normal * normalizedDistance * this.radius);
   }
 
   void OnDrawGizmos()
   {
     if (Application.isPlaying && (Time.time < showDelay))
-    {
-      float increment = 1.0f / this.rayCount;
-      float angleIncrement = (Mathf.PI * 2.0f) * increment;
-
-      for (int i = 0; i < this.rayCount; i++)
-      {
-        Vector2 normal = VoltMath.Polar(angleIncrement * i);
-        Gizmos.DrawLine(this.lastOrigin, this.lastOrigin + (normal * this.radius));
-      }
-    }
+      foreach (Vector2 hit in this.hits)
+        Gizmos.DrawLine(this.lastOrigin, this.lastOrigin + hit);
   }
 }
