@@ -30,4 +30,7 @@ VolatilePhysics/obj/*
 FakeUnity/bin/*
 FakeUnity/obj/*
 
+# Unity script files
+Unity/Unity.*
+Unity/Assembly-CSharp.*
 

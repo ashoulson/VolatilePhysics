@@ -42,27 +42,36 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Body.cs" />
-    <Compile Include="Collision\Collision.cs" />
-    <Compile Include="Collision\Contact.cs" />
-    <Compile Include="Collision\Manifold.cs" />
-    <Compile Include="Config.cs" />
-    <Compile Include="History.cs" />
+    <Compile Include="CommonUtil\Debug\UtilDebug.cs" />
+    <Compile Include="CommonUtil\Logging\ConsoleLogger.cs" />
+    <Compile Include="CommonUtil\Logging\UnityLogger.cs" />
+    <Compile Include="CommonUtil\Logging\UtilLogger.cs" />
+    <Compile Include="CommonUtil\Pooling\IUtilPoolable.cs" />
+    <Compile Include="CommonUtil\Pooling\UtilPool.cs" />
+    <Compile Include="CommonUtil\UtilTools.cs" />
+    <Compile Include="Internals\Axis.cs" />
+    <Compile Include="Internals\Broadphase\DynamicTree.cs" />
+    <Compile Include="Internals\Broadphase\IBroadPhase.cs" />
+    <Compile Include="Internals\CheapList.cs" />
+    <Compile Include="Internals\Collision\Collision.cs" />
+    <Compile Include="Internals\Collision\Contact.cs" />
+    <Compile Include="Internals\Collision\Manifold.cs" />
+    <Compile Include="Internals\History\HistoryBuffer.cs" />
+    <Compile Include="Internals\History\HistoryRecord.cs" />
+    <Compile Include="Internals\IIndexedValue.cs" />
+    <Compile Include="Extensions\VoltExplosion.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Shape.cs" />
-    <Compile Include="Shapes\Circle.cs" />
-    <Compile Include="Shapes\Polygon.cs" />
-    <Compile Include="Util\AABB.cs" />
-    <Compile Include="Util\Axis.cs" />
-    <Compile Include="Util\Common\CommonUtil.cs" />
-    <Compile Include="Util\Common\Pooling\GenericPool.cs" />
-    <Compile Include="Util\Common\Pooling\IPoolable.cs" />
-    <Compile Include="Util\Common\Pooling\Pool.cs" />
-    <Compile Include="Util\RayCast\RayCast.cs" />
-    <Compile Include="Util\RayCast\RayResult.cs" />
-    <Compile Include="Util\VolatileMath.cs" />
-    <Compile Include="Util\VolatileUtil.cs" />
-    <Compile Include="World.cs" />
+    <Compile Include="RayCast\VoltRayCast.cs" />
+    <Compile Include="RayCast\VoltRayResult.cs" />
+    <Compile Include="Shapes\VoltCircle.cs" />
+    <Compile Include="Shapes\VoltPolygon.cs" />
+    <Compile Include="VoltAABB.cs" />
+    <Compile Include="VoltBody.cs" />
+    <Compile Include="VoltConfig.cs" />
+    <Compile Include="VoltDebug.cs" />
+    <Compile Include="VoltMath.cs" />
+    <Compile Include="VoltShape.cs" />
+    <Compile Include="VoltWorld.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

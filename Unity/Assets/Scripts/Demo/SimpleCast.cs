@@ -19,7 +19,7 @@ public class SimpleCast : MonoBehaviour
   [SerializeField]
   Color color;
 
-  private bool Filter(Body body)
+  private bool Filter(VoltBody body)
   {
     if (this.ignoreBody != null)
       return body != this.ignoreBody.Body;
@@ -31,28 +31,16 @@ public class SimpleCast : MonoBehaviour
     VolatileWorld world = VolatileWorld.Instance;
     if ((world != null) && (Application.isPlaying == true))
     {
-      RayResult result = new RayResult();
-      RayCast cast =
-        new RayCast(
+      VoltRayResult result = new VoltRayResult();
+      VoltRayCast cast =
+        new VoltRayCast(
           transform.position,
           transform.position + (transform.up * 100.0f));
 
-      int frame = Volatile.History.CURRENT_FRAME;
-      if (this.frameOffset < 0)
-      {
-        frame = world.CurrentFrame + this.frameOffset;
-        if (frame < 0)
-          frame = Volatile.History.CURRENT_FRAME; ;
-      }
-      else
-      {
-        frame = Volatile.History.CURRENT_FRAME; ;
-      }
-
       if (this.radius > 0.0f)
-        world.world.CircleCast(ref cast, this.radius, ref result, this.Filter, frame);
+        world.World.CircleCast(ref cast, this.radius, ref result, this.Filter, -this.frameOffset);
       else
-        world.world.RayCast(ref cast, ref result, this.Filter, frame);
+        world.World.RayCast(ref cast, ref result, this.Filter, -this.frameOffset);
 
       float drawRadius = (this.radius == 0.0f) ? 0.2f : this.radius;
       Gizmos.color = this.color;
