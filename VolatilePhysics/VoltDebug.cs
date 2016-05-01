@@ -25,40 +25,39 @@ using UnityEngine;
 
 namespace Volatile
 {
-  /// <summary>
-  /// A semi-precomputed ray optimized for fast AABB tests.
-  /// </summary>
-  public struct RayCast
+  public static class VoltDebug
   {
-    internal readonly Vector2 origin;
-    internal readonly Vector2 direction;
-    internal readonly Vector2 invDirection;
-    internal readonly float distance;
-    internal readonly bool signX;
-    internal readonly bool signY;
-
-    public RayCast(Vector2 origin, Vector2 destination)
+    #region Debug
+    public static void Draw(VoltBody body)
     {
-      Vector2 delta = destination - origin;
+      body.GizmoDraw(
+        new Color(1.0f, 1.0f, 0.0f, 1.0f),  // Edge Color
+        new Color(1.0f, 0.0f, 1.0f, 1.0f),  // Normal Color
+        new Color(1.0f, 0.0f, 0.0f, 1.0f),  // Body Origin Color
+        new Color(0.0f, 0.0f, 0.0f, 1.0f),  // Shape Origin Color
+        new Color(0.1f, 0.0f, 0.5f, 1.0f),  // Body AABB Color
+        new Color(0.7f, 0.0f, 0.3f, 0.5f),  // Shape AABB Color
+        0.25f);
 
-      this.origin = origin;
-      this.direction = delta.normalized;
-      this.distance = delta.magnitude;
-      this.signX = direction.x < 0.0f;
-      this.signY = direction.y < 0.0f;
-      this.invDirection = 
-        new Vector2(1.0f / direction.x, 1.0f / direction.y);
+      body.GizmoDrawHistory(
+        new Color(0.0f, 0.0f, 1.0f, 0.3f)); // History AABB Color
     }
 
-    public RayCast(Vector2 origin, Vector2 direction, float distance)
+    public static void Draw(VoltShape shape)
     {
-      this.origin = origin;
-      this.direction = direction;
-      this.distance = distance;
-      this.signX = direction.x < 0.0f;
-      this.signY = direction.y < 0.0f;
-      this.invDirection = 
-        new Vector2(1.0f / direction.x, 1.0f / direction.y);
+      shape.GizmoDraw(
+        new Color(1.0f, 1.0f, 0.0f, 1.0f),  // Edge Color
+        new Color(1.0f, 0.0f, 1.0f, 1.0f),  // Normal Color
+        new Color(0.0f, 0.0f, 0.0f, 1.0f),  // Origin Color
+        new Color(0.7f, 0.0f, 0.3f, 1.0f),  // AABB Color
+        0.25f);
     }
+
+    public static void Draw(VoltAABB aabb)
+    {
+      aabb.GizmoDraw(
+        new Color(1.0f, 0.0f, 0.5f, 1.0f));  // AABB Color
+    }
+    #endregion
   }
 }

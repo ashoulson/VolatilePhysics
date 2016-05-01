@@ -25,39 +25,56 @@ using UnityEngine;
 
 namespace Volatile
 {
-  public static class VolatileUtil
+  public struct VoltRayResult
   {
-    #region Debug
-    public static void Draw(Body body)
+    public bool IsValid { get { return this.shape != null; } }
+    public bool IsContained
     {
-      body.GizmoDraw(
-        new Color(1.0f, 1.0f, 0.0f, 1.0f),  // Edge Color
-        new Color(1.0f, 0.0f, 1.0f, 1.0f),  // Normal Color
-        new Color(1.0f, 0.0f, 0.0f, 1.0f),  // Body Origin Color
-        new Color(0.0f, 0.0f, 0.0f, 1.0f),  // Shape Origin Color
-        new Color(0.1f, 0.0f, 0.5f, 1.0f),  // Body AABB Color
-        new Color(0.7f, 0.0f, 0.3f, 0.5f),  // Shape AABB Color
-        0.25f);
-
-      body.GizmoDrawHistory(
-        new Color(0.0f, 0.0f, 1.0f, 0.3f)); // History AABB Color
+      get { return this.IsValid && this.distance == 0.0f; }
     }
 
-    public static void Draw(Shape shape)
-    {
-      shape.GizmoDraw(
-        new Color(1.0f, 1.0f, 0.0f, 1.0f),  // Edge Color
-        new Color(1.0f, 0.0f, 1.0f, 1.0f),  // Normal Color
-        new Color(0.0f, 0.0f, 0.0f, 1.0f),  // Origin Color
-        new Color(0.7f, 0.0f, 0.3f, 1.0f),  // AABB Color
-        0.25f);
+    public VoltShape Shape { get { return this.shape; } }
+
+    public VoltBody Body 
+    { 
+      get { return (this.shape == null) ? null : this.shape.Body; } 
     }
 
-    public static void Draw(AABB aabb)
+    public float Distance { get { return this.distance; } }
+    public Vector2 Normal { get { return this.normal; } }
+
+    private VoltShape shape;
+    private float distance;
+    internal Vector2 normal;
+
+    public Vector2 ComputePoint(ref VoltRayCast cast)
     {
-      aabb.GizmoDraw(
-        new Color(1.0f, 0.0f, 0.5f, 1.0f));  // AABB Color
+      return cast.origin + (cast.direction * this.distance);
     }
-    #endregion
+
+    internal void Set(
+      VoltShape shape,
+      float distance,
+      Vector2 normal)
+    {
+      if (this.IsValid == false || distance < this.distance)
+      {
+        this.shape = shape;
+        this.distance = distance;
+        this.normal = normal;
+      }
+    }
+
+    internal void Reset()
+    {
+      this.shape = null;
+    }
+
+    internal void SetContained(VoltShape shape)
+    {
+      this.shape = shape;
+      this.distance = 0.0f;
+      this.normal = Vector2.zero;
+    }
   }
 }

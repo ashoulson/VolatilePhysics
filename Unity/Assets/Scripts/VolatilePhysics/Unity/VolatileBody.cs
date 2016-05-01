@@ -36,9 +36,9 @@ public class VolatileBody : MonoBehaviour
     float radians = Mathf.Deg2Rad * transform.eulerAngles.z;
 
     if (this.isStatic == true)
-      this.body = world.CreateStaticBody(position, radians, shapes);
+      this.body = world.CreateStaticBody(position, radians, shapes.ToArray());
     else
-      this.body = world.CreateDynamicBody(position, radians, shapes);
+      this.body = world.CreateDynamicBody(position, radians, shapes.ToArray());
 
     this.lastPosition = this.nextPosition = transform.position;
     this.lastAngle = this.nextAngle = transform.eulerAngles.z;

@@ -59,11 +59,8 @@
  <Reference Include="UnityEngine.Networking">
  <HintPath>D:/Program Files/Unity/Editor/Data/UnityExtensions/Unity/Networking/UnityEngine.Networking.dll</HintPath>
  </Reference>
- <Reference Include="CommonUtil">
- <HintPath>C:/Users/Alex/Documents/GitHub/VolatilePhysics/Unity/Assets/Resources/CommonUtil.dll</HintPath>
- </Reference>
  <Reference Include="VolatilePhysics">
- <HintPath>C:/Users/Alex/Documents/GitHub/VolatilePhysics/Unity/Assets/Resources/VolatilePhysics.dll</HintPath>
+ <HintPath>C:/Users/Alex/Documents/GitHub/VolatilePhysics/Unity/Assets/VolatilePhysics.dll</HintPath>
  </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

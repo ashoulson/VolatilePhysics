@@ -25,8 +25,42 @@ using UnityEngine;
 
 namespace Volatile
 {
-  public static class VolatileMath
+  public static class VoltMath
   {
+    #region Transformations
+    public static Vector2 WorldToBodyPoint(
+      Vector2 bodyPosition,
+      Vector2 bodyFacing,
+      Vector2 vector)
+    {
+      return (vector - bodyPosition).InvRotate(bodyFacing);
+    }
+
+    public static Vector2 WorldToBodyDirection(
+      Vector2 bodyFacing,
+      Vector2 vector)
+    {
+      return vector.InvRotate(bodyFacing);
+    }
+    #endregion
+
+    #region Body-Space to World-Space Transformations
+    public static Vector2 BodyToWorldPoint(
+      Vector2 bodyPosition,
+      Vector2 bodyFacing,
+      Vector2 vector)
+    {
+      return vector.Rotate(bodyFacing) + bodyPosition;
+    }
+
+    public static Vector2 BodyToWorldDirection(
+      Vector2 bodyFacing,
+      Vector2 vector)
+    {
+      return vector.Rotate(bodyFacing);
+    }
+    #endregion
+
     public static Vector2 Right(this Vector2 v)
     {
       return new Vector2(v.y, -v.x);
@@ -52,9 +86,9 @@ namespace Volatile
       return Mathf.Atan2(v.y, v.x);
     }
 
-    public static Vector2 Polar(float a)
+    public static Vector2 Polar(float radians)
     {
-      return new Vector2(Mathf.Cos(a), Mathf.Sin(a));
+      return new Vector2(Mathf.Cos(radians), Mathf.Sin(radians));
     }
 
     public static float Cross(Vector2 a, Vector2 b)

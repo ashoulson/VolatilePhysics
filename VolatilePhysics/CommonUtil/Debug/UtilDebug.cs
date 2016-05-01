@@ -1,6 +1,6 @@
 ﻿/*
- *  VolatilePhysics - A 2D Physics Library for Networked Games
- *  Copyright (c) 2015-2016 - Alexander Shoulson - http://ashoulson.com
+ *  Common Utilities for Working with C# and Unity
+ *  Copyright (c) 2016 - Alexander Shoulson - http://ashoulson.com
  *
  *  This software is provided 'as-is', without any express or implied
  *  warranty. In no event will the authors be held liable for any damages
@@ -19,45 +19,48 @@
 */
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 
+#if UNITY
 using UnityEngine;
+#endif
 
-namespace Volatile
+namespace CommonUtil
 {
-  public static class History
+  public static class UtilDebug
   {
-    public const int CURRENT_FRAME = -1;
-
-    /// <summary>
-    /// Validates user-input frame numbers for processing internally.
-    /// </summary>
-    internal static bool ShouldStoreOnFrame(int frame)
+    [Conditional("DEBUG")]
+    public static void LogMessage(object message)
     {
-      if (frame == History.CURRENT_FRAME)
-        return false;
-
-      if (frame < 0)
-      {
-        Debug.LogError("Invalid frame value: " + frame);
-        return false;
-      }
-
-      return true;
+      UtilLogger.LogMessage(message);
     }
 
-    /// <summary>
-    /// Validates a frame number for performing casts and queries.
-    /// </summary>
-    internal static int ValidateTestFrame(int frame)
+    [Conditional("DEBUG")]
+    public static void LogWarning(object message)
     {
-      if ((frame != History.CURRENT_FRAME) && (frame < 0))
-      {
-        Debug.LogError("Invalid frame value " + frame);
-        return History.CURRENT_FRAME;
-      }
+      UtilLogger.LogWarning(message);
+    }
 
-      return frame;
+    [Conditional("DEBUG")]
+    public static void LogError(object message)
+    {
+      UtilLogger.LogError(message);
+    }
+
+    [Conditional("DEBUG")]
+    public static void Assert(bool condition)
+    {
+      if (condition == false)
+        UtilLogger.LogWarning("Assert Failed!");
+    }
+
+    [Conditional("DEBUG")]
+    public static void Assert(bool condition, object message)
+    {
+      if (condition == false)
+        UtilLogger.LogWarning("Assert Failed: " + message);
     }
   }
 }

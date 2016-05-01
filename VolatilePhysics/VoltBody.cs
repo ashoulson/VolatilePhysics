@@ -22,17 +22,34 @@ using System;
 using System.Collections.Generic;
 
 using UnityEngine;
+using CommonUtil;
 
 namespace Volatile
 {
-  public delegate bool BodyFilter(Body body);
-
-  public class Body
+  public enum VoltBodyType
   {
+    Static,
+    Dynamic,
+    Invalid,
+  }
+
+  public delegate bool VoltBodyFilter(VoltBody body);
+  public delegate bool VoltCollisionFilter(VoltBody bodyA, VoltBody bodyB);
+
+  public class VoltBody
+    : IUtilPoolable<VoltBody>
+    , IIndexedValue
+  {
+    #region Interface
+    IUtilPool<VoltBody> IUtilPoolable<VoltBody>.Pool { get; set; }
+    void IUtilPoolable<VoltBody>.Reset() { this.Reset(); }
+    int IIndexedValue.Index { get; set; }
+    #endregion
+
     /// <summary>
     /// A predefined filter that disallows collisions between dynamic bodies.
     /// </summary>
-    public static bool DisallowDynamic(Body a, Body b)
+    public static bool DisallowDynamic(VoltBody a, VoltBody b)
     {
       return
         (a != null) &&
@@ -42,183 +59,95 @@ namespace Volatile
 
     #region History
     /// <summary>
-    /// A stored historical image of a past body state, used for historical
-    /// queries and raycasts. Rather than actually rolling the body back to
-    /// its old position (expensive), we transform the ray into the body's
-    /// local space based on the body's old position/axis. Then all casts
-    /// on shapes use the local-space ray (this applies both for current-
-    /// time and past-time raycasts and point queries).
+    /// Tries to get a reference frame for a given number of ticks behind 
+    /// the current tick. Returns true if a value was found, false if a
+    /// value was not found (in which case we clamp to the nearest).
     /// </summary>
-    private struct State
+    public bool TryGetSpace(
+      int ticksBehind, 
+      out Vector2 position, 
+      out Vector2 facing)
     {
-      internal int frame;
-      internal AABB aabb;
-      internal Vector2 position;
-      internal Vector2 facing;
+      if (ticksBehind < 0)
+        throw new ArgumentOutOfRangeException("ticksBehind");
 
-      internal void Store(ref State other, int validatedFrame)
+      if (ticksBehind == 0)
       {
-        this.frame = validatedFrame;
-        this.aabb = other.aabb;
-        this.position = other.position;
-        this.facing = other.facing;
+        position = this.Position;
+        facing = this.Facing;
+        return true;
       }
 
-      #region World-Space to Body-Space Transformations
-      internal Vector2 WorldToBodyPoint(Vector2 vector)
+      if (this.history == null)
       {
-        return (vector - this.position).InvRotate(this.facing);
+        position = this.Position;
+        facing = this.Facing;
+        return false;
       }
 
-      internal Vector2 WorldToBodyDirection(Vector2 vector)
-      {
-        return vector.InvRotate(this.facing);
-      }
-
-      internal RayCast WorldToBodyRay(ref RayCast rayCast)
-      {
-        return new RayCast(
-          this.WorldToBodyPoint(rayCast.origin),
-          this.WorldToBodyDirection(rayCast.direction),
-          rayCast.distance);
-      }
-      #endregion
-
-      #region Body-Space to World-Space Transformations
-      internal Vector2 BodyToWorldPoint(Vector2 vector)
-      {
-        return vector.Rotate(this.facing) + this.position;
-      }
-
-
-      internal Vector2 BodyToWorldDirection(Vector2 vector)
-      {
-        return vector.Rotate(this.facing);
-      }
-
-      internal Axis BodyToWorldAxis(Axis axis)
-      {
-        Vector2 normal = axis.Normal.Rotate(this.facing);
-        float width = Vector2.Dot(normal, this.position) + axis.Width;
-        return new Axis(normal, width);
-      }
-      #endregion
+      HistoryRecord record;
+      bool found = this.history.TryGet(ticksBehind - 1, out record);
+      position = record.position;
+      facing = record.facing;
+      return found;
     }
-
-    private State[] historyStates;
-    private State currentState;
 
     /// <summary>
     /// Initializes the buffer for storing past body states/spaces.
     /// </summary>
-    internal void StartHistory(int length)
+    internal void AssignHistory(HistoryBuffer history)
     {
-      Debug.Assert(
-        length >= 0,
-        "StartHistory(): Length value must be >= 0");
-
-      if (this.IsStatic == false)
-      {
-        this.historyStates = new State[length];
-        for (int i = 0; i < length; i++)
-          this.historyStates[i].frame = History.CURRENT_FRAME;
-      }
+      UtilDebug.Assert(this.IsStatic == false);
+      this.history = history;
     }
 
     /// <summary>
-    /// Stores a snapshot of this body's current state/space to a frame.
+    /// Stores a snapshot of this body's current state/space to a tick.
     /// </summary>
-    internal void StoreState(int frame)
+    private void StoreState()
     {
-      Debug.Assert(
-        frame >= 0, 
-        "StoreState(): Frame value must be >= 0");
-
-      if (this.historyStates != null)
-      {
-        int length = this.historyStates.Length;
-        if (length > 0)
-        {
-          this.historyStates[frame % length].Store(
-            ref this.currentState,
-            frame);
-          return;
-        }
-      }
+      if (this.history != null)
+        this.history.Store(this.currentState);
     }
 
     /// <summary>
-    /// Retrieves a snapshot of the body's state/space at a frame.
+    /// Retrieves a snapshot of the body's state/space at a tick.
     /// Logs an error and defaults to the current state if it can't be found.
     /// </summary>
-    private State GetState(int frame)
+    private HistoryRecord GetState(int ticksBehind)
     {
-      if (frame == History.CURRENT_FRAME)
+      if ((ticksBehind == 0) || (this.history == null))
         return this.currentState;
 
-      Debug.Assert(
-        frame >= 0, 
-        "GetState(): Frame value must be -1, or >= 0");
-
-      if (this.historyStates != null)
-      {
-        int length = this.historyStates.Length;
-        if (length > 0)
-        {
-          State image = this.historyStates[frame % length];
-          if (image.frame == frame)
-            return image;
-
-          Debug.LogWarning(
-            "Wrong frame history access! Expected " + 
-            frame +
-            ", but got " + image.frame);
-        }
-      }
-
-      return this.currentState;
+      HistoryRecord output;
+      this.history.TryGet(ticksBehind - 1, out output);
+      return output;
     }
     #endregion
 
-    public static bool Filter(Body body, BodyFilter filter)
+    public static bool Filter(VoltBody body, VoltBodyFilter filter)
     {
       return ((filter == null) || (filter.Invoke(body) == true));
     }
 
-    #region Factory Functions
-    public static Body CreateDynamic(
-      Vector2 position,
-      float radians,
-      IEnumerable<Shape> shapesToAdd)
+    /// <summary>
+    /// Static objects are considered to have infinite mass and cannot move.
+    /// </summary>
+    public bool IsStatic
     {
-      Body body = new Body(position, radians, shapesToAdd);
-      body.ComputeDynamics();
-      return body;
+      get
+      {
+        if (this.BodyType == VoltBodyType.Invalid)
+          throw new InvalidOperationException();
+        return this.BodyType == VoltBodyType.Static;
+      }
     }
 
-    public static Body CreateStatic(
-      Vector2 position,
-      float radians,
-      IEnumerable<Shape> shapesToAdd)
-    {
-      Body body = new Body(position, radians, shapesToAdd);
-      body.SetStatic();
-      return body;
-    }
-    #endregion
-
     /// <summary>
-    /// For attaching arbitrary data to this body.
+    /// If we're doing historical queries or tests, the body may have since
+    /// been removed from the world.
     /// </summary>
-    public object UserData { get; set; }
-
-    public World World { get; private set; }
-    public IList<Shape> Shapes { get { return this.shapes.AsReadOnly(); } }
-
-    /// <summary>
-    /// Number of shapes in the body.
-    /// </summary>
-    public int Count { get { return this.shapes.Count; } }
+    public bool IsInWorld { get { return this.World != null; } }
 
     // Some basic properties are stored in an internal mutable
     // record to avoid code redundancy when performing conversions
@@ -234,12 +163,28 @@ namespace Volatile
       private set { this.currentState.facing = value; }
     }
 
-    public AABB AABB
+    public VoltAABB AABB
     {
       get { return this.currentState.aabb; }
       private set { this.currentState.aabb = value; }
     }
 
+#if DEBUG
+    internal bool IsInitialized { get; set; }
+#endif
+
+    /// <summary>
+    /// For attaching arbitrary data to this body.
+    /// </summary>
+    public object UserData { get; set; }
+
+    public VoltWorld World { get; private set; }
+    public VoltBodyType BodyType { get; private set; }
+    public VoltCollisionFilter CollisionFilter { private get; set; }
+
+    /// <summary>
+    /// Current angle in radians.
+    /// </summary>
     public float Angle { get; private set; }
 
     public Vector2 LinearVelocity { get; set; }
@@ -248,22 +193,21 @@ namespace Volatile
     public Vector2 Force { get; private set; }
     public float Torque { get; private set; }
 
-    public bool IsStatic { get; private set; }
     public float Mass { get; private set; }
     public float Inertia { get; private set; }
     public float InvMass { get; private set; }
     public float InvInertia { get; private set; }
 
-    /// <summary>
-    /// If we're doing historical queries or tests, the body may have since
-    /// been removed from the world.
-    /// </summary>
-    public bool IsInWorld { get { return this.World != null; } }
-
     internal Vector2 BiasVelocity { get; private set; }
     internal float BiasRotation { get; private set; }
 
-    internal List<Shape> shapes;
+    internal int ProxyId { get; set; }
+
+    internal VoltShape[] shapes;
+    internal int shapeCount;
+
+    private HistoryBuffer history;
+    private HistoryRecord currentState;
 
     #region Manipulation
     public void AddTorque(float torque)
@@ -279,14 +223,14 @@ namespace Volatile
     public void AddForce(Vector2 force, Vector2 point)
     {
       this.Force += force;
-      this.Torque += VolatileMath.Cross(this.Position - point, force);
+      this.Torque += VoltMath.Cross(this.Position - point, force);
     }
 
     public void Set(Vector2 position, float radians)
     {
       this.Position = position;
       this.Angle = radians;
-      this.Facing = VolatileMath.Polar(radians);
+      this.Facing = VoltMath.Polar(radians);
       this.OnPositionUpdated();
     }
     #endregion
@@ -298,16 +242,16 @@ namespace Volatile
     /// </summary>
     internal bool QueryPoint(
       Vector2 point, 
-      int validatedFrame = History.CURRENT_FRAME)
+      int ticksBehind)
     {
       // AABB check done in world space (because it keeps changing)
-      State record = this.GetState(validatedFrame);
+      HistoryRecord record = this.GetState(ticksBehind);
       if (record.aabb.QueryPoint(point) == false)
         return false;
 
       // Actual query on shapes done in body space
       Vector2 bodySpacePoint = record.WorldToBodyPoint(point);
-      for (int i = 0; i < this.shapes.Count; i++)
+      for (int i = 0; i < this.shapeCount; i++)
         if (this.shapes[i].QueryPoint(bodySpacePoint))
           return true;
       return false;
@@ -320,16 +264,16 @@ namespace Volatile
     internal bool QueryCircle(
       Vector2 origin, 
       float radius,
-      int validatedFrame = History.CURRENT_FRAME)
+      int ticksBehind)
     {
       // AABB check done in world space (because it keeps changing)
-      State record = this.GetState(validatedFrame);
+      HistoryRecord record = this.GetState(ticksBehind);
       if (record.aabb.QueryCircleApproximate(origin, radius) == false)
         return false;
 
       // Actual query on shapes done in body space
       Vector2 bodySpaceOrigin = record.WorldToBodyPoint(origin);
-      for (int i = 0; i < this.shapes.Count; i++)
+      for (int i = 0; i < this.shapeCount; i++)
         if (this.shapes[i].QueryCircle(bodySpaceOrigin, radius))
           return true;
       return false;
@@ -340,17 +284,17 @@ namespace Volatile
     /// Begins with AABB checks.
     /// </summary>
     internal bool RayCast(
-      ref RayCast ray, 
-      ref RayResult result,
-      int validatedFrame = History.CURRENT_FRAME)
+      ref VoltRayCast ray, 
+      ref VoltRayResult result,
+      int ticksBehind)
     {
-      State record = this.GetState(validatedFrame);
+      HistoryRecord record = this.GetState(ticksBehind);
       if (record.aabb.RayCast(ref ray) == false)
         return false;
 
       // Actual tests on shapes done in body space
-      RayCast bodySpaceRay = record.WorldToBodyRay(ref ray);
-      for (int i = 0; i < this.shapes.Count; i++)
+      VoltRayCast bodySpaceRay = record.WorldToBodyRay(ref ray);
+      for (int i = 0; i < this.shapeCount; i++)
         if (this.shapes[i].RayCast(ref bodySpaceRay, ref result))
           if (result.IsContained)
             return true;
@@ -367,18 +311,18 @@ namespace Volatile
     /// Begins with AABB checks.
     /// </summary>
     internal bool CircleCast(
-      ref RayCast ray,
+      ref VoltRayCast ray,
       float radius,
-      ref RayResult result,
-      int validatedFrame = History.CURRENT_FRAME)
+      ref VoltRayResult result,
+      int ticksBehind)
     {
-      State record = this.GetState(validatedFrame);
+      HistoryRecord record = this.GetState(ticksBehind);
       if (record.aabb.CircleCast(ref ray, radius) == false)
         return false;
 
       // Actual tests on shapes done in body space
-      RayCast bodySpaceRay = record.WorldToBodyRay(ref ray);
-      for (int i = 0; i < this.shapes.Count; i++)
+      VoltRayCast bodySpaceRay = record.WorldToBodyRay(ref ray);
+      for (int i = 0; i < this.shapeCount; i++)
         if (this.shapes[i].CircleCast(ref bodySpaceRay, radius, ref result))
           if (result.IsContained)
             return true;
@@ -391,53 +335,162 @@ namespace Volatile
     }
     #endregion
 
-    private Body(
-      Vector2 position, 
-      float radians, 
-      IEnumerable<Shape> shapesToAdd)
+    public VoltBody()
     {
-      this.historyStates = null;
-      this.currentState.frame = History.CURRENT_FRAME;
+      this.ProxyId = DynamicTree.NULL_NODE;
+      this.Reset();
+    }
+
+    internal void InitializeDynamic(
+      Vector2 position,
+      float radians,
+      VoltShape[] shapesToAdd)
+    {
+      this.Initialize(position, radians, shapesToAdd);
+      this.OnPositionUpdated();
+      this.ComputeDynamics();
+    }
+
+    internal void InitializeStatic(
+      Vector2 position,
+      float radians,
+      VoltShape[] shapesToAdd)
+    {
+      this.Initialize(position, radians, shapesToAdd);
+      this.OnPositionUpdated();
+      this.SetStatic();
+    }
+
+    private void Initialize(
+      Vector2 position,
+      float radians,
+      VoltShape[] shapesToAdd)
+    {
       this.Position = position;
       this.Angle = radians;
-      this.Facing = VolatileMath.Polar(radians);
+      this.Facing = VoltMath.Polar(radians);
 
-      this.shapes = new List<Shape>();
-      foreach (Shape shape in shapesToAdd)
-        this.AddShape(shape);
-      this.OnPositionUpdated();
+#if DEBUG
+      for (int i = 0; i < shapesToAdd.Length; i++)
+        UtilDebug.Assert(shapesToAdd[i].IsInitialized);
+#endif
+
+      if ((this.shapes == null) || (this.shapes.Length < shapesToAdd.Length))
+        this.shapes = new VoltShape[shapesToAdd.Length];
+      Array.Copy(shapesToAdd, this.shapes, shapesToAdd.Length);
+      this.shapeCount = shapesToAdd.Length;
+      for (int i = 0; i < this.shapeCount; i++)
+        this.shapes[i].AssignBody(this);
+
+#if DEBUG
+      this.IsInitialized = true;
+#endif
     }
 
     internal void Update()
     {
+      if (this.history != null)
+        this.history.Store(this.currentState);
       this.Integrate();
       this.OnPositionUpdated();
     }
 
-    internal void AssignWorld(World world)
+    internal void AssignWorld(VoltWorld world)
     {
       this.World = world;
     }
 
+    internal void FreeHistory()
+    {
+      if ((this.World != null) && (this.history != null))
+        this.World.FreeHistory(this.history);
+      this.history = null;
+    }
+
+    internal void FreeShapes()
+    {
+      if (this.World != null)
+        this.World.FreeShapes(this.shapes);
+      this.shapeCount = 0;
+    }
+
+    /// <summary>
+    /// Used for saving the body as part of another structure. The body
+    /// will retain all geometry data and associated metrics, but its
+    /// position, velocity, forces, and all related history will be cleared.
+    /// </summary>
+    internal void PartialReset()
+    {
+      this.history = null;
+      this.currentState = default(HistoryRecord);
+
+      this.LinearVelocity = Vector2.zero;
+      this.AngularVelocity = 0.0f;
+
+      this.Force = Vector2.zero;
+      this.Torque = 0.0f;
+
+      this.BiasVelocity = Vector2.zero;
+      this.BiasRotation = 0.0f;
+    }
+
+    /// <summary>
+    /// Full reset. Clears out all data for pooling. Call FreeShapes() first.
+    /// </summary>
+    private void Reset()
+    {
+      UtilDebug.Assert(this.shapeCount == 0);
+
+#if DEBUG
+      this.IsInitialized = false;
+#endif
+
+      this.UserData = null;
+      this.World = null;
+      this.BodyType = VoltBodyType.Invalid;
+      this.CollisionFilter = null;
+
+      this.Angle = 0.0f;
+      this.LinearVelocity = Vector2.zero;
+      this.AngularVelocity = 0.0f;
+
+      this.Force = Vector2.zero;
+      this.Torque = 0.0f;
+
+      this.Mass = 0.0f;
+      this.Inertia = 0.0f;
+      this.InvMass = 0.0f;
+      this.InvInertia = 0.0f;
+
+      this.BiasVelocity = Vector2.zero;
+      this.BiasRotation = 0.0f;
+
+      this.history = null;
+      this.currentState = default(HistoryRecord);
+    }
+
     #region Collision
-    internal bool CanCollide(Body other)
+    internal bool CanCollide(VoltBody other)
     {
       // Ignore self and static-static collisions
       if ((this == other) || (this.IsStatic && other.IsStatic))
         return false;
+
+      if (this.CollisionFilter != null)
+        return this.CollisionFilter.Invoke(this, other);
       return true;
     }
 
     internal void ApplyImpulse(Vector2 j, Vector2 r)
     {
       this.LinearVelocity += this.InvMass * j;
-      this.AngularVelocity -= this.InvInertia * VolatileMath.Cross(j, r);
+      this.AngularVelocity -= this.InvInertia * VoltMath.Cross(j, r);
     }
 
     internal void ApplyBias(Vector2 j, Vector2 r)
     {
       this.BiasVelocity += this.InvMass * j;
-      this.BiasRotation -= this.InvInertia * VolatileMath.Cross(j, r);
+      this.BiasRotation -= this.InvInertia * VoltMath.Cross(j, r);
     }
     #endregion
 
@@ -460,20 +513,11 @@ namespace Volatile
 
     #region Helpers
     /// <summary>
-    /// Adds a shape and notifies it that it has a new body.
-    /// </summary>
-    private void AddShape(Shape shape)
-    {
-      this.shapes.Add(shape);
-      shape.AssignBody(this);
-    }
-
-    /// <summary>
     /// Applies the current position and angle to shapes and the AABB.
     /// </summary>
     private void OnPositionUpdated()
     {
-      for (int i = 0; i < this.shapes.Count; i++)
+      for (int i = 0; i < this.shapeCount; i++)
         this.shapes[i].OnBodyPositionUpdated();
       this.UpdateAABB();
     }
@@ -488,16 +532,16 @@ namespace Volatile
       float bottom = float.PositiveInfinity;
       float left = float.PositiveInfinity;
 
-      for (int i = 0; i < this.shapes.Count; i++)
+      for (int i = 0; i < this.shapeCount; i++)
       {
-        AABB aabb = this.shapes[i].AABB;
+        VoltAABB aabb = this.shapes[i].AABB;
         top = Mathf.Max(top, aabb.Top);
         right = Mathf.Max(right, aabb.Right);
         bottom = Mathf.Min(bottom, aabb.Bottom);
         left = Mathf.Min(left, aabb.Left);
       }
 
-      this.AABB = new AABB(top, bottom, left, right);
+      this.AABB = new VoltAABB(top, bottom, left, right);
     }
 
     /// <summary>
@@ -536,7 +580,7 @@ namespace Volatile
         this.World.DeltaTime * this.LinearVelocity + this.BiasVelocity;
       this.Angle +=
         this.World.DeltaTime * this.AngularVelocity + this.BiasRotation;
-      this.Facing = VolatileMath.Polar(this.Angle);
+      this.Facing = VoltMath.Polar(this.Angle);
     }
 
     private void ClearForces()
@@ -552,9 +596,9 @@ namespace Volatile
       this.Mass = 0.0f;
       this.Inertia = 0.0f;
 
-      for (int i = 0; i < this.shapes.Count; i++)
+      for (int i = 0; i < this.shapeCount; i++)
       {
-        Shape shape = this.shapes[i];
+        VoltShape shape = this.shapes[i];
         if (shape.Density == 0.0f)
           continue;
         float curMass = shape.Mass;
@@ -564,27 +608,27 @@ namespace Volatile
         this.Inertia += curMass * curInertia;
       }
 
-      if (this.Mass < Config.MINIMUM_DYNAMIC_MASS)
+      if (this.Mass < VoltConfig.MINIMUM_DYNAMIC_MASS)
       {
-        Debug.LogWarning(
-          "mass < MINIMUM_DYNAMIC_MASS, setting to static");
-        this.SetStatic();
+        throw new InvalidOperationException("Mass of dynamic too small");
       }
       else
       {
         this.InvMass = 1.0f / this.Mass;
         this.InvInertia = 1.0f / this.Inertia;
-        this.IsStatic = false;
       }
+
+      this.BodyType = VoltBodyType.Dynamic;
     }
 
     private void SetStatic()
     {
-      this.IsStatic = true;
       this.Mass = 0.0f;
       this.Inertia = 0.0f;
       this.InvMass = 0.0f;
       this.InvInertia = 0.0f;
+
+      this.BodyType = VoltBodyType.Static;
     }
     #endregion
 
@@ -612,7 +656,7 @@ namespace Volatile
 
       this.AABB.GizmoDraw(bodyAabbColor);
 
-      foreach (Shape shape in this.Shapes)
+      foreach (VoltShape shape in this.shapes)
         shape.GizmoDraw(
           edgeColor,
           normalColor,
@@ -627,17 +671,9 @@ namespace Volatile
     {
       Color current = Gizmos.color;
 
-      if (this.historyStates != null)
-      {
-        for (int i = 0; i < this.historyStates.Length; i++)
-        {
-          State state = this.historyStates[i];
-          if (state.frame != History.CURRENT_FRAME)
-          {
-            state.aabb.GizmoDraw(aabbColor);
-          }
-        }
-      }
+      if (this.history != null)
+        foreach (HistoryRecord record in this.history.GetValues())
+          record.aabb.GizmoDraw(aabbColor);
 
       Gizmos.color = current;
     }

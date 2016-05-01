@@ -21,8 +21,8 @@
 using System;
 using System.Collections.Generic;
 
-using CommonTools;
 using UnityEngine;
+using CommonUtil;
 
 namespace Volatile
 {
@@ -30,9 +30,9 @@ namespace Volatile
   {
     #region Dispatch
     private delegate Manifold Test(
-      World world,
-      Shape sa, 
-      Shape sb);
+      VoltWorld world,
+      VoltShape sa, 
+      VoltShape sb);
 
     private readonly static Test[,] tests = new Test[,]
       {
@@ -41,52 +41,52 @@ namespace Volatile
       };
 
     internal static Manifold Dispatch(
-      World world,
-      Shape sa, 
-      Shape sb)
+      VoltWorld world,
+      VoltShape sa, 
+      VoltShape sb)
     {
       Test test = Collision.tests[(int)sa.Type, (int)sb.Type];
       return test(world, sa, sb);
     }
 
     private static Manifold __Circle_Circle(
-      World world,
-      Shape sa, 
-      Shape sb)
+      VoltWorld world,
+      VoltShape sa, 
+      VoltShape sb)
     {
-      return Circle_Circle(world, (Circle)sa, (Circle)sb);
+      return Circle_Circle(world, (VoltCircle)sa, (VoltCircle)sb);
     }
 
     private static Manifold __Circle_Polygon(
-      World world,
-      Shape sa, 
-      Shape sb)
+      VoltWorld world,
+      VoltShape sa, 
+      VoltShape sb)
     {
-      return Circle_Polygon(world, (Circle)sa, (Polygon)sb);
+      return Circle_Polygon(world, (VoltCircle)sa, (VoltPolygon)sb);
     }
 
     private static Manifold __Polygon_Circle(
-      World world,
-      Shape sa, 
-      Shape sb)
+      VoltWorld world,
+      VoltShape sa, 
+      VoltShape sb)
     {
-      return Circle_Polygon(world, (Circle)sb, (Polygon)sa);
+      return Circle_Polygon(world, (VoltCircle)sb, (VoltPolygon)sa);
     }
 
     private static Manifold __Polygon_Polygon(
-      World world,
-      Shape sa, 
-      Shape sb)
+      VoltWorld world,
+      VoltShape sa, 
+      VoltShape sb)
     {
-      return Polygon_Polygon(world, (Polygon)sa, (Polygon)sb);
+      return Polygon_Polygon(world, (VoltPolygon)sa, (VoltPolygon)sb);
     }
     #endregion
 
     #region Collision Tests
     private static Manifold Circle_Circle(
-      World world,
-      Circle circA,
-      Circle circB)
+      VoltWorld world,
+      VoltCircle circA,
+      VoltCircle circB)
     {
       return 
         TestCircles(
@@ -98,33 +98,32 @@ namespace Volatile
     }
 
     private static Manifold Circle_Polygon(
-      World world,
-      Circle circ,
-      Polygon poly)
+      VoltWorld world,
+      VoltCircle circ,
+      VoltPolygon poly)
     {
       // Get the axis on the polygon closest to the circle's origin
       float penetration;
-      int ix =
+      int index =
         Collision.FindAxisMaxPenetration(
           circ.worldSpaceOrigin,
           circ.radius,
-          poly.worldSpaceAxes,
+          poly.WorldAxes,
           out penetration);
 
-      if (ix < 0)
+      if (index < 0)
         return null;
 
-      int length = poly.worldSpaceAxes.Length;
-      Vector2 a = poly.worldSpaceVertices[ix];
-      Vector2 b = poly.worldSpaceVertices[(ix + 1) % length];
-      Axis axis = poly.worldSpaceAxes[ix];
+      Vector2 a, b;
+      poly.GetEdge(index, out a, out b);
+      Axis axis = poly.GetWorldAxis(index);
 
       // If the circle is past one of the two vertices, check it like
       // a circle-circle intersection where the vertex has radius 0
-      float d = VolatileMath.Cross(axis.Normal, circ.worldSpaceOrigin);
-      if (d > VolatileMath.Cross(axis.Normal, a))
+      float d = VoltMath.Cross(axis.Normal, circ.worldSpaceOrigin);
+      if (d > VoltMath.Cross(axis.Normal, a))
         return Collision.TestCircles(world, circ, poly, a, 0.0f);
-      if (d < VolatileMath.Cross(axis.Normal, b))
+      if (d < VoltMath.Cross(axis.Normal, b))
         return Collision.TestCircles(world, circ, poly, b, 0.0f);
 
       // Build the collision Manifold
@@ -136,9 +135,9 @@ namespace Volatile
     }
 
     private static Manifold Polygon_Polygon(
-      World world,
-      Polygon polyA,
-      Polygon polyB)
+      VoltWorld world,
+      VoltPolygon polyA,
+      VoltPolygon polyB)
     {
       Axis a1, a2;
       if (Collision.FindMinSepAxis(polyA, polyB, out a1) == false)
@@ -149,8 +148,8 @@ namespace Volatile
       // We will use poly1's axis, so we may need to swap
       if (a2.Width > a1.Width)
       {
-        CommonUtil.Swap(ref polyA, ref polyB);
-        CommonUtil.Swap(ref a1, ref a2);
+        UtilTools.Swap(ref polyA, ref polyB);
+        UtilTools.Swap(ref a1, ref a2);
       }
 
       // Build the collision Manifold
@@ -191,11 +190,11 @@ namespace Volatile
     /// Checks a ray against a circle with a given origin and square radius.
     /// </summary>
     internal static bool CircleRayCast(
-      Shape shape,
+      VoltShape shape,
       Vector2 shapeOrigin,
       float sqrRadius,
-      ref RayCast ray,
-      ref RayResult result)
+      ref VoltRayCast ray,
+      ref VoltRayResult result)
     {
       Vector2 toOrigin = shapeOrigin - ray.origin;
 
@@ -271,16 +270,17 @@ namespace Volatile
     internal static int FindAxisMaxPenetration(
       Vector2 origin,
       float radius,
-      Axis[] axes,
+      IEnumerable<Axis> axes,
       out float penetration)
     {
-      int ix = 0;
+      int index = 0;
+      int found = 0;
       penetration = float.NegativeInfinity;
 
-      for (int i = 0; i < axes.Length; i++)
+      foreach (Axis axis in axes)
       {
-        float dot = Vector2.Dot(axes[i].Normal, origin);
-        float dist = dot - axes[i].Width - radius;
+        float dot = Vector2.Dot(axis.Normal, origin);
+        float dist = dot - axis.Width - radius;
 
         if (dist > 0)
           return -1;
@@ -288,11 +288,13 @@ namespace Volatile
         if (dist > penetration)
         {
           penetration = dist;
-          ix = i;
+          found = index;
         }
+
+        index++;
       }
 
-      return ix;
+      return found;
     }
     #endregion
 
@@ -303,9 +305,9 @@ namespace Volatile
     /// </summary>
     /// 
     private static Manifold TestCircles(
-      World world,
-      Circle shapeA,
-      Shape shapeB,
+      VoltWorld world,
+      VoltCircle shapeA,
+      VoltShape shapeB,
       Vector2 overrideBCenter, // For testing vertices in circles
       float overrideBRadius)
     {
@@ -331,15 +333,15 @@ namespace Volatile
     }
 
     private static bool FindMinSepAxis(
-      Polygon poly1,
-      Polygon poly2,
+      VoltPolygon poly1,
+      VoltPolygon poly2,
       out Axis axis)
     {
       axis = new Axis(Vector2.zero, float.NegativeInfinity);
-      foreach (Axis a in poly1.worldSpaceAxes)
+      foreach (Axis a in poly1.WorldAxes)
       {
         float min = float.PositiveInfinity;
-        foreach (Vector2 v in poly2.worldSpaceVertices)
+        foreach (Vector2 v in poly2.WorldVertices)
           min = Mathf.Min(min, Vector2.Dot(a.Normal, v));
         min -= a.Width;
 
@@ -360,15 +362,15 @@ namespace Volatile
     /// See http://chipmunk-physics.googlecode.com/svn/trunk/src/cpCollision.c
     /// </summary>
     private static void FindVerts(
-      Polygon poly1,
-      Polygon poly2,
+      VoltPolygon poly1,
+      VoltPolygon poly2,
       Vector2 normal,
       float penetration,
       Manifold manifold)
     {
       bool found = false;
 
-      foreach (Vector2 vertex in poly1.worldSpaceVertices)
+      foreach (Vector2 vertex in poly1.WorldVertices)
       {
         if (poly2.ContainsPoint(vertex) == true)
         {
@@ -378,7 +380,7 @@ namespace Volatile
         }
       }
 
-      foreach (Vector2 vertex in poly2.worldSpaceVertices)
+      foreach (Vector2 vertex in poly2.WorldVertices)
       {
         if (poly1.ContainsPoint(vertex) == true)
         {
@@ -397,20 +399,20 @@ namespace Volatile
     /// A fallback for handling degenerate "Star of David" cases.
     /// </summary>
     private static void FindVertsFallback(
-      Polygon poly1,
-      Polygon poly2,
+      VoltPolygon poly1,
+      VoltPolygon poly2,
       Vector2 normal,
       float penetration,
       Manifold manifold)
     {
-      foreach (Vector2 vertex in poly1.worldSpaceVertices)
+      foreach (Vector2 vertex in poly1.WorldVertices)
       {
         if (poly2.ContainsPointPartial(vertex, normal) == true)
           if (manifold.AddContact(vertex, normal, penetration) == false)
             return;
       }
 
-      foreach (Vector2 vertex in poly2.worldSpaceVertices)
+      foreach (Vector2 vertex in poly2.WorldVertices)
       {
         if (poly1.ContainsPointPartial(vertex, -normal) == true)
           if (manifold.AddContact(vertex, normal, penetration) == false)
