@@ -58,7 +58,7 @@ namespace Volatile
     internal float Damping { get; private set; }
 
     private CheapList<VoltBody> bodies;
-    private CheapList<Manifold> manifolds;
+    private List<Manifold> manifolds;
 
     // Each World instance should own its own object pools, in case
     // you want to run multiple World instances simultaneously.
@@ -81,7 +81,7 @@ namespace Volatile
       this.DeltaTime = VoltConfig.DEFAULT_DELTA_TIME;
 
       this.bodies = new CheapList<VoltBody>();
-      this.manifolds = new CheapList<Manifold>();
+      this.manifolds = new List<Manifold>();
 
       this.bodyPool = new UtilPool<VoltBody>();
       this.circlePool = new UtilPool<VoltShape, VoltCircle>();
