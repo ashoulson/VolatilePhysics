@@ -59,6 +59,7 @@
     <Compile Include="Internals\History\HistoryBuffer.cs" />
     <Compile Include="Internals\History\HistoryRecord.cs" />
     <Compile Include="Internals\IIndexedValue.cs" />
+    <Compile Include="Extensions\VoltExplosion.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RayCast\VoltRayCast.cs" />
     <Compile Include="RayCast\VoltRayResult.cs" />
