@@ -11,7 +11,7 @@ public class VolatileWorld : MonoBehaviour
   public static VolatileWorld Instance { get { return instance; } }
   protected static VolatileWorld instance = null;
 
-  DynamicTree testTree = null;
+  //DynamicTree testTree = null;
 
   [SerializeField]
   int historyLength = 0;
@@ -29,9 +29,9 @@ public class VolatileWorld : MonoBehaviour
 
   void Start()
   {
-    this.testTree = new DynamicTree();
-    foreach (VoltBody body in this.World.Bodies)
-      testTree.AddBody(body);
+    //this.testTree = new DynamicTree();
+    //foreach (VoltBody body in this.World.Bodies)
+      //testTree.AddBody(body);
   }
 
   void FixedUpdate()
@@ -39,13 +39,13 @@ public class VolatileWorld : MonoBehaviour
     if (this.doUpdate)
       this.World.Update();
 
-    foreach (VoltBody body in this.World.Bodies)
-      this.testTree.MoveBody(body, Vector2.zero);
+    //foreach (VoltBody body in this.World.Bodies)
+      //this.testTree.MoveBody(body, Vector2.zero);
   }
 
   void OnDrawGizmos()
   {
-    if (this.testTree != null)
-      this.testTree.GizmoDraw(Color.blue);
+    //if (this.testTree != null)
+      //this.testTree.GizmoDraw(Color.blue);
   }
 }

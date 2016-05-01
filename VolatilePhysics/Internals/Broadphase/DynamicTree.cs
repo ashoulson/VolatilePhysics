@@ -1,4 +1,24 @@
 ﻿/*
+ *  VolatilePhysics - A 2D Physics Library for Networked Games
+ *  Copyright (c) 2015-2016 - Alexander Shoulson - http://ashoulson.com
+ *
+ *  This software is provided 'as-is', without any express or implied
+ *  warranty. In no event will the authors be held liable for any damages
+ *  arising from the use of this software.
+ *  Permission is granted to anyone to use this software for any purpose,
+ *  including commercial applications, and to alter it and redistribute it
+ *  freely, subject to the following restrictions:
+ *  
+ *  1. The origin of this software must not be misrepresented; you must not
+ *     claim that you wrote the original software. If you use this software
+ *     in a product, an acknowledgment in the product documentation would be
+ *     appreciated but is not required.
+ *  2. Altered source versions must be plainly marked as such, and must not be
+ *     misrepresented as being the original software.
+ *  3. This notice may not be removed or altered from any source distribution.
+*/
+
+/*
 * Farseer Physics Engine:
 * Copyright (c) 2012 Ian Qvist
 * 
@@ -30,15 +50,17 @@ using CommonUtil;
 namespace Volatile
 {
   /// <summary>
-  /// A dynamic tree arranges data in a binary tree to accelerate
-  /// queries such as volume queries and ray casts. Leafs are proxies
-  /// with an AABB. In the tree we expand the proxy AABB by Settings.b2this.fatAABBFactor
-  /// so that the proxy AABB is bigger than the client object. This allows the client
-  /// object to move by small amounts without triggering a tree update.
+  /// A dynamic tree bounding volume hierarchy used for collision detection.
+  /// Does not support raycasts (for now) as they would not be compatible with
+  /// Volatile's historical raycast capability -- no past-step data is preserved
+  /// in this tree.
+  /// 
+  /// Bounding AABBs are expanded to allow for movement room according to
+  /// the VoltConfig.AABB_EXTENSION setting.
   ///
   /// Nodes are pooled and relocatable, so we use node indices rather than pointers.
   /// </summary>
-  public class DynamicTree
+  internal class DynamicTree : IBroadPhase
   {
     internal const int NULL_NODE = -1;
 
@@ -47,10 +69,13 @@ namespace Volatile
     /// </summary>
     private class Node
     {
-      internal bool IsLeaf { get { return this.left == DynamicTree.NULL_NODE; } }
+      internal bool IsLeaf 
+      { 
+        get { return this.left == DynamicTree.NULL_NODE; } 
+      }
 
       /// <summary>
-      /// Enlarged AABB
+      /// Expanded AABB.
       /// </summary>
       internal VoltAABB aabb;
 
@@ -88,7 +113,8 @@ namespace Volatile
       }
     }
 
-    private readonly Stack<int> queryStack = new Stack<int>(256);
+    private readonly Stack<int> queryStack;
+    private readonly List<VoltBody> queryResult;
 
     private int freeList;
     private int nodeCapacity;
@@ -96,12 +122,12 @@ namespace Volatile
     private Node[] nodes;
     private int rootId;
 
-    /// <summary>
-    /// Constructing the tree initializes the node pool.
-    /// </summary>
     public DynamicTree()
     {
       this.rootId = NULL_NODE;
+
+      this.queryStack = new Stack<int>(256);
+      this.queryResult = new List<VoltBody>(256);
 
       this.nodeCapacity = 16;
       this.nodeCount = 0;
@@ -115,7 +141,8 @@ namespace Volatile
     }
 
     /// <summary>
-    /// Compute the height of the binary tree in O(N) time. Should not be called often.
+    /// Compute the height of the binary tree in O(N) time.
+    /// Should not be called often.
     /// </summary>
     public int Height
     {
@@ -154,8 +181,8 @@ namespace Volatile
     }
 
     /// <summary>
-    /// Get the maximum balance of an node in the tree. The balance is the difference
-    /// in height of the two children of a node.
+    /// Get the maximum balance of an node in the tree. The balance is the
+    /// difference in height of the two children of a node.
     /// </summary>
     public int MaxBalance
     {
@@ -191,7 +218,7 @@ namespace Volatile
       int proxyId;
       Node proxyNode = this.AllocateNode(out proxyId);
 
-      // Fatten the aabb
+      // Expand the aabb
       proxyNode.aabb = 
         VoltAABB.CreateExpanded(
           body.AABB, 
@@ -220,20 +247,20 @@ namespace Volatile
     }
 
     /// <summary>
-    /// Move a body with a swept AABB. If the body has moved outside of its fattened AABB,
-    /// then the body is removed from the tree and re-inserted. Otherwise
-    /// the function returns immediately.
+    /// Updates a body's position. If the body has moved outside of its
+    /// expanded AABB, then the body is removed from the tree and re-inserted.
+    /// Otherwise the function returns immediately.
     /// </summary>
-    public bool MoveBody(
-      VoltBody body, 
-      Vector2 displacement = default(Vector2))
+    public void UpdateBody(VoltBody body)
     {
       int proxyId = body.ProxyId;
       UtilDebug.Assert((0 <= proxyId) && (proxyId < this.nodeCapacity));
-      UtilDebug.Assert(this.nodes[proxyId].IsLeaf);
 
-      if (this.nodes[proxyId].aabb.Contains(body.AABB))
-        return false;
+      Node proxyNode = this.nodes[proxyId];
+      UtilDebug.Assert(proxyNode.IsLeaf);
+
+      if (proxyNode.aabb.Contains(body.AABB))
+        return;
       this.RemoveLeaf(proxyId);
 
       // Extend AABB
@@ -244,18 +271,20 @@ namespace Volatile
       //Vector2 sweep = VoltConfig.AABB_MULTIPLIER * displacement;
       //VoltAABB swept = VoltAABB.CreateSwept(expanded, sweep);
       //this.nodes[proxyId].aabb = swept;
-      this.nodes[proxyId].aabb = expanded;
 
+      proxyNode.aabb = expanded;
       this.InsertLeaf(proxyId);
-      return true;
+      return;
     }
 
     /// <summary>
     /// Query an AABB for overlapping proxies.
     /// </summary>
-    public IEnumerable<VoltBody> Query(VoltAABB aabb)
+    public IList<VoltBody> Query(VoltAABB aabb, out int count)
     {
+      count = 0;
       this.queryStack.Clear();
+      this.queryResult.Clear();
       this.queryStack.Push(this.rootId);
 
       while (this.queryStack.Count > 0)
@@ -269,7 +298,8 @@ namespace Volatile
         {
           if (node.IsLeaf)
           {
-            yield return node.body;
+            count++;
+            this.queryResult.Add(node.body);
           }
           else
           {
@@ -278,6 +308,8 @@ namespace Volatile
           }
         }
       }
+
+      return this.queryResult;
     }
 
     private Node AllocateNode(out int nodeId)
@@ -367,9 +399,7 @@ namespace Volatile
       leafNode.parentOrNext = newParentId;
 
       // Walk back up the tree fixing heights and AABBs
-      this.FixAABBs(leafNode);
-
-      //Validate();
+      this.FixAncestors(leafNode.parentOrNext);
     }
 
     private int FindBestSibling(ref VoltAABB leafAABB)
@@ -409,32 +439,19 @@ namespace Volatile
       return index;
     }
 
-    private void FixAABBs(Node leafNode)
+    private void FixAncestors(int index)
     {
-      int index = leafNode.parentOrNext;
       while (index != NULL_NODE)
       {
         index = this.Balance(index);
+
         Node indexNode = this.nodes[index];
+        Node left = this.nodes[indexNode.left];
+        Node right = this.nodes[indexNode.right];
 
-        int child1 = indexNode.left;
-        int child2 = indexNode.right;
-
-        UtilDebug.Assert(child1 != NULL_NODE);
-        UtilDebug.Assert(child2 != NULL_NODE);
-
-        indexNode.height = 
-          1 +
-          Math.Max(
-            this.nodes[child1].height, 
-            this.nodes[child2].height);
-
-        indexNode.aabb = 
-          VoltAABB.CreateMerged(
-            this.nodes[child1].aabb, 
-            this.nodes[child2].aabb);
-
-        index = this.nodes[index].parentOrNext;
+        indexNode.aabb = VoltAABB.CreateMerged(left.aabb, right.aabb);
+        indexNode.height = 1 + Math.Max(left.height, right.height);
+        index = indexNode.parentOrNext;
       }
     }
 
@@ -456,67 +473,41 @@ namespace Volatile
       }
     }
 
-    private void RemoveLeaf(int leaf)
+    private void RemoveLeaf(int leafId)
     {
-      if (leaf == this.rootId)
+      if (leafId == this.rootId)
       {
         this.rootId = NULL_NODE;
         return;
       }
 
-      int parent = this.nodes[leaf].parentOrNext;
-      int grandParent = this.nodes[parent].parentOrNext;
-      int sibling;
-      if (this.nodes[parent].left == leaf)
-      {
-        sibling = this.nodes[parent].right;
-      }
-      else
-      {
-        sibling = this.nodes[parent].left;
-      }
+      int parentId = this.nodes[leafId].parentOrNext;
+      Node parent = this.nodes[parentId];
 
-      if (grandParent != NULL_NODE)
+      int siblingId = (parent.left == leafId) ? parent.right : parent.left;
+      Node sibling = this.nodes[siblingId];
+
+      int grandParentId = parent.parentOrNext;
+      if (grandParentId != NULL_NODE)
       {
         // Destroy parent and connect sibling to grandParent
-        if (this.nodes[grandParent].left == parent)
-        {
-          this.nodes[grandParent].left = sibling;
-        }
+        Node grandparent = this.nodes[grandParentId];
+        if (grandparent.left == parentId)
+          grandparent.left = siblingId;
         else
-        {
-          this.nodes[grandParent].right = sibling;
-        }
-        this.nodes[sibling].parentOrNext = grandParent;
-        FreeNode(parent);
+          grandparent.right = siblingId;
+        sibling.parentOrNext = grandParentId;
+        this.FreeNode(parentId);
 
-        // Adjust ancestor bounds
-        int index = grandParent;
-        while (index != NULL_NODE)
-        {
-          index = Balance(index);
-
-          int child1 = this.nodes[index].left;
-          int child2 = this.nodes[index].right;
-
-          this.nodes[index].aabb = 
-            VoltAABB.CreateMerged(
-              this.nodes[child1].aabb, 
-              this.nodes[child2].aabb);
-          this.nodes[index].height = 
-            1 + Math.Max(this.nodes[child1].height, this.nodes[child2].height);
-
-          index = this.nodes[index].parentOrNext;
-        }
+        // Fix the tree going up
+        this.FixAncestors(grandParentId);
       }
       else
       {
-        this.rootId = sibling;
-        this.nodes[sibling].parentOrNext = NULL_NODE;
-        FreeNode(parent);
+        this.rootId = siblingId;
+        sibling.parentOrNext = NULL_NODE;
+        this.FreeNode(parentId);
       }
-
-      //Validate();
     }
 
     /// <summary>
@@ -528,9 +519,7 @@ namespace Volatile
 
       Node A = this.nodes[iA];
       if (A.IsLeaf || A.height < 2)
-      {
         return iA;
-      }
 
       int iB = A.left;
       int iC = A.right;
@@ -539,138 +528,92 @@ namespace Volatile
 
       Node B = this.nodes[iB];
       Node C = this.nodes[iC];
-
       int balance = C.height - B.height;
 
-      // Rotate C up
-      if (balance > 1)
-      {
-        int iF = C.left;
-        int iG = C.right;
-        Node F = this.nodes[iF];
-        Node G = this.nodes[iG];
-        UtilDebug.Assert(0 <= iF && iF < this.nodeCapacity);
-        UtilDebug.Assert(0 <= iG && iG < this.nodeCapacity);
-
-        // Swap A and C
-        C.left = iA;
-        C.parentOrNext = A.parentOrNext;
-        A.parentOrNext = iC;
-
-        // A's old parent should point to C
-        if (C.parentOrNext != NULL_NODE)
-        {
-          if (this.nodes[C.parentOrNext].left == iA)
-          {
-            this.nodes[C.parentOrNext].left = iC;
-          }
-          else
-          {
-            UtilDebug.Assert(this.nodes[C.parentOrNext].right == iA);
-            this.nodes[C.parentOrNext].right = iC;
-          }
-        }
-        else
-        {
-          this.rootId = iC;
-        }
-
-        // Rotate
-        if (F.height > G.height)
-        {
-          C.right = iF;
-          A.right = iG;
-          G.parentOrNext = iA;
-          A.aabb = VoltAABB.CreateMerged(B.aabb, G.aabb);
-          C.aabb = VoltAABB.CreateMerged(A.aabb, F.aabb);
-
-          A.height = 1 + Math.Max(B.height, G.height);
-          C.height = 1 + Math.Max(A.height, F.height);
-        }
-        else
-        {
-          C.right = iG;
-          A.right = iF;
-          F.parentOrNext = iA;
-          A.aabb = VoltAABB.CreateMerged(B.aabb, F.aabb);
-          C.aabb = VoltAABB.CreateMerged(A.aabb, G.aabb);
-
-          A.height = 1 + Math.Max(B.height, F.height);
-          C.height = 1 + Math.Max(A.height, G.height);
-        }
-
-        return iC;
-      }
-
-      // Rotate B up
-      if (balance < -1)
-      {
-        int iD = B.left;
-        int iE = B.right;
-        Node D = this.nodes[iD];
-        Node E = this.nodes[iE];
-        UtilDebug.Assert((0 <= iD) && (iD < this.nodeCapacity));
-        UtilDebug.Assert((0 <= iE) && (iE < this.nodeCapacity));
-
-        // Swap A and B
-        B.left = iA;
-        B.parentOrNext = A.parentOrNext;
-        A.parentOrNext = iB;
-
-        // A's old parent should point to B
-        if (B.parentOrNext != NULL_NODE)
-        {
-          if (this.nodes[B.parentOrNext].left == iA)
-          {
-            this.nodes[B.parentOrNext].left = iB;
-          }
-          else
-          {
-            UtilDebug.Assert(this.nodes[B.parentOrNext].right == iA);
-            this.nodes[B.parentOrNext].right = iB;
-          }
-        }
-        else
-        {
-          this.rootId = iB;
-        }
-
-        // Rotate
-        if (D.height > E.height)
-        {
-          B.right = iD;
-          A.left = iE;
-          E.parentOrNext = iA;
-          A.aabb = VoltAABB.CreateMerged(C.aabb, E.aabb);
-          B.aabb = VoltAABB.CreateMerged(A.aabb, D.aabb);
- 
-          A.height = 1 + Math.Max(C.height, E.height);
-          B.height = 1 + Math.Max(A.height, D.height);
-        }
-        else
-        {
-          B.right = iE;
-          A.left = iD;
-          D.parentOrNext = iA;
-          A.aabb = VoltAABB.CreateMerged(C.aabb, D.aabb);
-          B.aabb = VoltAABB.CreateMerged(A.aabb, E.aabb);
-
-          A.height = 1 + Math.Max(C.height, D.height);
-          B.height = 1 + Math.Max(A.height, E.height);
-        }
-
-        return iB;
-      }
-
+      if (balance > 1) // Rotate C up
+        return this.Rotate(A, B, C, iA, iC, false);
+      if (balance < -1) // Rotate B up
+        return this.Rotate(A, C, B, iA, iB, true);
       return iA;
+    }
+
+    private int Rotate(
+      Node P,
+      Node Q,
+      Node R,
+      int iP,
+      int iR,
+      bool left)
+    {
+      int iX = R.left;
+      int iY = R.right;
+      Node X = this.nodes[iX];
+      Node Y = this.nodes[iY];
+      UtilDebug.Assert((0 <= iX) && (iX < this.nodeCapacity));
+      UtilDebug.Assert((0 <= iY) && (iY < this.nodeCapacity));
+
+      // Swap P and R
+      R.left = iP;
+      R.parentOrNext = P.parentOrNext;
+      P.parentOrNext = iR;
+
+      // P's old parent should point to R
+      if (R.parentOrNext != NULL_NODE)
+      {
+        if (this.nodes[R.parentOrNext].left == iP)
+        {
+          this.nodes[R.parentOrNext].left = iR;
+        }
+        else
+        {
+          UtilDebug.Assert(this.nodes[R.parentOrNext].right == iP);
+          this.nodes[R.parentOrNext].right = iR;
+        }
+      }
+      else
+      {
+        this.rootId = iR;
+      }
+
+      // Rotate
+      if (X.height > Y.height)
+        this.UpdateRotated(P, Q, R, iP, iX, iY, left);
+      else
+        this.UpdateRotated(P, Q, R, iP, iY, iX, left);
+
+      return iR;
+    }
+
+    private void UpdateRotated(
+      Node P, 
+      Node Q, 
+      Node R, 
+      int iP, 
+      int iX, 
+      int iY, 
+      bool left)
+    {
+      Node X = this.nodes[iX];
+      Node Y = this.nodes[iY];
+
+      R.right = iX;
+      if (left)
+        P.left = iY;
+      else
+        P.right = iY;
+
+      Y.parentOrNext = iP;
+      P.aabb = VoltAABB.CreateMerged(Q.aabb, Y.aabb);
+      R.aabb = VoltAABB.CreateMerged(P.aabb, X.aabb);
+
+      P.height = 1 + Math.Max(Q.height, Y.height);
+      R.height = 1 + Math.Max(P.height, X.height);
     }
 
     /// <summary>
     /// Compute the height of a sub-tree.
     /// </summary>
-    /// <param name="nodeId">The node id to use as parent.</param>
-    /// <returns>The height of the tree.</returns>
-    public int ComputeHeight(int nodeId)
+    private int ComputeHeight(int nodeId)
     {
       UtilDebug.Assert((0 <= nodeId) && (nodeId < this.nodeCapacity));
       Node node = this.nodes[nodeId];
@@ -685,12 +628,12 @@ namespace Volatile
     /// <summary>
     /// Compute the height of the entire tree.
     /// </summary>
-    /// <returns>The height of the tree.</returns>
     public int ComputeHeight()
     {
       return this.ComputeHeight(this.rootId);
     }
 
+    #region Debug
     public void GizmoDraw(Color aabbColor)
     {
       this.DoGizmoDraw(aabbColor, this.rootId);
@@ -707,100 +650,6 @@ namespace Volatile
       this.DoGizmoDraw(color, node.left);
       this.DoGizmoDraw(color, node.right);
     }
-
-    //public void ValidateStructure(int index)
-    //{
-    //  if (index == NULL_NODE)
-    //  {
-    //    return;
-    //  }
-
-    //  if (index == this.root)
-    //  {
-    //    Debug.Assert(this.nodes[index].parentOrNext == NULL_NODE);
-    //  }
-
-    //  Node node = this.nodes[index];
-
-    //  int child1 = node.child1;
-    //  int child2 = node.child2;
-
-    //  if (node.IsLeaf())
-    //  {
-    //    Debug.Assert(child1 == NULL_NODE);
-    //    Debug.Assert(child2 == NULL_NODE);
-    //    Debug.Assert(node.height == 0);
-    //    return;
-    //  }
-
-    //  Debug.Assert(0 <= child1 && child1 < this.nodeCapacity);
-    //  Debug.Assert(0 <= child2 && child2 < this.nodeCapacity);
-
-    //  Debug.Assert(this.nodes[child1].parentOrNext == index);
-    //  Debug.Assert(this.nodes[child2].parentOrNext == index);
-
-    //  ValidateStructure(child1);
-    //  ValidateStructure(child2);
-    //}
-
-    //public void ValidateMetrics(int index)
-    //{
-    //  if (index == NULL_NODE)
-    //  {
-    //    return;
-    //  }
-
-    //  Node node = this.nodes[index];
-
-    //  int child1 = node.child1;
-    //  int child2 = node.child2;
-
-    //  if (node.IsLeaf())
-    //  {
-    //    Debug.Assert(child1 == NULL_NODE);
-    //    Debug.Assert(child2 == NULL_NODE);
-    //    Debug.Assert(node.height == 0);
-    //    return;
-    //  }
-
-    //  Debug.Assert(0 <= child1 && child1 < this.nodeCapacity);
-    //  Debug.Assert(0 <= child2 && child2 < this.nodeCapacity);
-
-    //  int height1 = this.nodes[child1].height;
-    //  int height2 = this.nodes[child2].height;
-    //  int height = 1 + Math.Max(height1, height2);
-    //  Debug.Assert(node.height == height);
-
-    //  AABB AABB = new AABB();
-    //  AABB.Combine(ref this.nodes[child1].aabb, ref this.nodes[child2].aabb);
-
-    //  Debug.Assert(AABB.LowerBound == node.aabb.LowerBound);
-    //  Debug.Assert(AABB.UpperBound == node.aabb.UpperBound);
-
-    //  ValidateMetrics(child1);
-    //  ValidateMetrics(child2);
-    //}
-
-    ///// <summary>
-    ///// Validate this tree. For testing.
-    ///// </summary>
-    //public void Validate()
-    //{
-    //  ValidateStructure(this.root);
-    //  ValidateMetrics(this.root);
-
-    //  int freeCount = 0;
-    //  int freeIndex = this.freeList;
-    //  while (freeIndex != NULL_NODE)
-    //  {
-    //    Debug.Assert(0 <= freeIndex && freeIndex < this.nodeCapacity);
-    //    freeIndex = this.nodes[freeIndex].parentOrNext;
-    //    ++freeCount;
-    //  }
-
-    //  Debug.Assert(Height == ComputeHeight());
-
-    //  Debug.Assert(this.nodeCount + freeCount == this.nodeCapacity);
-    //}
+    #endregion
   }
 }
