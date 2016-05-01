@@ -108,7 +108,7 @@ namespace Volatile
         Collision.FindAxisMaxPenetration(
           circ.worldSpaceOrigin,
           circ.radius,
-          poly.WorldAxes,
+          poly,
           out penetration);
 
       if (index < 0)
@@ -270,15 +270,16 @@ namespace Volatile
     internal static int FindAxisMaxPenetration(
       Vector2 origin,
       float radius,
-      IEnumerable<Axis> axes,
+      VoltPolygon poly,
       out float penetration)
     {
       int index = 0;
       int found = 0;
       penetration = float.NegativeInfinity;
 
-      foreach (Axis axis in axes)
+      for (int i = 0; i < poly.countWorld; i++)
       {
+        Axis axis = poly.worldAxes[i];
         float dot = Vector2.Dot(axis.Normal, origin);
         float dist = dot - axis.Width - radius;
 
@@ -338,11 +339,16 @@ namespace Volatile
       out Axis axis)
     {
       axis = new Axis(Vector2.zero, float.NegativeInfinity);
-      foreach (Axis a in poly1.WorldAxes)
+
+      for (int i = 0; i < poly1.countWorld; i++)
       {
+        Axis a = poly1.worldAxes[i];
         float min = float.PositiveInfinity;
-        foreach (Vector2 v in poly2.WorldVertices)
+        for (int j = 0; j < poly2.countWorld; j++)
+        {
+          Vector2 v = poly2.worldVertices[j];
           min = Mathf.Min(min, Vector2.Dot(a.Normal, v));
+        }
         min -= a.Width;
 
         if (min > 0)
@@ -370,8 +376,9 @@ namespace Volatile
     {
       bool found = false;
 
-      foreach (Vector2 vertex in poly1.WorldVertices)
+      for (int i = 0; i < poly1.countWorld; i++)
       {
+        Vector2 vertex = poly1.worldVertices[i];
         if (poly2.ContainsPoint(vertex) == true)
         {
           if (manifold.AddContact(vertex, normal, penetration) == false)
@@ -380,8 +387,9 @@ namespace Volatile
         }
       }
 
-      foreach (Vector2 vertex in poly2.WorldVertices)
+      for (int i = 0; i < poly2.countWorld; i++)
       {
+        Vector2 vertex = poly2.worldVertices[i];
         if (poly1.ContainsPoint(vertex) == true)
         {
           if (manifold.AddContact(vertex, normal, penetration) == false)
@@ -405,15 +413,17 @@ namespace Volatile
       float penetration,
       Manifold manifold)
     {
-      foreach (Vector2 vertex in poly1.WorldVertices)
+      for (int i = 0; i < poly1.countWorld; i++)
       {
+        Vector2 vertex = poly1.worldVertices[i];
         if (poly2.ContainsPointPartial(vertex, normal) == true)
           if (manifold.AddContact(vertex, normal, penetration) == false)
             return;
       }
 
-      foreach (Vector2 vertex in poly2.WorldVertices)
+      for (int i = 0; i < poly2.countWorld; i++)
       {
+        Vector2 vertex = poly2.worldVertices[i];
         if (poly1.ContainsPointPartial(vertex, -normal) == true)
           if (manifold.AddContact(vertex, normal, penetration) == false)
             return;

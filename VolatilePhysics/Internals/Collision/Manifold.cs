@@ -28,10 +28,12 @@ namespace Volatile
 {
   internal sealed class Manifold
     : IUtilPoolable<Manifold>
+    , IIndexedValue
   {
     #region Interface
     IUtilPool<Manifold> IUtilPoolable<Manifold>.Pool { get; set; }
     void IUtilPoolable<Manifold>.Reset() { this.Reset(); }
+    int IIndexedValue.Index { get; set; }
     #endregion
 
     internal VoltShape ShapeA { get; private set; }

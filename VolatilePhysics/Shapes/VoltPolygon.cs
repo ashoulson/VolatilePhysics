@@ -114,53 +114,15 @@ namespace Volatile
     #endregion
 
     #region Fields
-    private Vector2[] worldVertices;
-    private Axis[] worldAxes;
-    private int countWorld;
+    internal Vector2[] worldVertices;
+    internal Axis[] worldAxes;
+    internal int countWorld;
 
     // Precomputed body-space values (these should never change unless we
     // want to support moving shapes relative to their body root later on)
-    private Vector2[] bodyVertices;
-    private Axis[] bodyAxes;
-    private int countBody;
-    #endregion
-
-    #region Iterators
-    internal IEnumerable<Vector2> WorldVertices
-    {
-      get
-      {
-        for (int i = 0; i < this.countWorld; i++)
-          yield return this.worldVertices[i];
-      }
-    }
-
-    internal IEnumerable<Axis> WorldAxes
-    {
-      get
-      {
-        for (int i = 0; i < this.countWorld; i++)
-          yield return this.worldAxes[i];
-      }
-    }
-
-    internal IEnumerable<Vector2> BodyVertices
-    {
-      get
-      {
-        for (int i = 0; i < this.countBody; i++)
-          yield return this.bodyVertices[i];
-      }
-    }
-
-    internal IEnumerable<Axis> BodyAxes
-    {
-      get
-      {
-        for (int i = 0; i < this.countBody; i++)
-          yield return this.bodyAxes[i];
-      }
-    }
+    internal Vector2[] bodyVertices;
+    internal Axis[] bodyAxes;
+    internal int countBody;
     #endregion
 
     public VoltPolygon() 
@@ -216,9 +178,12 @@ namespace Volatile
     protected override bool ShapeQueryPoint(
       Vector2 bodySpacePoint)
     {
-      foreach (Axis axis in this.BodyAxes)
+      for (int i = 0; i < this.countBody; i++)
+      {
+        Axis axis = this.bodyAxes[i];
         if (Vector2.Dot(axis.Normal, bodySpacePoint) > axis.Width)
           return false;
+      }
       return true;
     }
 
@@ -232,7 +197,7 @@ namespace Volatile
         Collision.FindAxisMaxPenetration(
           bodySpaceOrigin,
           radius,
-          this.bodyAxes,
+          this,
           out penetration);
 
       if (foundIndex < 0)
@@ -373,9 +338,12 @@ namespace Volatile
     internal bool ContainsPoint(
       Vector2 worldSpacePoint)
     {
-      foreach (Axis axis in this.WorldAxes)
+      for (int i = 0; i < this.countWorld; i++)
+      {
+        Axis axis = this.worldAxes[i];
         if (Vector2.Dot(axis.Normal, worldSpacePoint) > axis.Width)
           return false;
+      }
       return true;
     }
 
@@ -539,12 +507,12 @@ namespace Volatile
       float sqrRadius = radius * radius;
       bool castHit = false;
 
-      foreach (Vector2 bodyVertex in this.BodyVertices)
+      for (int i = 0; i < this.countBody; i++)
       {
         castHit |=
           Collision.CircleRayCast(
             this,
-            bodyVertex,
+            this.bodyVertices[i],
             sqrRadius,
             ref bodySpaceRay,
             ref result);

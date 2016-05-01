@@ -19,6 +19,7 @@
 */
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 
 using CommonUtil;
@@ -29,7 +30,7 @@ namespace Volatile
   /// A very loose partial encapsulation of a list array. Supports fast item
   /// at end, and fast arbitrary element removal. Does not guarantee order.
   /// </summary>
-  internal class CheapList<T>
+  internal class CheapList<T> : IEnumerable<T>
     where T : class, IIndexedValue
   {
     public int Count { get { return this.count; } }
@@ -80,6 +81,23 @@ namespace Volatile
       }
 
       this.count--;
+    }
+
+    public void Clear()
+    {
+      this.count = 0;
+    }
+
+    public IEnumerator<T> GetEnumerator()
+    {
+      for (int i = 0; i < this.count; i++)
+        yield return this.values[i];
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+      for (int i = 0; i < this.count; i++)
+        yield return this.values[i];
     }
   }
 }
