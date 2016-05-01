@@ -59,7 +59,6 @@ namespace Volatile
 
     private CheapList<VoltBody> bodies;
     private CheapList<Manifold> manifolds;
-    private IBroadPhase broadPhase;
 
     // Each World instance should own its own object pools, in case
     // you want to run multiple World instances simultaneously.
@@ -83,7 +82,6 @@ namespace Volatile
 
       this.bodies = new CheapList<VoltBody>();
       this.manifolds = new CheapList<Manifold>();
-      this.broadPhase = new DynamicTree();
 
       this.bodyPool = new UtilPool<VoltBody>();
       this.circlePool = new UtilPool<VoltShape, VoltCircle>();
@@ -164,7 +162,6 @@ namespace Volatile
     {
       UtilDebug.Assert(body.World == this);
       this.bodies.Remove(body);
-      this.broadPhase.RemoveBody(body);
 
       body.FreeHistory();
       body.PartialReset();
@@ -194,11 +191,8 @@ namespace Volatile
     /// </summary>
     public void Update()
     {
-      foreach (VoltBody body in this.bodies)
-      {
-        body.Update();
-        this.broadPhase.UpdateBody(body);
-      }
+      for (int i = 0; i < this.bodies.Count; i++)
+        this.bodies[i].Update();
       this.BroadPhase();
 
       this.UpdateCollision();
@@ -219,7 +213,6 @@ namespace Volatile
     public void Update(VoltBody body)
     {
       body.Update();
-      this.broadPhase.UpdateBody(body);
       this.BroadPhase(body);
 
       this.UpdateCollision();
@@ -237,10 +230,13 @@ namespace Volatile
       if (ticksBehind < 0)
         throw new ArgumentOutOfRangeException("ticksBehind");
 
-      foreach (VoltBody body in this.bodies)
+      for (int i = 0; i < this.bodies.Count; i++)
+      {
+        VoltBody body = this.bodies[i];
         if (VoltBody.Filter(body, filter))
           if (body.QueryPoint(point, ticksBehind))
             yield return body;
+      }
     }
 
     /// <summary>
@@ -255,10 +251,13 @@ namespace Volatile
       if (ticksBehind < 0)
         throw new ArgumentOutOfRangeException("ticksBehind");
 
-      foreach (VoltBody body in this.bodies)
+      for (int i = 0; i < this.bodies.Count; i++)
+      {
+        VoltBody body = this.bodies[i];
         if (VoltBody.Filter(body, filter))
           if (body.QueryCircle(origin, radius, ticksBehind))
-            yield return body;
+           yield return body;
+      }
     }
 
     /// <summary>
@@ -273,8 +272,9 @@ namespace Volatile
       if (ticksBehind < 0)
         throw new ArgumentOutOfRangeException("ticksBehind");
 
-      foreach (VoltBody body in this.bodies)
+      for (int i = 0; i < this.bodies.Count; i++)
       {
+        VoltBody body = this.bodies[i];
         if (VoltBody.Filter(body, filter) == true)
         {
           body.RayCast(ref ray, ref result, ticksBehind);
@@ -299,8 +299,9 @@ namespace Volatile
       if (ticksBehind < 0)
         throw new ArgumentOutOfRangeException("ticksBehind");
 
-      foreach (VoltBody body in this.bodies)
+      for (int i = 0; i < this.bodies.Count; i++)
       {
+        VoltBody body = this.bodies[i];
         if (VoltBody.Filter(body, filter) == true)
         {
           body.CircleCast(ref ray, radius, ref result, ticksBehind);
@@ -318,7 +319,6 @@ namespace Volatile
       body.AssignWorld(this);
       if ((this.HistoryLength > 0) && (body.IsStatic == false))
         body.AssignHistory(this.AllocateHistory());
-      this.broadPhase.AddBody(body);
     }
 
     /// <summary>
@@ -326,14 +326,13 @@ namespace Volatile
     /// </summary>
     private void BroadPhase()
     {
-      foreach (VoltBody ba in this.bodies)
+      for (int i = 0; i < this.bodies.Count; i++)
       {
-        int count;
-        IList<VoltBody> result = this.broadPhase.Query(ba.AABB, out count);
-
-        for (int i = 0; i < count; i++)
+        for (int j = i + 1; j < this.bodies.Count; j++)
         {
-          VoltBody bb = result[i];
+          VoltBody ba = this.bodies[i];
+          VoltBody bb = this.bodies[j];
+
           if (ba.CanCollide(bb) && bb.CanCollide(ba) && ba.AABB.Intersect(bb.AABB))
             for (int i_s = 0; i_s < ba.shapeCount; i_s++)
               for (int j_s = 0; j_s < bb.shapeCount; j_s++)
@@ -346,14 +345,11 @@ namespace Volatile
     /// Identifies collisions for a single body. Does not keep track of 
     /// symmetrical duplicates (they could be counted twice).
     /// </summary>
-    private void BroadPhase(VoltBody ba)
+    private void BroadPhase(VoltBody bb)
     {
-      int count;
-      IList<VoltBody> result = this.broadPhase.Query(ba.AABB, out count);
-
-      for (int i = 0; i < count; i++)
+      for (int i = 0; i < this.bodies.Count; i++)
       {
-        VoltBody bb = result[i];
+        VoltBody ba = this.bodies[i];
         if (ba.CanCollide(bb) && bb.CanCollide(ba) && ba.AABB.Intersect(bb.AABB))
           for (int i_s = 0; i_s < ba.shapeCount; i_s++)
             for (int j_s = 0; j_s < bb.shapeCount; j_s++)
@@ -368,7 +364,7 @@ namespace Volatile
       VoltShape sa,
       VoltShape sb)
     {
-      if (sa.AABB.Intersect(sb.worldSpaceAABB) == false)
+      if (sa.AABB.Intersect(sb.AABB) == false)
         return;
 
       VoltShape.OrderShapes(ref sa, ref sb);
@@ -379,21 +375,21 @@ namespace Volatile
 
     private void UpdateCollision()
     {
-      foreach (Manifold manifold in this.manifolds)
-        manifold.PreStep();
+      for (int i = 0; i < this.manifolds.Count; i++)
+        this.manifolds[i].PreStep();
 
       this.Elasticity = 1.0f;
       for (int j = 0; j < this.IterationCount * 1 / 3; j++)
-        foreach (Manifold manifold in this.manifolds)
-          manifold.Solve();
+        for (int i = 0; i < this.manifolds.Count; i++)
+          this.manifolds[i].Solve();
 
-      foreach (Manifold manifold in this.manifolds)
-        manifold.SolveCached();
+      for (int i = 0; i < this.manifolds.Count; i++)
+        this.manifolds[i].SolveCached();
 
       this.Elasticity = 0.0f;
       for (int j = 0; j < this.IterationCount * 2 / 3; j++)
-        foreach (Manifold manifold in this.manifolds)
-          manifold.Solve();
+        for (int i = 0; i < this.manifolds.Count; i++)
+          this.manifolds[i].Solve();
     }
 
     #region Pooling
@@ -421,8 +417,8 @@ namespace Volatile
 
     private void FreeManifolds()
     {
-      foreach (Manifold manifold in this.manifolds)
-        this.manifoldPool.Deallocate(manifold);
+      for (int i = 0; i < this.manifolds.Count; i++)
+        this.manifoldPool.Deallocate(this.manifolds[i]);
       this.manifolds.Clear();
     }
 
