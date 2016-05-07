@@ -3,7 +3,6 @@ using System.Collections.Generic;
 
 using UnityEngine;
 using Volatile;
-using Volatile.Extensions;
 
 public class SimpleExplode : MonoBehaviour 
 {
@@ -28,9 +27,9 @@ public class SimpleExplode : MonoBehaviour
     this.hits = new List<Vector2>();
   }
 
-	void Update() 
-	{
-	  if (Input.GetKeyDown(KeyCode.E))
+  void Update()
+  {
+    if (Input.GetKeyDown(KeyCode.E))
     {
       this.hits.Clear();
       this.lastOrigin = this.transform.position;
@@ -42,12 +41,12 @@ public class SimpleExplode : MonoBehaviour
         this.ExplosionCallback,
         (body) => body != this.body.Body);
     }
-	}
+  }
 
   private void ExplosionCallback(
-    VoltShape shape, 
-    Vector2 normal, 
-    float increment, 
+    VoltShape shape,
+    Vector2 normal,
+    float increment,
     float normalizedDistance)
   {
     float force = this.forceMax * (1.0f - normalizedDistance) * increment;

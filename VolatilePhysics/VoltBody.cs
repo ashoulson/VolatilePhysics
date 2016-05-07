@@ -201,6 +201,9 @@ namespace Volatile
     internal Vector2 BiasVelocity { get; private set; }
     internal float BiasRotation { get; private set; }
 
+    // Used for broadphase structures
+    internal int ProxyId { get; set; }
+
     internal VoltShape[] shapes;
     internal int shapeCount;
 
@@ -266,7 +269,7 @@ namespace Volatile
     {
       // AABB check done in world space (because it keeps changing)
       HistoryRecord record = this.GetState(ticksBehind);
-      if (record.aabb.QueryCircleApproximate(origin, radius) == false)
+      if (record.aabb.QueryCircleApprox(origin, radius) == false)
         return false;
 
       // Actual query on shapes done in body space
@@ -327,7 +330,7 @@ namespace Volatile
       int ticksBehind)
     {
       HistoryRecord record = this.GetState(ticksBehind);
-      if (record.aabb.CircleCast(ref ray, radius) == false)
+      if (record.aabb.CircleCastApprox(ref ray, radius) == false)
         return false;
 
       // Actual tests on shapes done in body space

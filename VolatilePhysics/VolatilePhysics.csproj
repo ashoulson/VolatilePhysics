@@ -49,7 +49,11 @@
     <Compile Include="CommonUtil\Pooling\IUtilPoolable.cs" />
     <Compile Include="CommonUtil\Pooling\UtilPool.cs" />
     <Compile Include="CommonUtil\UtilTools.cs" />
+    <Compile Include="Extensions\VoltExplosion.cs" />
     <Compile Include="Internals\Axis.cs" />
+    <Compile Include="Internals\Broadphase\IBroadphase.cs" />
+    <Compile Include="Internals\Broadphase\NaiveBroadphase.cs" />
+    <Compile Include="Internals\Broadphase\TreeBroadphase.cs" />
     <Compile Include="Internals\CheapList.cs" />
     <Compile Include="Internals\Collision\Collision.cs" />
     <Compile Include="Internals\Collision\Contact.cs" />
@@ -57,7 +61,6 @@
     <Compile Include="Internals\History\HistoryBuffer.cs" />
     <Compile Include="Internals\History\HistoryRecord.cs" />
     <Compile Include="Internals\IIndexedValue.cs" />
-    <Compile Include="Extensions\VoltExplosion.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RayCast\VoltRayCast.cs" />
     <Compile Include="RayCast\VoltRayResult.cs" />
@@ -65,10 +68,12 @@
     <Compile Include="Shapes\VoltPolygon.cs" />
     <Compile Include="VoltAABB.cs" />
     <Compile Include="VoltBody.cs" />
+    <Compile Include="VoltBuffer.cs" />
     <Compile Include="VoltConfig.cs" />
     <Compile Include="VoltDebug.cs" />
     <Compile Include="VoltMath.cs" />
     <Compile Include="VoltShape.cs" />
+    <Compile Include="VoltUtil.cs" />
     <Compile Include="VoltWorld.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

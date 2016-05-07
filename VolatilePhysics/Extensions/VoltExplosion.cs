@@ -23,7 +23,9 @@ using System.Collections.Generic;
 
 using UnityEngine;
 
-namespace Volatile.Extensions
+using CommonUtil;
+
+namespace Volatile
 {
   public delegate void VoltExplosionCallback(
     VoltShape shape, 
@@ -31,20 +33,40 @@ namespace Volatile.Extensions
     float increment, 
     float normalizedDistance);
 
-  public static class VoltExplosion
+  public partial class VoltWorld
   {
-    public static void ResolveExplosion(
-      this VoltWorld world, 
-      Vector2 origin, 
-      float radius, 
+    private static void InitializeStack(ref Stack<VoltBody> stack)
+    {
+      if (stack == null)
+        stack = new Stack<VoltBody>(256);
+      stack.Clear();
+    }
+
+    private Stack<VoltBody> occludingBodies;
+    private Stack<VoltBody> targetBodies;
+
+    /// <summary>
+    /// Resolves an explosion with a series of radial raycasts.
+    /// Fires a callback for each ray that hits on each target.
+    /// 
+    /// By default (useOcclusion = true), these rays are blocked by
+    /// static geometry.
+    /// </summary>
+    public IEnumerable<VoltBody> ResolveExplosion(
+      Vector2 origin,
+      float radius,
       VoltExplosionCallback callback,
-      VoltBodyFilter filter = null, 
+      VoltBodyFilter targetFilter = null,
       int ticksBehind = 0,
+      bool useOcclusion = true,
       int rayCount = 32)
     {
       VoltAABB worldBounds = new VoltAABB(origin, radius);
-      IEnumerable<VoltBody> bodies = 
-        world.QueryBounds(worldBounds, filter, ticksBehind);
+      this.PopulateExplosionBodies(
+        ref worldBounds,
+        targetFilter,
+        ticksBehind,
+        useOcclusion);
 
       VoltRayCast ray;
       VoltRayResult result;
@@ -57,19 +79,73 @@ namespace Volatile.Extensions
         ray = new VoltRayCast(origin, normal, radius);
         result = default(VoltRayResult);
 
-        foreach (VoltBody body in bodies)
+        // Prime the ray on the blockers
+        foreach (VoltBody body in this.occludingBodies)
         {
           body.RayCast(ref ray, ref result, ticksBehind);
           if (result.IsContained)
             break;
         }
 
-        if (result.IsValid)
-          callback.Invoke(
-            result.Shape, 
-            normal, 
-            increment, 
-            result.Distance / radius);
+        // Check against the target bodies, starting from the blocker result
+        VoltRayResult primed;
+        foreach (VoltBody body in this.targetBodies)
+        {
+          primed = result;
+          if (body.RayCast(ref ray, ref primed, ticksBehind))
+          {
+            // Did we hit the body or were we blocked?
+            if (primed.Shape.Body == body)
+            {
+              callback.Invoke(
+                primed.Shape,
+                normal,
+                increment,
+                primed.Distance / radius);
+            }
+          }
+        }
+      }
+
+      return targetBodies;
+    }
+
+    private void PopulateExplosionBodies(
+      ref VoltAABB worldBounds,
+      VoltBodyFilter targetFilter,
+      int ticksBehind,
+      bool useOcclusion)
+    {
+      if (ticksBehind < 0)
+        throw new ArgumentOutOfRangeException("ticksBehind");
+
+      VoltWorld.InitializeStack(ref this.occludingBodies);
+      VoltWorld.InitializeStack(ref this.targetBodies);
+
+      if (useOcclusion)
+        this.CollectOccluders(ref worldBounds);
+      this.CollectTargets(ref worldBounds, targetFilter, ticksBehind);
+    }
+
+    private void CollectOccluders(ref VoltAABB worldBounds)
+    {
+      this.reusableBuffer.Clear();
+      this.staticBroadphase.QueryOverlap(worldBounds, this.reusableBuffer);
+      for (int i = 0; i < this.reusableBuffer.Count; i++)
+        this.occludingBodies.Push(this.reusableBuffer[i]);
+    }
+
+    private void CollectTargets(
+      ref VoltAABB worldBounds,
+      VoltBodyFilter targetFilter,
+      int ticksBehind)
+    {
+      for (int i = 0; i < this.bodies.Count; i++)
+      {
+        VoltBody body = this.bodies[i];
+        if (VoltBody.Filter(body, targetFilter))
+          if (body.QueryOverlap(worldBounds, ticksBehind))
+              this.targetBodies.Push(body);
       }
     }
   }

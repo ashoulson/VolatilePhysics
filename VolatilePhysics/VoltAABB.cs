@@ -160,13 +160,9 @@ namespace Volatile
     }
 
     /// <summary>
-    /// Performs an approximate circle test by expanding the AABB in all
-    /// directions by the radius and then doing a point test. Note that this
-    /// does not account for rounded edges at the corners of the AABB, which
-    /// can create false positives. For culling, however, this is perfectly
-    /// fine to use without a more accurate approach.
+    /// Note: This doesn't take rounded edges into account.
     /// </summary>
-    public bool QueryCircleApproximate(Vector2 origin, float radius)
+    public bool QueryCircleApprox(Vector2 origin, float radius)
     {
       return
         (this.left - radius) <= origin.x &&
@@ -186,9 +182,9 @@ namespace Volatile
     }
 
     /// <summary>
-    /// Note, this doesn't take rounded edges into account.
+    /// Note: This doesn't take rounded edges into account.
     /// </summary>
-    public bool CircleCast(ref VoltRayCast ray, float radius)
+    public bool CircleCastApprox(ref VoltRayCast ray, float radius)
     {
       return VoltAABB.RayCast(
         ref ray,
