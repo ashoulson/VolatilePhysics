@@ -37,10 +37,11 @@ namespace Volatile
       base.Initialize(density, friction, restitution);
       this.UpdateArrays(vertices.Length);
 
-      Array.Copy(vertices, this.worldVertices, vertices.Length);
-      VoltPolygon.ComputeAxes(vertices, ref this.worldAxes);
-      this.worldSpaceAABB = VoltPolygon.ComputeBounds(vertices);
       this.countWorld = vertices.Length;
+      Array.Copy(vertices, this.worldVertices, this.countWorld);
+      VoltPolygon.ComputeAxes(vertices, this.countWorld, ref this.worldAxes);
+      this.worldSpaceAABB = 
+        VoltPolygon.ComputeBounds(vertices, this.countWorld);
 
       this.countBody = 0; // Needs to be set on metric compute
     }
@@ -54,12 +55,15 @@ namespace Volatile
       base.Initialize(density, friction, restitution);
       this.UpdateArrays(vertices.Length);
 
-      this.countWorld = vertices.Length; // Will be set on position update
+      // World vertices will be computed on position update
+      this.countWorld = vertices.Length;
 
-      Array.Copy(vertices, this.bodyVertices, vertices.Length);
-      VoltPolygon.ComputeAxes(vertices, ref this.bodyAxes);
-      this.bodySpaceAABB = VoltPolygon.ComputeBounds(vertices);
       this.countBody = vertices.Length;
+      Array.Copy(vertices, this.bodyVertices, vertices.Length);
+      VoltPolygon.ComputeAxes(vertices, this.countBody, ref this.bodyAxes);
+      this.bodySpaceAABB = 
+        VoltPolygon.ComputeBounds(vertices, this.countBody);
+
     }
     #endregion
 
@@ -76,28 +80,31 @@ namespace Volatile
 
     private static void ComputeAxes(
       Vector2[] vertices,
+      int count,
       ref Axis[] destination)
     {
-      if (destination.Length < vertices.Length)
-        destination = new Axis[vertices.Length];
+      if (destination.Length < count)
+        destination = new Axis[count];
 
-      for (int i = 0; i < vertices.Length; i++)
+      for (int i = 0; i < count; i++)
       {
         Vector2 u = vertices[i];
-        Vector2 v = vertices[(i + 1) % vertices.Length];
+        Vector2 v = vertices[(i + 1) % count];
         Vector2 normal = (v - u).Left().normalized;
         destination[i] = new Axis(normal, Vector2.Dot(normal, u));
       }
     }
 
-    private static VoltAABB ComputeBounds(Vector2[] vertices)
+    private static VoltAABB ComputeBounds(
+      Vector2[] vertices,
+      int count)
     {
       float top = vertices[0].y;
       float bottom = vertices[0].y;
       float left = vertices[0].x;
       float right = vertices[0].x;
 
-      for (int i = 1; i < vertices.Length; i++)
+      for (int i = 1; i < count; i++)
       {
         top = Mathf.Max(top, vertices[i].y);
         bottom = Mathf.Min(bottom, vertices[i].y);
@@ -150,9 +157,10 @@ namespace Volatile
           this.worldVertices,
           this.bodyVertices, 
           this.countWorld);
-        VoltPolygon.ComputeAxes(this.bodyVertices, ref this.bodyAxes);
-        this.bodySpaceAABB = VoltPolygon.ComputeBounds(this.bodyVertices);
         this.countBody = this.countWorld;
+        VoltPolygon.ComputeAxes(this.bodyVertices, this.countBody, ref this.bodyAxes);
+        this.bodySpaceAABB = 
+          VoltPolygon.ComputeBounds(this.bodyVertices, this.countBody);
       }
 
       this.Area = this.ComputeArea();
@@ -170,7 +178,8 @@ namespace Volatile
           this.Body.BodyToWorldAxisCurrent(this.bodyAxes[i]);
       }
 
-      this.worldSpaceAABB = VoltPolygon.ComputeBounds(this.worldVertices);
+      this.worldSpaceAABB = 
+        VoltPolygon.ComputeBounds(this.worldVertices, this.countWorld);
     }
     #endregion
 

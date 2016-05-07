@@ -11,6 +11,8 @@ public class VolatileWorld : MonoBehaviour
   public static VolatileWorld Instance { get { return instance; } }
   protected static VolatileWorld instance = null;
 
+  
+
   [SerializeField]
   int historyLength = 0;
 

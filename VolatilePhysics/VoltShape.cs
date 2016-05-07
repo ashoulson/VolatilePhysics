@@ -125,7 +125,7 @@ namespace Volatile
     internal bool QueryCircle(Vector2 bodySpaceOrigin, float radius)
     {
       // Queries and casts on shapes are always done in body space
-      if (this.bodySpaceAABB.QueryCircleApproximate(bodySpaceOrigin, radius))
+      if (this.bodySpaceAABB.QueryCircleApprox(bodySpaceOrigin, radius))
         return this.ShapeQueryCircle(bodySpaceOrigin, radius);
       return false;
     }
@@ -154,7 +154,7 @@ namespace Volatile
       ref VoltRayResult result)
     {
       // Queries and casts on shapes are always done in body space
-      if (this.bodySpaceAABB.CircleCast(ref bodySpaceRay, radius))
+      if (this.bodySpaceAABB.CircleCastApprox(ref bodySpaceRay, radius))
         return this.ShapeCircleCast(ref bodySpaceRay, radius, ref result);
       return false;
     }

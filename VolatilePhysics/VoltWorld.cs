@@ -26,7 +26,7 @@ using CommonUtil;
 
 namespace Volatile
 {
-  public sealed class VoltWorld
+  public partial class VoltWorld
   {
     /// <summary>
     /// Fixed update delta time for body integration. 
@@ -60,8 +60,11 @@ namespace Volatile
     private CheapList<VoltBody> bodies;
     private List<Manifold> manifolds;
 
-    // A pre-allocated reusable output list
-    private Stack<VoltBody> reusableOutput;
+    private IBroadPhase dynamicBroadphase;
+    private IBroadPhase staticBroadphase;
+
+    private VoltBuffer reusableBuffer;
+    private VoltBuffer reusableOutput;
 
     // Each World instance should own its own object pools, in case
     // you want to run multiple World instances simultaneously.
@@ -86,7 +89,11 @@ namespace Volatile
       this.bodies = new CheapList<VoltBody>();
       this.manifolds = new List<Manifold>();
 
-      this.reusableOutput = new Stack<VoltBody>();
+      this.dynamicBroadphase = new NaiveBroadphase();
+      this.staticBroadphase = new TreeBroadphase();
+
+      this.reusableBuffer = new VoltBuffer();
+      this.reusableOutput = new VoltBuffer();
 
       this.bodyPool = new UtilPool<VoltBody>();
       this.circlePool = new UtilPool<VoltShape, VoltCircle>();
@@ -123,7 +130,7 @@ namespace Volatile
     {
       VoltBody body = this.bodyPool.Allocate();
       body.InitializeStatic(position, radians, shapesToAdd);
-      this.AddBody(body);
+      this.AddBodyInternal(body);
       return body;
     }
 
@@ -137,7 +144,7 @@ namespace Volatile
     {
       VoltBody body = this.bodyPool.Allocate();
       body.InitializeDynamic(position, radians, shapesToAdd);
-      this.AddBody(body);
+      this.AddBodyInternal(body);
       return body;
     }
 
@@ -154,7 +161,7 @@ namespace Volatile
       UtilDebug.Assert(body.IsInitialized);
 #endif
       UtilDebug.Assert(body.World == null);
-      this.AddBody(body);
+      this.AddBodyInternal(body);
       body.Set(position, radians);
     }
 
@@ -166,11 +173,10 @@ namespace Volatile
     public void RemoveBody(VoltBody body)
     {
       UtilDebug.Assert(body.World == this);
-      this.bodies.Remove(body);
 
-      body.FreeHistory();
       body.PartialReset();
-      body.AssignWorld(null);
+
+      this.RemoveBodyInternal(body);
     }
 
     /// <summary>
@@ -180,12 +186,10 @@ namespace Volatile
     public void DestroyBody(VoltBody body)
     {
       UtilDebug.Assert(body.World == this);
-      this.bodies.Remove(body);
 
-      body.FreeHistory();
       body.FreeShapes();
-      body.AssignWorld(null);
 
+      this.RemoveBodyInternal(body);
       this.FreeBody(body);
     }
 
@@ -197,7 +201,15 @@ namespace Volatile
     public void Update()
     {
       for (int i = 0; i < this.bodies.Count; i++)
-        this.bodies[i].Update();
+      {
+        VoltBody body = this.bodies[i];
+        if (body.IsStatic == false)
+        {
+          body.Update();
+          this.dynamicBroadphase.UpdateBody(body);
+        }
+      }
+          
       this.BroadPhase();
 
       this.UpdateCollision();
@@ -209,16 +221,20 @@ namespace Volatile
     /// If a frame number is provided, all dynamic bodies will store their
     /// state for that frame for later testing.
     /// 
-    /// Note: This function is more efficient to use if you have only a single
-    /// body in your world surrounded by static geometry (as is common for 
-    /// client-side controller prediction in networked games). If you have 
-    /// multiple dynamic bodies, using this function on each individual body 
-    /// may result in collisions being resolved twice with double the force.
+    /// Note: This function is best used with dynamic collisions disabled, 
+    /// otherwise you might get symmetric duplicates on collisions.
     /// </summary>
-    public void Update(VoltBody body)
+    public void Update(VoltBody body, bool collideDynamic = false)
     {
+      if (body.IsStatic)
+      {
+        UtilDebug.LogWarning("Updating static body, doing nothing");
+        return;
+      }
+
       body.Update();
-      this.BroadPhase(body);
+      this.dynamicBroadphase.UpdateBody(body);
+      this.BroadPhase(body, collideDynamic);
 
       this.UpdateCollision();
       this.FreeManifolds();
@@ -230,7 +246,7 @@ namespace Volatile
     /// Subsequent calls to other Query functions (Point, Circle, Bounds) will
     /// invalidate the resulting enumeration from this function.
     /// </summary>
-    public IEnumerable<VoltBody> QueryPoint(
+    public VoltBuffer QueryPoint(
       Vector2 point,
       VoltBodyFilter filter = null,
       int ticksBehind = 0)
@@ -238,15 +254,18 @@ namespace Volatile
       if (ticksBehind < 0)
         throw new ArgumentOutOfRangeException("ticksBehind");
 
+      this.reusableBuffer.Clear();
+      this.staticBroadphase.QueryPoint(point, this.reusableBuffer);
+      this.dynamicBroadphase.QueryPoint(point, this.reusableBuffer);
+
       this.reusableOutput.Clear();
-      for (int i = 0; i < this.bodies.Count; i++)
+      for (int i = 0; i < this.reusableBuffer.Count; i++)
       {
-        VoltBody body = this.bodies[i];
+        VoltBody body = this.reusableBuffer[i];
         if (VoltBody.Filter(body, filter))
           if (body.QueryPoint(point, ticksBehind))
-            this.reusableOutput.Push(body);
+            this.reusableOutput.Add(body);
       }
-
       return this.reusableOutput;
     }
 
@@ -256,7 +275,7 @@ namespace Volatile
     /// Subsequent calls to other Query functions (Point, Circle, Bounds) will
     /// invalidate the resulting enumeration from this function.
     /// </summary>
-    public IEnumerable<VoltBody> QueryCircle(
+    public VoltBuffer QueryCircle(
       Vector2 origin,
       float radius,
       VoltBodyFilter filter = null,
@@ -265,39 +284,17 @@ namespace Volatile
       if (ticksBehind < 0)
         throw new ArgumentOutOfRangeException("ticksBehind");
 
+      this.reusableBuffer.Clear();
+      this.staticBroadphase.QueryCircle(origin, radius, this.reusableBuffer);
+      this.dynamicBroadphase.QueryCircle(origin, radius, this.reusableBuffer);
+
       this.reusableOutput.Clear();
-      for (int i = 0; i < this.bodies.Count; i++)
+      for (int i = 0; i < this.reusableBuffer.Count; i++)
       {
-        VoltBody body = this.bodies[i];
+        VoltBody body = this.reusableBuffer[i];
         if (VoltBody.Filter(body, filter))
           if (body.QueryCircle(origin, radius, ticksBehind))
-            this.reusableOutput.Push(body);
-      }
-
-      return this.reusableOutput;
-    }
-
-    /// <summary>
-    /// Finds all bodies intersecting with a given circle.
-    /// 
-    /// Subsequent calls to other Query functions (Point, Circle, Bounds) will
-    /// invalidate the resulting enumeration from this function.
-    /// </summary>
-    public IEnumerable<VoltBody> QueryBounds(
-      VoltAABB worldBounds,
-      VoltBodyFilter filter = null,
-      int ticksBehind = 0)
-    {
-      if (ticksBehind < 0)
-        throw new ArgumentOutOfRangeException("ticksBehind");
-
-      this.reusableOutput.Clear();
-      for (int i = 0; i < this.bodies.Count; i++)
-      {
-        VoltBody body = this.bodies[i];
-        if (VoltBody.Filter(body, filter))
-          if (body.QueryOverlap(worldBounds, ticksBehind))
-            this.reusableOutput.Push(body);
+            this.reusableOutput.Add(body);
       }
 
       return this.reusableOutput;
@@ -315,13 +312,17 @@ namespace Volatile
       if (ticksBehind < 0)
         throw new ArgumentOutOfRangeException("ticksBehind");
 
-      for (int i = 0; i < this.bodies.Count; i++)
+      this.reusableBuffer.Clear();
+      this.staticBroadphase.RayCast(ref ray, this.reusableBuffer);
+      this.dynamicBroadphase.RayCast(ref ray, this.reusableBuffer);
+
+      for (int i = 0; i < this.reusableBuffer.Count; i++)
       {
-        VoltBody body = this.bodies[i];
-        if (VoltBody.Filter(body, filter) == true)
+        VoltBody body = this.reusableBuffer[i];
+        if (VoltBody.Filter(body, filter))
         {
           body.RayCast(ref ray, ref result, ticksBehind);
-          if (result.IsContained == true)
+          if (result.IsContained)
             return true;
         }
       }
@@ -342,13 +343,17 @@ namespace Volatile
       if (ticksBehind < 0)
         throw new ArgumentOutOfRangeException("ticksBehind");
 
-      for (int i = 0; i < this.bodies.Count; i++)
+      this.reusableBuffer.Clear();
+      this.staticBroadphase.CircleCast(ref ray, radius, this.reusableBuffer);
+      this.dynamicBroadphase.CircleCast(ref ray, radius, this.reusableBuffer);
+
+      for (int i = 0; i < this.reusableBuffer.Count; i++)
       {
-        VoltBody body = this.bodies[i];
-        if (VoltBody.Filter(body, filter) == true)
+        VoltBody body = this.reusableBuffer[i];
+        if (VoltBody.Filter(body, filter))
         {
           body.CircleCast(ref ray, radius, ref result, ticksBehind);
-          if (result.IsContained == true)
+          if (result.IsContained)
             return true;
         }
       }
@@ -356,12 +361,29 @@ namespace Volatile
     }
 
     #region Internals
-    private void AddBody(VoltBody body)
+    private void AddBodyInternal(VoltBody body)
     {
       this.bodies.Add(body);
+      if (body.IsStatic)
+        this.staticBroadphase.AddBody(body);
+      else
+        this.dynamicBroadphase.AddBody(body);
+
       body.AssignWorld(this);
       if ((this.HistoryLength > 0) && (body.IsStatic == false))
         body.AssignHistory(this.AllocateHistory());
+    }
+
+    private void RemoveBodyInternal(VoltBody body)
+    {
+      this.bodies.Remove(body);
+      if (body.IsStatic)
+        this.staticBroadphase.RemoveBody(body);
+      else
+        this.dynamicBroadphase.RemoveBody(body);
+
+      body.FreeHistory();
+      body.AssignWorld(null);
     }
 
     /// <summary>
@@ -371,16 +393,19 @@ namespace Volatile
     {
       for (int i = 0; i < this.bodies.Count; i++)
       {
-        for (int j = i + 1; j < this.bodies.Count; j++)
-        {
-          VoltBody ba = this.bodies[i];
-          VoltBody bb = this.bodies[j];
+        VoltBody query = this.bodies[i];
+        if (query.IsStatic)
+          continue;
 
-          if (ba.CanCollide(bb) && bb.CanCollide(ba) && ba.AABB.Intersect(bb.AABB))
-            for (int i_s = 0; i_s < ba.shapeCount; i_s++)
-              for (int j_s = 0; j_s < bb.shapeCount; j_s++)
-                this.NarrowPhase(ba.shapes[i_s], bb.shapes[j_s]);
-        }
+        this.reusableBuffer.Clear();
+        this.staticBroadphase.QueryOverlap(query.AABB, this.reusableBuffer);
+
+        // HACK: Don't use dynamic broadphase for global updates for now
+        for (int j = i + 1; j < this.bodies.Count; j++)
+          if (this.bodies[j].IsStatic == false)
+            this.reusableBuffer.Add(this.bodies[j]);
+
+        this.TestBuffer(query);
       }
     }
 
@@ -388,15 +413,32 @@ namespace Volatile
     /// Identifies collisions for a single body. Does not keep track of 
     /// symmetrical duplicates (they could be counted twice).
     /// </summary>
-    private void BroadPhase(VoltBody bb)
+    private void BroadPhase(VoltBody query, bool collideDynamic = false)
     {
-      for (int i = 0; i < this.bodies.Count; i++)
+      UtilDebug.Assert(query.IsStatic == false);
+
+      this.reusableBuffer.Clear();
+      this.staticBroadphase.QueryOverlap(query.AABB, this.reusableBuffer);
+      if (collideDynamic)
+        this.dynamicBroadphase.QueryOverlap(query.AABB, this.reusableBuffer);
+
+      this.TestBuffer(query);
+    }
+
+    private void TestBuffer(VoltBody query)
+    {
+      for (int i = 0; i < this.reusableBuffer.Count; i++)
       {
-        VoltBody ba = this.bodies[i];
-        if (ba.CanCollide(bb) && bb.CanCollide(ba) && ba.AABB.Intersect(bb.AABB))
-          for (int i_s = 0; i_s < ba.shapeCount; i_s++)
-            for (int j_s = 0; j_s < bb.shapeCount; j_s++)
-              this.NarrowPhase(ba.shapes[i_s], bb.shapes[j_s]);
+        VoltBody test = this.reusableBuffer[i];
+        bool canCollide =
+          query.CanCollide(test) &&
+          test.CanCollide(query) &&
+          query.AABB.Intersect(test.AABB);
+
+        if (canCollide)
+          for (int i_q = 0; i_q < query.shapeCount; i_q++)
+            for (int j_t = 0; j_t < test.shapeCount; j_t++)
+              this.NarrowPhase(query.shapes[i_q], test.shapes[j_t]);
       }
     }
 

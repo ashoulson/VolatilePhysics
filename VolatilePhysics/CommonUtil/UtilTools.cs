@@ -67,10 +67,10 @@ namespace CommonUtil
       a = temp;
     }
 
-    public static int ExpandArray<T>(ref T[] oldArray)
+    public static int ExpandArray<T>(ref T[] oldArray, int minSize = 1)
     {
       // TODO: Revisit this using next-largest primes like built-in lists do
-      int newCapacity = oldArray.Length * 2;
+      int newCapacity = Math.Max(oldArray.Length * 2, minSize);
       T[] newArray = new T[newCapacity];
       Array.Copy(oldArray, newArray, oldArray.Length);
       oldArray = newArray;
