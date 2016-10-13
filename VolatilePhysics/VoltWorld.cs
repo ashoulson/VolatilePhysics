@@ -21,8 +21,9 @@
 using System;
 using System.Collections.Generic;
 
+#if UNITY
 using UnityEngine;
-using CommonUtil;
+#endif
 
 namespace Volatile
 {
@@ -63,18 +64,18 @@ namespace Volatile
     private IBroadPhase dynamicBroadphase;
     private IBroadPhase staticBroadphase;
 
-    private VoltBuffer reusableBuffer;
-    private VoltBuffer reusableOutput;
+    private VoltBuffer<VoltBody> reusableBuffer;
+    private VoltBuffer<VoltBody> reusableOutput;
 
     // Each World instance should own its own object pools, in case
     // you want to run multiple World instances simultaneously.
-    private IUtilPool<VoltBody> bodyPool;
-    private IUtilPool<VoltShape> circlePool;
-    private IUtilPool<VoltShape> polygonPool;
+    private IVoltPool<VoltBody> bodyPool;
+    private IVoltPool<VoltShape> circlePool;
+    private IVoltPool<VoltShape> polygonPool;
 
-    private IUtilPool<Contact> contactPool;
-    private IUtilPool<Manifold> manifoldPool;
-    private IUtilPool<HistoryBuffer> historyPool;
+    private IVoltPool<Contact> contactPool;
+    private IVoltPool<Manifold> manifoldPool;
+    private IVoltPool<HistoryBuffer> historyPool;
 
     public VoltWorld(
       int historyLength = 0,
@@ -92,32 +93,72 @@ namespace Volatile
       this.dynamicBroadphase = new NaiveBroadphase();
       this.staticBroadphase = new TreeBroadphase();
 
-      this.reusableBuffer = new VoltBuffer();
-      this.reusableOutput = new VoltBuffer();
+      this.reusableBuffer = new VoltBuffer<VoltBody>();
+      this.reusableOutput = new VoltBuffer<VoltBody>();
 
-      this.bodyPool = new UtilPool<VoltBody>();
-      this.circlePool = new UtilPool<VoltShape, VoltCircle>();
-      this.polygonPool = new UtilPool<VoltShape, VoltPolygon>();
+      this.bodyPool = new VoltPool<VoltBody>();
+      this.circlePool = new VoltPool<VoltShape, VoltCircle>();
+      this.polygonPool = new VoltPool<VoltShape, VoltPolygon>();
 
-      this.contactPool = new UtilPool<Contact>();
-      this.manifoldPool = new UtilPool<Manifold>();
-      this.historyPool = new UtilPool<HistoryBuffer>();
+      this.contactPool = new VoltPool<Contact>();
+      this.manifoldPool = new VoltPool<Manifold>();
+      this.historyPool = new VoltPool<HistoryBuffer>();
     }
 
     /// <summary>
-    /// Creates a new polygon shape. Must be initialized afterwards.
+    /// Creates a new polygon shape from world-space vertices.
     /// </summary>
-    public VoltPolygon CreatePolygon()
+    public VoltPolygon CreatePolygonWorldSpace(
+      Vector2[] worldVertices,
+      float density = VoltConfig.DEFAULT_DENSITY,
+      float friction = VoltConfig.DEFAULT_FRICTION,
+      float restitution = VoltConfig.DEFAULT_RESTITUTION)
     {
-      return (VoltPolygon)this.polygonPool.Allocate();
+      VoltPolygon polygon = (VoltPolygon)this.polygonPool.Allocate();
+      polygon.InitializeFromWorldVertices(
+        worldVertices,
+        density,
+        friction,
+        restitution);
+      return polygon;
     }
 
     /// <summary>
-    /// Creates a new circle shape. Must be initialized afterwards.
+    /// Creates a new polygon shape from body-space vertices.
     /// </summary>
-    public VoltCircle CreateCircle()
+    public VoltPolygon CreatePolygonBodySpace(
+      Vector2[] bodyVertices,
+      float density = VoltConfig.DEFAULT_DENSITY,
+      float friction = VoltConfig.DEFAULT_FRICTION,
+      float restitution = VoltConfig.DEFAULT_RESTITUTION)
     {
-      return (VoltCircle)this.circlePool.Allocate();
+      VoltPolygon polygon = (VoltPolygon)this.polygonPool.Allocate();
+      polygon.InitializeFromBodyVertices(
+        bodyVertices,
+        density,
+        friction,
+        restitution);
+      return polygon;
+    }
+
+    /// <summary>
+    /// Creates a new circle shape from a world-space origin.
+    /// </summary>
+    public VoltCircle CreateCircleWorldSpace(
+      Vector2 worldSpaceOrigin,
+      float radius,
+      float density = VoltConfig.DEFAULT_DENSITY,
+      float friction = VoltConfig.DEFAULT_FRICTION,
+      float restitution = VoltConfig.DEFAULT_RESTITUTION)
+    {
+      VoltCircle circle = (VoltCircle)this.circlePool.Allocate();
+      circle.InitializeFromWorldSpace(
+        worldSpaceOrigin, 
+        radius, 
+        density, 
+        friction, 
+        restitution);
+      return circle;
     }
 
     /// <summary>
@@ -158,9 +199,9 @@ namespace Volatile
       float radians)
     {
 #if DEBUG
-      UtilDebug.Assert(body.IsInitialized);
+      VoltDebug.Assert(body.IsInitialized);
 #endif
-      UtilDebug.Assert(body.World == null);
+      VoltDebug.Assert(body.World == null);
       this.AddBodyInternal(body);
       body.Set(position, radians);
     }
@@ -172,7 +213,7 @@ namespace Volatile
     /// </summary>
     public void RemoveBody(VoltBody body)
     {
-      UtilDebug.Assert(body.World == this);
+      VoltDebug.Assert(body.World == this);
 
       body.PartialReset();
 
@@ -185,7 +226,7 @@ namespace Volatile
     /// </summary>
     public void DestroyBody(VoltBody body)
     {
-      UtilDebug.Assert(body.World == this);
+      VoltDebug.Assert(body.World == this);
 
       body.FreeShapes();
 
@@ -228,7 +269,7 @@ namespace Volatile
     {
       if (body.IsStatic)
       {
-        UtilDebug.LogWarning("Updating static body, doing nothing");
+        VoltDebug.LogWarning("Updating static body, doing nothing");
         return;
       }
 
@@ -246,7 +287,7 @@ namespace Volatile
     /// Subsequent calls to other Query functions (Point, Circle, Bounds) will
     /// invalidate the resulting enumeration from this function.
     /// </summary>
-    public VoltBuffer QueryPoint(
+    public VoltBuffer<VoltBody> QueryPoint(
       Vector2 point,
       VoltBodyFilter filter = null,
       int ticksBehind = 0)
@@ -275,7 +316,7 @@ namespace Volatile
     /// Subsequent calls to other Query functions (Point, Circle, Bounds) will
     /// invalidate the resulting enumeration from this function.
     /// </summary>
-    public VoltBuffer QueryCircle(
+    public VoltBuffer<VoltBody> QueryCircle(
       Vector2 origin,
       float radius,
       VoltBodyFilter filter = null,
@@ -360,7 +401,7 @@ namespace Volatile
       return result.IsValid;
     }
 
-    #region Internals
+#region Internals
     private void AddBodyInternal(VoltBody body)
     {
       this.bodies.Add(body);
@@ -400,7 +441,8 @@ namespace Volatile
         this.reusableBuffer.Clear();
         this.staticBroadphase.QueryOverlap(query.AABB, this.reusableBuffer);
 
-        // HACK: Don't use dynamic broadphase for global updates for now
+        // HACK: Don't use dynamic broadphase for global updates for this.
+        // It's faster if we do it manually because we can triangularize.
         for (int j = i + 1; j < this.bodies.Count; j++)
           if (this.bodies[j].IsStatic == false)
             this.reusableBuffer.Add(this.bodies[j]);
@@ -415,7 +457,7 @@ namespace Volatile
     /// </summary>
     private void BroadPhase(VoltBody query, bool collideDynamic = false)
     {
-      UtilDebug.Assert(query.IsStatic == false);
+      VoltDebug.Assert(query.IsStatic == false);
 
       this.reusableBuffer.Clear();
       this.staticBroadphase.QueryOverlap(query.AABB, this.reusableBuffer);
@@ -477,7 +519,7 @@ namespace Volatile
           this.manifolds[i].Solve();
     }
 
-    #region Pooling
+#region Pooling
     internal Contact AllocateContact()
     {
       return this.contactPool.Allocate();
@@ -518,28 +560,34 @@ namespace Volatile
       this.historyPool.Deallocate(history);
     }
 
-    internal void FreeShapes(IList<VoltShape> shapes)
+    internal void FreeShape(VoltShape shape)
     {
-      for (int i = 0; i < shapes.Count; i++)
+      switch (shape.Type)
       {
-        VoltShape shape = shapes[i];
-        switch (shape.Type)
-        {
-          case VoltShape.ShapeType.Circle:
-            this.circlePool.Deallocate(shape);
-            break;
+        case VoltShape.ShapeType.Circle:
+          this.circlePool.Deallocate(shape);
+          break;
 
-          case VoltShape.ShapeType.Polygon:
-            this.polygonPool.Deallocate(shape);
-            break;
+        case VoltShape.ShapeType.Polygon:
+          this.polygonPool.Deallocate(shape);
+          break;
 
-          default:
-            UtilDebug.LogError("Unknown shape for deallocation");
-            break;
-        }
+        default:
+          VoltDebug.LogError("Unknown shape for deallocation");
+          break;
       }
     }
-    #endregion
-    #endregion
+
+    private VoltCircle CreateCircle()
+    {
+      return new VoltCircle();
+    }
+
+    private VoltPolygon CreatePolygon()
+    {
+      return new VoltPolygon();
+    }
+#endregion
+#endregion
   }
 }

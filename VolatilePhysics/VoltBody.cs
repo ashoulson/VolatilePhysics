@@ -19,10 +19,10 @@
 */
 
 using System;
-using System.Collections.Generic;
 
+#if UNITY
 using UnityEngine;
-using CommonUtil;
+#endif
 
 namespace Volatile
 {
@@ -37,12 +37,12 @@ namespace Volatile
   public delegate bool VoltCollisionFilter(VoltBody bodyA, VoltBody bodyB);
 
   public class VoltBody
-    : IUtilPoolable<VoltBody>
+    : IVoltPoolable<VoltBody>
     , IIndexedValue
   {
     #region Interface
-    IUtilPool<VoltBody> IUtilPoolable<VoltBody>.Pool { get; set; }
-    void IUtilPoolable<VoltBody>.Reset() { this.Reset(); }
+    IVoltPool<VoltBody> IVoltPoolable<VoltBody>.Pool { get; set; }
+    void IVoltPoolable<VoltBody>.Reset() { this.Reset(); }
     int IIndexedValue.Index { get; set; }
     #endregion
 
@@ -64,8 +64,8 @@ namespace Volatile
     /// value was not found (in which case we clamp to the nearest).
     /// </summary>
     public bool TryGetSpace(
-      int ticksBehind, 
-      out Vector2 position, 
+      int ticksBehind,
+      out Vector2 position,
       out Vector2 facing)
     {
       if (ticksBehind < 0)
@@ -97,7 +97,7 @@ namespace Volatile
     /// </summary>
     internal void AssignHistory(HistoryBuffer history)
     {
-      UtilDebug.Assert(this.IsStatic == false);
+      VoltDebug.Assert(this.IsStatic == false);
       this.history = history;
     }
 
@@ -238,17 +238,33 @@ namespace Volatile
 
     #region Tests
     /// <summary>
-    /// Checks if a point is contained in this body. 
-    /// Begins with AABB checks.
+    /// Checks if an AABB overlaps with our AABB.
     /// </summary>
-    internal bool QueryPoint(
-      Vector2 point, 
+    internal bool QueryAABBOnly(
+      VoltAABB worldBounds,
       int ticksBehind)
     {
-      // AABB check done in world space (because it keeps changing)
       HistoryRecord record = this.GetState(ticksBehind);
-      if (record.aabb.QueryPoint(point) == false)
-        return false;
+
+      // AABB check done in world space (because it keeps changing)
+      return record.aabb.Intersect(worldBounds);
+    }
+
+    /// <summary>
+    /// Checks if a point is contained in this body. 
+    /// Begins with AABB checks unless bypassed.
+    /// </summary>
+    internal bool QueryPoint(
+      Vector2 point,
+      int ticksBehind,
+      bool bypassAABB = false)
+    {
+      HistoryRecord record = this.GetState(ticksBehind);
+
+      // AABB check done in world space (because it keeps changing)
+      if (bypassAABB == false)
+        if (record.aabb.QueryPoint(point) == false)
+          return false;
 
       // Actual query on shapes done in body space
       Vector2 bodySpacePoint = record.WorldToBodyPoint(point);
@@ -263,14 +279,17 @@ namespace Volatile
     /// Begins with AABB checks.
     /// </summary>
     internal bool QueryCircle(
-      Vector2 origin, 
+      Vector2 origin,
       float radius,
-      int ticksBehind)
+      int ticksBehind,
+      bool bypassAABB = false)
     {
-      // AABB check done in world space (because it keeps changing)
       HistoryRecord record = this.GetState(ticksBehind);
-      if (record.aabb.QueryCircleApprox(origin, radius) == false)
-        return false;
+
+      // AABB check done in world space (because it keeps changing)
+      if (bypassAABB == false)
+        if (record.aabb.QueryCircleApprox(origin, radius) == false)
+          return false;
 
       // Actual query on shapes done in body space
       Vector2 bodySpaceOrigin = record.WorldToBodyPoint(origin);
@@ -281,29 +300,21 @@ namespace Volatile
     }
 
     /// <summary>
-    /// Checks if an AABB overlaps with our AABB.
-    /// </summary>
-    internal bool QueryOverlap(
-      VoltAABB worldBounds,
-      int ticksBehind)
-    {
-      // AABB check done in world space (because it keeps changing)
-      HistoryRecord record = this.GetState(ticksBehind);
-      return record.aabb.Intersect(worldBounds);
-    }
-
-    /// <summary>
     /// Performs a ray cast check on this body. 
     /// Begins with AABB checks.
     /// </summary>
     internal bool RayCast(
-      ref VoltRayCast ray, 
+      ref VoltRayCast ray,
       ref VoltRayResult result,
-      int ticksBehind)
+      int ticksBehind,
+      bool bypassAABB = false)
     {
       HistoryRecord record = this.GetState(ticksBehind);
-      if (record.aabb.RayCast(ref ray) == false)
-        return false;
+
+      // AABB check done in world space (because it keeps changing)
+      if (bypassAABB == false)
+        if (record.aabb.RayCast(ref ray) == false)
+          return false;
 
       // Actual tests on shapes done in body space
       VoltRayCast bodySpaceRay = record.WorldToBodyRay(ref ray);
@@ -327,11 +338,15 @@ namespace Volatile
       ref VoltRayCast ray,
       float radius,
       ref VoltRayResult result,
-      int ticksBehind)
+      int ticksBehind,
+      bool bypassAABB = false)
     {
       HistoryRecord record = this.GetState(ticksBehind);
-      if (record.aabb.CircleCastApprox(ref ray, radius) == false)
-        return false;
+
+      // AABB check done in world space (because it keeps changing)
+      if (bypassAABB == false)
+        if (record.aabb.CircleCastApprox(ref ray, radius) == false)
+          return false;
 
       // Actual tests on shapes done in body space
       VoltRayCast bodySpaceRay = record.WorldToBodyRay(ref ray);
@@ -351,6 +366,7 @@ namespace Volatile
     public VoltBody()
     {
       this.Reset();
+      this.ProxyId = -1;
     }
 
     internal void InitializeDynamic(
@@ -384,7 +400,7 @@ namespace Volatile
 
 #if DEBUG
       for (int i = 0; i < shapesToAdd.Length; i++)
-        UtilDebug.Assert(shapesToAdd[i].IsInitialized);
+        VoltDebug.Assert(shapesToAdd[i].IsInitialized);
 #endif
 
       if ((this.shapes == null) || (this.shapes.Length < shapesToAdd.Length))
@@ -422,7 +438,12 @@ namespace Volatile
     internal void FreeShapes()
     {
       if (this.World != null)
-        this.World.FreeShapes(this.shapes);
+      {
+        for (int i = 0; i < this.shapeCount; i++)
+          this.World.FreeShape(this.shapes[i]);
+        for (int i = 0; i < this.shapes.Length; i++)
+          this.shapes[i] = null;
+      }
       this.shapeCount = 0;
     }
 
@@ -451,7 +472,7 @@ namespace Volatile
     /// </summary>
     private void Reset()
     {
-      UtilDebug.Assert(this.shapeCount == 0);
+      VoltDebug.Assert(this.shapeCount == 0);
 
 #if DEBUG
       this.IsInitialized = false;
@@ -642,9 +663,10 @@ namespace Volatile
 
       this.BodyType = VoltBodyType.Static;
     }
-    #endregion
+#endregion
 
     #region Debug
+#if UNITY && DEBUG
     public void GizmoDraw(
       Color edgeColor,
       Color normalColor,
@@ -668,8 +690,8 @@ namespace Volatile
 
       this.AABB.GizmoDraw(bodyAabbColor);
 
-      foreach (VoltShape shape in this.shapes)
-        shape.GizmoDraw(
+      for (int i = 0; i < this.shapeCount; i++)
+        this.shapes[i].GizmoDraw(
           edgeColor,
           normalColor,
           shapeOriginColor,
@@ -689,6 +711,7 @@ namespace Volatile
 
       Gizmos.color = current;
     }
+#endif
     #endregion
   }
 }

@@ -1,6 +1,6 @@
 ﻿/*
- *  Common Utilities for Working with C# and Unity
- *  Copyright (c) 2016 - Alexander Shoulson - http://ashoulson.com
+ *  VolatilePhysics - A 2D Physics Library for Networked Games
+ *  Copyright (c) 2015-2016 - Alexander Shoulson - http://ashoulson.com
  *
  *  This software is provided 'as-is', without any express or implied
  *  warranty. In no event will the authors be held liable for any damages
@@ -18,52 +18,62 @@
  *  3. This notice may not be removed or altered from any source distribution.
 */
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 
-namespace CommonUtil
+namespace Volatile
 {
-  public interface IUtilPool<T>
+  public interface IVoltPool<T>
   {
     T Allocate();
     void Deallocate(T obj);
-    IUtilPool<T> Clone();
+    IVoltPool<T> Clone();
   }
 
-  public static class UtilPool
+  public class VoltPool
   {
     public static void Free<T>(T obj)
-      where T : IUtilPoolable<T>
+      where T : IVoltPoolable<T>
     {
       obj.Pool.Deallocate(obj);
     }
 
     public static void SafeReplace<T>(ref T destination, T obj)
-      where T : IUtilPoolable<T>
+      where T : IVoltPoolable<T>
     {
       if (destination != null)
-        UtilPool.Free(destination);
+        VoltPool.Free(destination);
       destination = obj;
+    }
+
+    public static void DrainQueue<T>(Queue<T> queue)
+      where T : IVoltPoolable<T>
+    {
+      while (queue.Count > 0)
+        VoltPool.Free(queue.Dequeue());
     }
   }
 
-  public class UtilPool<T> : IUtilPool<T>
-    where T : IUtilPoolable<T>, new()
+  internal abstract class VoltPoolBase<T> : IVoltPool<T>
+    where T : IVoltPoolable<T>
   {
     private readonly Stack<T> freeList;
 
-    public UtilPool()
+    public abstract IVoltPool<T> Clone();
+    protected abstract T Create();
+
+    public VoltPoolBase()
     {
       this.freeList = new Stack<T>();
     }
 
     public T Allocate()
     {
+      T obj;
       if (this.freeList.Count > 0)
-        return this.freeList.Pop();
+        obj = this.freeList.Pop();
+      else
+        obj = this.Create();
 
-      T obj = new T();
       obj.Pool = this;
       obj.Reset();
       return obj;
@@ -71,51 +81,40 @@ namespace CommonUtil
 
     public void Deallocate(T obj)
     {
-      UtilDebug.Assert(obj.Pool == this);
+      VoltDebug.Assert(obj.Pool == this);
 
       obj.Reset();
+      obj.Pool = null; // Prevent multiple frees
       this.freeList.Push(obj);
-    }
-
-    public IUtilPool<T> Clone()
-    {
-      return new UtilPool<T>();
     }
   }
 
-  public class UtilPool<TBase, TDerived> : IUtilPool<TBase>
-    where TBase : IUtilPoolable<TBase>
+  internal class VoltPool<T> : VoltPoolBase<T>
+    where T : IVoltPoolable<T>, new()
+  {
+    protected override T Create()
+    {
+      return new T();
+    }
+
+    public override IVoltPool<T> Clone()
+    {
+      return new VoltPool<T>();
+    }
+  }
+
+  internal class VoltPool<TBase, TDerived> : VoltPoolBase<TBase>
+    where TBase : IVoltPoolable<TBase>
     where TDerived : TBase, new()
   {
-    private readonly Stack<TBase> freeList;
-
-    public UtilPool()
+    protected override TBase Create()
     {
-      this.freeList = new Stack<TBase>();
+      return new TDerived();
     }
 
-    public TBase Allocate()
+    public override IVoltPool<TBase> Clone()
     {
-      if (this.freeList.Count > 0)
-        return this.freeList.Pop();
-
-      TBase obj = new TDerived();
-      obj.Pool = this;
-      obj.Reset();
-      return obj;
-    }
-
-    public void Deallocate(TBase obj)
-    {
-      UtilDebug.Assert(obj.Pool == this);
-
-      obj.Reset();
-      this.freeList.Push(obj);
-    }
-
-    public IUtilPool<TBase> Clone()
-    {
-      return new UtilPool<TBase, TDerived>();
+      return new VoltPool<TBase, TDerived>();
     }
   }
 }

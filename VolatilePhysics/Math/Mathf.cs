@@ -18,11 +18,8 @@
  *  3. This notice may not be removed or altered from any source distribution.
 */
 
-using System;
-using System.Collections.Generic;
-
-// Unity emulation layer -- only includes the functions Volatile requires
-namespace UnityEngine
+#if !UNITY
+namespace Volatile
 {
   public static class Mathf
   {
@@ -72,3 +69,4 @@ namespace UnityEngine
     }
   }
 }
+#endif

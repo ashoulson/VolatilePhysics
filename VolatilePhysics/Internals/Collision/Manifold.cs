@@ -18,20 +18,18 @@
  *  3. This notice may not be removed or altered from any source distribution.
 */
 
-using System;
-using System.Collections.Generic;
-
+#if UNITY
 using UnityEngine;
-using CommonUtil;
+#endif
 
 namespace Volatile
 {
   internal sealed class Manifold
-    : IUtilPoolable<Manifold>
+    : IVoltPoolable<Manifold>
   {
     #region Interface
-    IUtilPool<Manifold> IUtilPoolable<Manifold>.Pool { get; set; }
-    void IUtilPoolable<Manifold>.Reset() { this.Reset(); }
+    IVoltPool<Manifold> IVoltPoolable<Manifold>.Pool { get; set; }
+    void IVoltPoolable<Manifold>.Reset() { this.Reset(); }
     #endregion
 
     internal VoltShape ShapeA { get; private set; }
@@ -105,7 +103,7 @@ namespace Volatile
     private void ClearContacts()
     {
       for (int i = 0; i < this.used; i++)
-        UtilPool.Free(this.contacts[i]);
+        VoltPool.Free(this.contacts[i]);
       this.used = 0;
     }
 

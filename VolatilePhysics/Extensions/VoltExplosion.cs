@@ -19,133 +19,141 @@
 */
 
 using System;
-using System.Collections.Generic;
 
+#if UNITY
 using UnityEngine;
-
-using CommonUtil;
+#endif
 
 namespace Volatile
 {
   public delegate void VoltExplosionCallback(
-    VoltShape shape, 
-    Vector2 normal,
-    float increment, 
-    float normalizedDistance);
+    VoltRayResult rayResult,
+    float rayWeight);
 
   public partial class VoltWorld
   {
-    private static void InitializeStack(ref Stack<VoltBody> stack)
-    {
-      if (stack == null)
-        stack = new Stack<VoltBody>(256);
-      stack.Clear();
-    }
+    // We'll increase the minimum occluder range by this amount when testing.
+    // This way, if an occluder is also a target, we will catch that target
+    // within the occluder range. Also allows us to handle the case where the
+    // explosion origin is within both targets' and occluders' shapes.
+    private const float EXPLOSION_OCCLUDER_SLOP = 0.05f;
 
-    private Stack<VoltBody> occludingBodies;
-    private Stack<VoltBody> targetBodies;
+    private VoltBuffer<VoltBody> targetBodies;
+    private VoltBuffer<VoltBody> occludingBodies;
 
-    /// <summary>
-    /// Resolves an explosion with a series of radial raycasts.
-    /// Fires a callback for each ray that hits on each target.
-    /// 
-    /// By default (useOcclusion = true), these rays are blocked by
-    /// static geometry.
-    /// </summary>
-    public IEnumerable<VoltBody> ResolveExplosion(
+    public void PerformExplosion(
       Vector2 origin,
       float radius,
       VoltExplosionCallback callback,
       VoltBodyFilter targetFilter = null,
+      VoltBodyFilter occlusionFilter = null,
       int ticksBehind = 0,
-      bool useOcclusion = true,
       int rayCount = 32)
     {
-      VoltAABB worldBounds = new VoltAABB(origin, radius);
-      this.PopulateExplosionBodies(
-        ref worldBounds,
-        targetFilter,
+      if (ticksBehind < 0)
+        throw new ArgumentOutOfRangeException("ticksBehind");
+
+      // Get all target bodies
+      this.PopulateFiltered(
+        origin, 
+        radius, 
+        targetFilter, 
+        ticksBehind, 
+        ref this.targetBodies);
+
+      // Get all occluding bodies
+      this.PopulateFiltered(
+        origin,
+        radius,
+        occlusionFilter,
         ticksBehind,
-        useOcclusion);
+        ref this.occludingBodies);
 
       VoltRayCast ray;
-      VoltRayResult result;
-      float increment = 1.0f / rayCount;
-      float angleIncrement = (Mathf.PI * 2.0f) * increment;
+      float rayWeight = 1.0f / rayCount;
+      float angleIncrement = (Mathf.PI * 2.0f) * rayWeight;
 
       for (int i = 0; i < rayCount; i++)
       {
         Vector2 normal = VoltMath.Polar(angleIncrement * i);
         ray = new VoltRayCast(origin, normal, radius);
-        result = default(VoltRayResult);
 
-        // Prime the ray on the blockers
-        foreach (VoltBody body in this.occludingBodies)
-        {
-          body.RayCast(ref ray, ref result, ticksBehind);
-          if (result.IsContained)
-            break;
-        }
+        float minDistance = 
+          this.GetOccludingDistance(ray, ticksBehind);
+        minDistance += VoltWorld.EXPLOSION_OCCLUDER_SLOP;
 
-        // Check against the target bodies, starting from the blocker result
-        VoltRayResult primed;
-        foreach (VoltBody body in this.targetBodies)
-        {
-          primed = result;
-          if (body.RayCast(ref ray, ref primed, ticksBehind))
-          {
-            // Did we hit the body or were we blocked?
-            if (primed.Shape.Body == body)
-            {
-              callback.Invoke(
-                primed.Shape,
-                normal,
-                increment,
-                primed.Distance / radius);
-            }
-          }
-        }
+        this.TestTargets(ray, callback, ticksBehind, minDistance, rayWeight);
       }
-
-      return targetBodies;
     }
 
-    private void PopulateExplosionBodies(
-      ref VoltAABB worldBounds,
-      VoltBodyFilter targetFilter,
-      int ticksBehind,
-      bool useOcclusion)
-    {
-      if (ticksBehind < 0)
-        throw new ArgumentOutOfRangeException("ticksBehind");
-
-      VoltWorld.InitializeStack(ref this.occludingBodies);
-      VoltWorld.InitializeStack(ref this.targetBodies);
-
-      if (useOcclusion)
-        this.CollectOccluders(ref worldBounds);
-      this.CollectTargets(ref worldBounds, targetFilter, ticksBehind);
-    }
-
-    private void CollectOccluders(ref VoltAABB worldBounds)
-    {
-      this.reusableBuffer.Clear();
-      this.staticBroadphase.QueryOverlap(worldBounds, this.reusableBuffer);
-      for (int i = 0; i < this.reusableBuffer.Count; i++)
-        this.occludingBodies.Push(this.reusableBuffer[i]);
-    }
-
-    private void CollectTargets(
-      ref VoltAABB worldBounds,
-      VoltBodyFilter targetFilter,
+    /// <summary>
+    /// Gets the distance to the closest occluder for the given ray.
+    /// </summary>
+    private float GetOccludingDistance(
+      VoltRayCast ray,
       int ticksBehind)
     {
-      for (int i = 0; i < this.bodies.Count; i++)
+      float distance = float.MaxValue;
+      VoltRayResult result = default(VoltRayResult);
+
+      for (int i = 0; i < this.occludingBodies.Count; i++)
       {
-        VoltBody body = this.bodies[i];
-        if (VoltBody.Filter(body, targetFilter))
-          if (body.QueryOverlap(worldBounds, ticksBehind))
-              this.targetBodies.Push(body);
+        if (this.occludingBodies[i].RayCast(ref ray, ref result, ticksBehind))
+          distance = result.Distance;
+        if (result.IsContained)
+          break;
+      }
+
+      return distance;
+    }
+
+    /// <summary>
+    /// Tests all valid explosion targets for a given ray.
+    /// </summary>
+    private void TestTargets(
+      VoltRayCast ray,
+      VoltExplosionCallback callback,
+      int ticksBehind,
+      float minOccluderDistance,
+      float rayWeight)
+    {
+      for (int i = 0; i < this.targetBodies.Count; i++)
+      {
+        VoltBody targetBody = this.targetBodies[i];
+        VoltRayResult result = default(VoltRayResult);
+
+        if (targetBody.RayCast(ref ray, ref result, ticksBehind))
+          if (result.Distance < minOccluderDistance)
+            callback.Invoke(result, rayWeight);
+      }
+    }
+
+    /// <summary>
+    /// Finds all dynamic bodies that overlap with the explosion AABB
+    /// and pass the target filter test. Does not test actual shapes.
+    /// </summary>
+    private void PopulateFiltered(
+      Vector2 origin,
+      float radius,
+      VoltBodyFilter targetFilter,
+      int ticksBehind,
+      ref VoltBuffer<VoltBody> filterBuffer)
+    {
+      if (filterBuffer == null)
+        filterBuffer = new VoltBuffer<VoltBody>();
+      filterBuffer.Clear();
+
+      this.reusableBuffer.Clear();
+      this.staticBroadphase.QueryCircle(origin, radius, this.reusableBuffer);
+      this.dynamicBroadphase.QueryCircle(origin, radius, this.reusableBuffer);
+
+      VoltAABB aabb = new VoltAABB(origin, radius);
+      for (int i = 0; i < this.reusableBuffer.Count; i++)
+      {
+        VoltBody body = this.reusableBuffer[i];
+        if ((targetFilter == null) || targetFilter.Invoke(body))
+          if (body.QueryAABBOnly(aabb, ticksBehind))
+            filterBuffer.Add(body);
       }
     }
   }

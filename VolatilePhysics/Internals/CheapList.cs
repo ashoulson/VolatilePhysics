@@ -18,11 +18,8 @@
  *  3. This notice may not be removed or altered from any source distribution.
 */
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
-
-using CommonUtil;
 
 namespace Volatile
 {
@@ -52,7 +49,7 @@ namespace Volatile
     public void Add(T value)
     {
       if (this.count >= this.values.Length)
-        UtilTools.ExpandArray(ref this.values);
+        VoltUtil.ExpandArray(ref this.values);
 
       this.values[this.count] = value;
       value.Index = this.count;
@@ -65,8 +62,8 @@ namespace Volatile
     public void Remove(T value)
     {
       int index = value.Index;
-      UtilDebug.Assert(index >= 0);
-      UtilDebug.Assert(index < this.count);
+      VoltDebug.Assert(index >= 0);
+      VoltDebug.Assert(index < this.count);
 
       int lastIndex = this.count - 1;
       if (index < lastIndex)

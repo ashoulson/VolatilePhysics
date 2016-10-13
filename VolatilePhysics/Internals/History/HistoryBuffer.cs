@@ -21,16 +21,14 @@
 using System;
 using System.Collections.Generic;
 
-using CommonUtil;
-
 namespace Volatile
 {
   internal class HistoryBuffer
-    : IUtilPoolable<HistoryBuffer>
+    : IVoltPoolable<HistoryBuffer>
   {
     #region Interface
-    IUtilPool<HistoryBuffer> IUtilPoolable<HistoryBuffer>.Pool { get; set; }
-    void IUtilPoolable<HistoryBuffer>.Reset() { this.Reset(); }
+    IVoltPool<HistoryBuffer> IVoltPoolable<HistoryBuffer>.Pool { get; set; }
+    void IVoltPoolable<HistoryBuffer>.Reset() { this.Reset(); }
     #endregion
 
     private HistoryRecord[] data;

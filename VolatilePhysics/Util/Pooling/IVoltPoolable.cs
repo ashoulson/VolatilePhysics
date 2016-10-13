@@ -18,28 +18,12 @@
  *  3. This notice may not be removed or altered from any source distribution.
 */
 
-using System;
-using System.Collections.Generic;
-
-using UnityEngine;
-
 namespace Volatile
 {
-  public static class VoltUtil
+  public interface IVoltPoolable<T>
+    where T : IVoltPoolable<T>
   {
-    public static bool Filter_StaticOnly(VoltBody body)
-    {
-      return body.IsStatic;
-    }
-
-    public static bool Filter_DynamicOnly(VoltBody body)
-    {
-      return (body.IsStatic == false);
-    }
-
-    public static bool Filter_All(VoltBody body)
-    {
-      return true;
-    }
+    IVoltPool<T> Pool { get; set; }
+    void Reset();
   }
 }

@@ -18,11 +18,9 @@
  *  3. This notice may not be removed or altered from any source distribution.
 */
 
-using System;
-using System.Collections.Generic;
-
+#if UNITY
 using UnityEngine;
-using CommonUtil;
+#endif
 
 namespace Volatile
 {
@@ -148,8 +146,8 @@ namespace Volatile
       // We will use poly1's axis, so we may need to swap
       if (a2.Width > a1.Width)
       {
-        UtilTools.Swap(ref polyA, ref polyB);
-        UtilTools.Swap(ref a1, ref a2);
+        VoltUtil.Swap(ref polyA, ref polyB);
+        VoltUtil.Swap(ref a1, ref a2);
       }
 
       // Build the collision Manifold
