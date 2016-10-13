@@ -42,10 +42,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 
+#if UNITY
 using UnityEngine;
-using CommonUtil;
+#endif
 
 namespace Volatile
 {
@@ -195,7 +195,7 @@ namespace Volatile
           if (node.height <= 1)
             continue;
 
-          UtilDebug.Assert(node.IsLeaf == false);
+          VoltDebug.Assert(node.IsLeaf == false);
           int balance =
             Math.Abs(
               this.nodes[node.right].height -
@@ -221,7 +221,7 @@ namespace Volatile
     /// </summary>
     public void AddBody(VoltBody body)
     {
-      UtilDebug.Assert(body.ProxyId == TreeBroadphase.NULL_NODE);
+      VoltDebug.Assert(body.ProxyId == TreeBroadphase.NULL_NODE);
 
       int proxyId;
       Node proxyNode = this.AllocateNode(out proxyId);
@@ -245,8 +245,8 @@ namespace Volatile
     public void RemoveBody(VoltBody body)
     {
       int proxyId = body.ProxyId;
-      UtilDebug.Assert((0 <= proxyId) && (proxyId < this.nodeCapacity));
-      UtilDebug.Assert(this.nodes[proxyId].IsLeaf);
+      VoltDebug.Assert((0 <= proxyId) && (proxyId < this.nodeCapacity));
+      VoltDebug.Assert(this.nodes[proxyId].IsLeaf);
 
       this.RemoveLeaf(proxyId);
       this.FreeNode(proxyId);
@@ -262,10 +262,10 @@ namespace Volatile
     public void UpdateBody(VoltBody body)
     {
       int proxyId = body.ProxyId;
-      UtilDebug.Assert((0 <= proxyId) && (proxyId < this.nodeCapacity));
+      VoltDebug.Assert((0 <= proxyId) && (proxyId < this.nodeCapacity));
 
       Node proxyNode = this.nodes[proxyId];
-      UtilDebug.Assert(proxyNode.IsLeaf);
+      VoltDebug.Assert(proxyNode.IsLeaf);
 
       if (proxyNode.aabb.Contains(body.AABB))
         return;
@@ -288,7 +288,7 @@ namespace Volatile
     #region Tests
     public void QueryOverlap(
       VoltAABB aabb,
-      VoltBuffer outBuffer)
+      VoltBuffer<VoltBody> outBuffer)
     {
       this.StartQuery(outBuffer);
       while (this.queryStack.Count > 0)
@@ -301,7 +301,7 @@ namespace Volatile
 
     public void QueryPoint(
       Vector2 point,
-      VoltBuffer outBuffer)
+      VoltBuffer<VoltBody> outBuffer)
     {
       this.StartQuery(outBuffer);
       while (this.queryStack.Count > 0)
@@ -315,7 +315,7 @@ namespace Volatile
     public void QueryCircle(
       Vector2 point, 
       float radius,
-      VoltBuffer outBuffer)
+      VoltBuffer<VoltBody> outBuffer)
     {
       this.StartQuery(outBuffer);
       while (this.queryStack.Count > 0)
@@ -328,7 +328,7 @@ namespace Volatile
 
     public void RayCast(
       ref VoltRayCast ray,
-      VoltBuffer outBuffer)
+      VoltBuffer<VoltBody> outBuffer)
     {
       this.StartQuery(outBuffer);
       while (this.queryStack.Count > 0)
@@ -342,7 +342,7 @@ namespace Volatile
     public void CircleCast(
       ref VoltRayCast ray, 
       float radius,
-      VoltBuffer outBuffer)
+      VoltBuffer<VoltBody> outBuffer)
     {
       this.StartQuery(outBuffer);
       while (this.queryStack.Count > 0)
@@ -357,7 +357,7 @@ namespace Volatile
     #region Internals
 
     #region Query Internals
-    private void StartQuery(VoltBuffer outBuffer)
+    private void StartQuery(VoltBuffer<VoltBody> outBuffer)
     {
       this.queryStack.Clear();
       this.ExpandChild(this.rootId, outBuffer);
@@ -368,9 +368,9 @@ namespace Volatile
       return this.nodes[this.queryStack.Pop()];
     }
 
-    private void ExpandNode(Node node, VoltBuffer outBuffer)
+    private void ExpandNode(Node node, VoltBuffer<VoltBody> outBuffer)
     {
-      UtilDebug.Assert(node.IsLeaf == false);
+      VoltDebug.Assert(node.IsLeaf == false);
       this.ExpandChild(node.left, outBuffer);
       this.ExpandChild(node.right, outBuffer);
     }
@@ -380,7 +380,7 @@ namespace Volatile
     /// This is redundant since we will be testing the body's bounding box in
     /// the first step of the narrowphase, and the two are almost equivalent.
     /// </summary>
-    private void ExpandChild(int query, VoltBuffer outBuffer)
+    private void ExpandChild(int query, VoltBuffer<VoltBody> outBuffer)
     {
       if (query != TreeBroadphase.NULL_NODE)
       {
@@ -398,11 +398,11 @@ namespace Volatile
       // Expand the node pool as needed
       if (this.freeList == NULL_NODE)
       {
-        UtilDebug.Assert(this.nodeCount == this.nodeCapacity);
+        VoltDebug.Assert(this.nodeCount == this.nodeCapacity);
 
         // The free list is empty -- rebuild a bigger pool
         Node[] oldNodes = this.nodes;
-        this.nodeCapacity = UtilTools.ExpandArray(ref this.nodes);
+        this.nodeCapacity = VoltUtil.ExpandArray(ref this.nodes);
         Array.Copy(oldNodes, this.nodes, this.nodeCount);
 
         // Build a linked list for the free list
@@ -427,8 +427,8 @@ namespace Volatile
 
     private void FreeNode(int nodeId)
     {
-      UtilDebug.Assert((0 <= nodeId) && (nodeId < this.nodeCapacity));
-      UtilDebug.Assert(0 < this.nodeCount);
+      VoltDebug.Assert((0 <= nodeId) && (nodeId < this.nodeCapacity));
+      VoltDebug.Assert(0 < this.nodeCount);
 
       this.nodes[nodeId].Initialize(this.freeList, -1);
       this.freeList = nodeId;
@@ -596,7 +596,7 @@ namespace Volatile
     /// </summary>
     private int Balance(int iA)
     {
-      UtilDebug.Assert(iA != NULL_NODE);
+      VoltDebug.Assert(iA != NULL_NODE);
 
       Node A = this.nodes[iA];
       if (A.IsLeaf || A.height < 2)
@@ -604,8 +604,8 @@ namespace Volatile
 
       int iB = A.left;
       int iC = A.right;
-      UtilDebug.Assert(0 <= iB && iB < this.nodeCapacity);
-      UtilDebug.Assert(0 <= iC && iC < this.nodeCapacity);
+      VoltDebug.Assert(0 <= iB && iB < this.nodeCapacity);
+      VoltDebug.Assert(0 <= iC && iC < this.nodeCapacity);
 
       Node B = this.nodes[iB];
       Node C = this.nodes[iC];
@@ -630,8 +630,8 @@ namespace Volatile
       int iY = R.right;
       Node X = this.nodes[iX];
       Node Y = this.nodes[iY];
-      UtilDebug.Assert((0 <= iX) && (iX < this.nodeCapacity));
-      UtilDebug.Assert((0 <= iY) && (iY < this.nodeCapacity));
+      VoltDebug.Assert((0 <= iX) && (iX < this.nodeCapacity));
+      VoltDebug.Assert((0 <= iY) && (iY < this.nodeCapacity));
 
       // Swap P and R
       R.left = iP;
@@ -647,7 +647,7 @@ namespace Volatile
         }
         else
         {
-          UtilDebug.Assert(this.nodes[R.parentOrNext].right == iP);
+          VoltDebug.Assert(this.nodes[R.parentOrNext].right == iP);
           this.nodes[R.parentOrNext].right = iR;
         }
       }
@@ -696,7 +696,7 @@ namespace Volatile
     /// </summary>
     private int ComputeHeight(int nodeId)
     {
-      UtilDebug.Assert((0 <= nodeId) && (nodeId < this.nodeCapacity));
+      VoltDebug.Assert((0 <= nodeId) && (nodeId < this.nodeCapacity));
       Node node = this.nodes[nodeId];
       if (node.IsLeaf)
         return 0;
@@ -708,6 +708,7 @@ namespace Volatile
     #endregion
 
     #region Debug
+#if UNITY && DEBUG
     public void GizmoDraw(Color aabbColor)
     {
       this.DoGizmoDraw(aabbColor, this.rootId);
@@ -724,6 +725,7 @@ namespace Volatile
       this.DoGizmoDraw(color, node.left);
       this.DoGizmoDraw(color, node.right);
     }
+#endif
     #endregion
   }
 }

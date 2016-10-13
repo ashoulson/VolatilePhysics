@@ -35,10 +35,10 @@ namespace Volatile
     // spaces defined by the structure itself. These tests should not test the
     // actual body's bounding box, as that will happen in the beginning of the
     // narrowphase test.
-    void QueryOverlap(VoltAABB aabb, VoltBuffer outBuffer);
-    void QueryPoint(Vector2 point, VoltBuffer outBuffer);
-    void QueryCircle(Vector2 point, float radius, VoltBuffer outBuffer);
-    void RayCast(ref VoltRayCast ray, VoltBuffer outBuffer);
-    void CircleCast(ref VoltRayCast ray, float radius, VoltBuffer outBuffer);
+    void QueryOverlap(VoltAABB aabb, VoltBuffer<VoltBody> outBuffer);
+    void QueryPoint(Vector2 point, VoltBuffer<VoltBody> outBuffer);
+    void QueryCircle(Vector2 point, float radius, VoltBuffer<VoltBody> outBuffer);
+    void RayCast(ref VoltRayCast ray, VoltBuffer<VoltBody> outBuffer);
+    void CircleCast(ref VoltRayCast ray, float radius, VoltBuffer<VoltBody> outBuffer);
   }
 }

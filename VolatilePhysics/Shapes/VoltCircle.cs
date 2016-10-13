@@ -28,12 +28,12 @@ namespace Volatile
   public sealed class VoltCircle : VoltShape
   {
     #region Factory Functions
-    public void InitializeFromWorldPosition(
+    internal void InitializeFromWorldSpace(
       Vector2 worldSpaceOrigin, 
       float radius,
-      float density = VoltConfig.DEFAULT_DENSITY,
-      float friction = VoltConfig.DEFAULT_FRICTION,
-      float restitution = VoltConfig.DEFAULT_RESTITUTION)
+      float density,
+      float friction,
+      float restitution)
     {
       base.Initialize(density, friction, restitution);
 
@@ -148,6 +148,7 @@ namespace Volatile
     #endregion
 
     #region Debug
+#if UNITY && DEBUG
     public override void GizmoDraw(
       Color edgeColor, 
       Color normalColor, 
@@ -164,6 +165,7 @@ namespace Volatile
 
       Gizmos.color = current;
     }
+#endif
     #endregion
   }
 }

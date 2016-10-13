@@ -1,6 +1,6 @@
 ﻿/*
- *  Common Utilities for Working with C# and Unity
- *  Copyright (c) 2016 - Alexander Shoulson - http://ashoulson.com
+ *  VolatilePhysics - A 2D Physics Library for Networked Games
+ *  Copyright (c) 2015-2016 - Alexander Shoulson - http://ashoulson.com
  *
  *  This software is provided 'as-is', without any express or implied
  *  warranty. In no event will the authors be held liable for any damages
@@ -19,48 +19,41 @@
 */
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
 
-#if UNITY
-using UnityEngine;
-#endif
-
-namespace CommonUtil
+namespace Volatile
 {
-  public static class UtilDebug
+  public static class VoltUtil
   {
-    [Conditional("DEBUG")]
-    public static void LogMessage(object message)
+    public static void Swap<T>(ref T a, ref T b)
     {
-      UtilLogger.LogMessage(message);
+      T temp = b;
+      b = a;
+      a = temp;
     }
 
-    [Conditional("DEBUG")]
-    public static void LogWarning(object message)
+    public static int ExpandArray<T>(ref T[] oldArray, int minSize = 1)
     {
-      UtilLogger.LogWarning(message);
+      // TODO: Revisit this using next-largest primes like built-in lists do
+      int newCapacity = Math.Max(oldArray.Length * 2, minSize);
+      T[] newArray = new T[newCapacity];
+      Array.Copy(oldArray, newArray, oldArray.Length);
+      oldArray = newArray;
+      return newCapacity;
     }
 
-    [Conditional("DEBUG")]
-    public static void LogError(object message)
+    public static bool Filter_StaticOnly(VoltBody body)
     {
-      UtilLogger.LogError(message);
+      return body.IsStatic;
     }
 
-    [Conditional("DEBUG")]
-    public static void Assert(bool condition)
+    public static bool Filter_DynamicOnly(VoltBody body)
     {
-      if (condition == false)
-        UtilLogger.LogWarning("Assert Failed!");
+      return (body.IsStatic == false);
     }
 
-    [Conditional("DEBUG")]
-    public static void Assert(bool condition, object message)
+    public static bool Filter_All(VoltBody body)
     {
-      if (condition == false)
-        UtilLogger.LogWarning("Assert Failed: " + message);
+      return true;
     }
   }
 }

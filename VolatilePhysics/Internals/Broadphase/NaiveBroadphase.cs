@@ -18,11 +18,9 @@
  *  3. This notice may not be removed or altered from any source distribution.
 */
 
-using System;
-using System.Collections.Generic;
-
+#if UNITY
 using UnityEngine;
-using CommonUtil;
+#endif
 
 namespace Volatile
 {
@@ -40,7 +38,7 @@ namespace Volatile
     public void AddBody(VoltBody body)
     {
       if (this.count >= this.bodies.Length)
-        UtilTools.ExpandArray(ref this.bodies);
+        VoltUtil.ExpandArray(ref this.bodies);
 
       this.bodies[this.count] = body;
       body.ProxyId = this.count;
@@ -50,8 +48,8 @@ namespace Volatile
     public void RemoveBody(VoltBody body)
     {
       int index = body.ProxyId;
-      UtilDebug.Assert(index >= 0);
-      UtilDebug.Assert(index < this.count);
+      VoltDebug.Assert(index >= 0);
+      VoltDebug.Assert(index < this.count);
 
       int lastIndex = this.count - 1;
       if (index < lastIndex)
@@ -75,14 +73,14 @@ namespace Volatile
 
     public void QueryOverlap(
       VoltAABB aabb,
-      VoltBuffer outBuffer)
+      VoltBuffer<VoltBody> outBuffer)
     {
       outBuffer.Add(this.bodies, this.count);
     }
 
     public void QueryPoint(
       Vector2 point,
-      VoltBuffer outBuffer)
+      VoltBuffer<VoltBody> outBuffer)
     {
       outBuffer.Add(this.bodies, this.count);
     }
@@ -90,14 +88,14 @@ namespace Volatile
     public void QueryCircle(
       Vector2 point,
       float radius,
-      VoltBuffer outBuffer)
+      VoltBuffer<VoltBody> outBuffer)
     {
       outBuffer.Add(this.bodies, this.count);
     }
 
     public void RayCast(
       ref VoltRayCast ray,
-      VoltBuffer outBuffer)
+      VoltBuffer<VoltBody> outBuffer)
     {
       outBuffer.Add(this.bodies, this.count);
     }
@@ -105,7 +103,7 @@ namespace Volatile
     public void CircleCast(
       ref VoltRayCast ray,
       float radius,
-      VoltBuffer outBuffer)
+      VoltBuffer<VoltBody> outBuffer)
     {
       outBuffer.Add(this.bodies, this.count);
     }

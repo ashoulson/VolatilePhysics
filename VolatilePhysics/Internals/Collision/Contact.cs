@@ -18,20 +18,18 @@
  *  3. This notice may not be removed or altered from any source distribution.
 */
 
-using System;
-using System.Collections.Generic;
-
-using CommonUtil;
+#if UNITY
 using UnityEngine;
+#endif
 
 namespace Volatile
 {
   internal sealed class Contact 
-    : IUtilPoolable<Contact>
+    : IVoltPoolable<Contact>
   {
     #region Interface
-    IUtilPool<Contact> IUtilPoolable<Contact>.Pool { get; set; }
-    void IUtilPoolable<Contact>.Reset() { this.Reset(); }
+    IVoltPool<Contact> IVoltPoolable<Contact>.Pool { get; set; }
+    void IVoltPoolable<Contact>.Reset() { this.Reset(); }
     #endregion
 
     #region Static Methods

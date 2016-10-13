@@ -22,21 +22,19 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-using CommonUtil;
-
 namespace Volatile
 {
-  public class VoltBuffer : IEnumerable<VoltBody>
+  public class VoltBuffer<T> : IEnumerable<T>
   {
     public int Count { get { return this.count; } }
-    public VoltBody this[int key] { get { return this.bodies[key]; } }
+    public T this[int key] { get { return this.items[key]; } }
 
-    private VoltBody[] bodies;
+    private T[] items;
     private int count;
 
     public VoltBuffer(int capacity = 256)
     {
-      this.bodies = new VoltBody[capacity];
+      this.items = new T[capacity];
       this.count = 0;
     }
 
@@ -44,21 +42,21 @@ namespace Volatile
     /// Adds a new element to the end of the list. Returns the index of the
     /// newly-indexed object.
     /// </summary>
-    internal void Add(VoltBody body)
+    internal void Add(T body)
     {
-      if (this.count >= this.bodies.Length)
-        UtilTools.ExpandArray(ref this.bodies);
+      if (this.count >= this.items.Length)
+        VoltUtil.ExpandArray(ref this.items);
 
-      this.bodies[this.count] = body;
+      this.items[this.count] = body;
       this.count++;
     }
 
-    internal void Add(VoltBody[] bodies, int count)
+    internal void Add(T[] bodies, int count)
     {
-      if ((this.count + count) >= this.bodies.Length)
-        UtilTools.ExpandArray(ref this.bodies, (this.count + count));
+      if ((this.count + count) >= this.items.Length)
+        VoltUtil.ExpandArray(ref this.items, (this.count + count));
 
-      Array.Copy(bodies, 0, this.bodies, this.count, count);
+      Array.Copy(bodies, 0, this.items, this.count, count);
       this.count += count;
     }
 
@@ -67,16 +65,16 @@ namespace Volatile
       this.count = 0;
     }
 
-    public IEnumerator<VoltBody> GetEnumerator()
+    public IEnumerator<T> GetEnumerator()
     {
       for (int i = 0; i < this.count; i++)
-        yield return this.bodies[i];
+        yield return this.items[i];
     }
 
     IEnumerator IEnumerable.GetEnumerator()
     {
       for (int i = 0; i < this.count; i++)
-        yield return this.bodies[i];
+        yield return this.items[i];
     }
   }
 }

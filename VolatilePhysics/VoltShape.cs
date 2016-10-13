@@ -18,20 +18,18 @@
  *  3. This notice may not be removed or altered from any source distribution.
 */
 
-using System;
-using System.Collections.Generic;
-
+#if UNITY
 using UnityEngine;
-using CommonUtil;
+#endif
 
 namespace Volatile
 {
   public abstract class VoltShape
-    : IUtilPoolable<VoltShape>
+    : IVoltPoolable<VoltShape>
   {
     #region Interface
-    IUtilPool<VoltShape> IUtilPoolable<VoltShape>.Pool { get; set; }
-    void IUtilPoolable<VoltShape>.Reset() { this.Reset(); }
+    IVoltPool<VoltShape> IVoltPoolable<VoltShape>.Pool { get; set; }
+    void IVoltPoolable<VoltShape>.Reset() { this.Reset(); }
     #endregion
 
     #region Static Methods
@@ -219,12 +217,14 @@ namespace Volatile
     #endregion
 
     #region Debug
+#if UNITY && DEBUG
     public abstract void GizmoDraw(
       Color edgeColor,
       Color normalColor,
       Color originColor,
       Color aabbColor,
       float normalLength);
+#endif
     #endregion
   }
 }

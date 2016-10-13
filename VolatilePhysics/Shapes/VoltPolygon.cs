@@ -28,11 +28,11 @@ namespace Volatile
   public sealed class VoltPolygon : VoltShape
   {
     #region Factory Functions
-    public void InitializeFromWorldVertices(
+    internal void InitializeFromWorldVertices(
       Vector2[] vertices,
-      float density = VoltConfig.DEFAULT_DENSITY,
-      float friction = VoltConfig.DEFAULT_FRICTION,
-      float restitution = VoltConfig.DEFAULT_RESTITUTION)
+      float density,
+      float friction,
+      float restitution)
     {
       base.Initialize(density, friction, restitution);
       this.UpdateArrays(vertices.Length);
@@ -46,11 +46,11 @@ namespace Volatile
       this.countBody = 0; // Needs to be set on metric compute
     }
 
-    public void InitializeFromBodyVertices(
+    internal void InitializeFromBodyVertices(
       Vector2[] vertices,
-      float density = VoltConfig.DEFAULT_DENSITY,
-      float friction = VoltConfig.DEFAULT_FRICTION,
-      float restitution = VoltConfig.DEFAULT_RESTITUTION)
+      float density,
+      float friction,
+      float restitution)
     {
       base.Initialize(density, friction, restitution);
       this.UpdateArrays(vertices.Length);
@@ -534,6 +534,7 @@ namespace Volatile
     #endregion
 
     #region Debug
+#if UNITY && DEBUG
     public override void GizmoDraw(
       Color edgeColor,
       Color normalColor,
@@ -565,6 +566,7 @@ namespace Volatile
 
       Gizmos.color = current;
     }
+#endif
     #endregion
   }
 }
