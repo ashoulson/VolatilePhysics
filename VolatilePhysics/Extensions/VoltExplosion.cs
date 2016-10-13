@@ -27,6 +27,7 @@ using UnityEngine;
 namespace Volatile
 {
   public delegate void VoltExplosionCallback(
+    VoltRayCast rayCast,
     VoltRayResult rayResult,
     float rayWeight);
 
@@ -124,7 +125,7 @@ namespace Volatile
 
         if (targetBody.RayCast(ref ray, ref result, ticksBehind))
           if (result.Distance < minOccluderDistance)
-            callback.Invoke(result, rayWeight);
+            callback.Invoke(ray, result, rayWeight);
       }
     }
 

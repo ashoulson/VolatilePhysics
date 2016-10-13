@@ -29,6 +29,33 @@ namespace Volatile
 {
   public partial class VoltWorld
   {
+    #region Helper Filters
+    public static bool FilterNone(VoltBody body)
+    {
+      return true;
+    }
+
+    public static bool FilterAll(VoltBody body)
+    {
+      return false;
+    }
+
+    public static bool FilterStatic(VoltBody body)
+    {
+      return (body.IsStatic == false);
+    }
+
+    public static bool FilterDynamic(VoltBody body)
+    {
+      return body.IsStatic;
+    }
+
+    public static VoltBodyFilter FilterExcept(VoltBody exception)
+    {
+      return ((body) => body != exception);
+    }
+    #endregion
+
     /// <summary>
     /// Fixed update delta time for body integration. 
     /// Defaults to Config.DEFAULT_DELTA_TIME.

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Volatile;
 
-public class SimpleExplode : MonoBehaviour 
+public class SimpleExplode : MonoBehaviour
 {
   [SerializeField]
   private float radius;
@@ -35,31 +35,28 @@ public class SimpleExplode : MonoBehaviour
       this.lastOrigin = this.transform.position;
       this.showDelay = Time.time + 0.2f;
 
-      VolatileWorld.Instance.World.ResolveExplosion(
+      VolatileWorld.Instance.World.PerformExplosion(
         this.lastOrigin,
         this.radius,
         this.ExplosionCallback,
-        (body) => body != this.body.Body);
+        (body) => (body.IsStatic == false) && (body != this.body.Body),
+        VoltWorld.FilterExcept(this.body.Body));
     }
   }
 
   private void ExplosionCallback(
-    VoltShape shape,
-    Vector2 normal,
-    float increment,
-    float normalizedDistance)
+    VoltRayCast rayCast,
+    VoltRayResult rayResult,
+    float rayWeight)
   {
-    float force = this.forceMax * (1.0f - normalizedDistance) * increment;
-    shape.Body.AddForce(normal * force);
-
-    // Gizmo info
-    this.hits.Add(normal * normalizedDistance * this.radius);
+    Vector2 point = rayResult.ComputePoint(ref rayCast);
+    this.hits.Add(point);
   }
 
   void OnDrawGizmos()
   {
     if (Application.isPlaying && (Time.time < showDelay))
       foreach (Vector2 hit in this.hits)
-        Gizmos.DrawLine(this.lastOrigin, this.lastOrigin + hit);
+        Gizmos.DrawLine(this.lastOrigin, hit);
   }
 }
