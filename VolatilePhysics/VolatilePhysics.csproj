@@ -65,6 +65,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Math\MathfInternal.cs" />
     <Compile Include="Util\Debug\VoltDebug.cs" />
     <Compile Include="Util\Pooling\IVoltPoolable.cs" />
     <Compile Include="Util\Pooling\VoltPool.cs" />
