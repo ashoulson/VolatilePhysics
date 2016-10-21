@@ -253,11 +253,11 @@ namespace Volatile
     /// </summary>
     public void DestroyBody(VoltBody body)
     {
-      VoltDebug.Assert(body.World == this);
+      if (body.World == this)
+        this.RemoveBodyInternal(body);
 
+      VoltDebug.Assert(body.World == null);
       body.FreeShapes();
-
-      this.RemoveBodyInternal(body);
       this.FreeBody(body);
     }
 
