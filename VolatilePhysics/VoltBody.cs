@@ -34,7 +34,6 @@ namespace Volatile
   }
 
   public delegate bool VoltBodyFilter(VoltBody body);
-  public delegate bool VoltCollisionFilter(VoltBody bodyA, VoltBody bodyB);
 
   public class VoltBody
     : IVoltPoolable<VoltBody>
@@ -180,7 +179,7 @@ namespace Volatile
 
     public VoltWorld World { get; private set; }
     public VoltBodyType BodyType { get; private set; }
-    public VoltCollisionFilter CollisionFilter { private get; set; }
+    public VoltBodyFilter CollisionFilter { private get; set; }
 
     /// <summary>
     /// Current angle in radians.
@@ -510,7 +509,7 @@ namespace Volatile
         return false;
 
       if (this.CollisionFilter != null)
-        return this.CollisionFilter.Invoke(this, other);
+        return this.CollisionFilter.Invoke(other);
       return true;
     }
 
