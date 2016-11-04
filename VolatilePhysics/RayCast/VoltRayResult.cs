@@ -18,11 +18,6 @@
  *  3. This notice may not be removed or altered from any source distribution.
 */
 
-using System;
-using System.Collections.Generic;
-
-using UnityEngine;
-
 namespace Volatile
 {
   public struct VoltRayResult
@@ -41,13 +36,13 @@ namespace Volatile
     }
 
     public float Distance { get { return this.distance; } }
-    public Vector2 Normal { get { return this.normal; } }
+    public VoltVec2 Normal { get { return this.normal; } }
 
     private VoltShape shape;
     private float distance;
-    internal Vector2 normal;
+    internal VoltVec2 normal;
 
-    public Vector2 ComputePoint(ref VoltRayCast cast)
+    public VoltVec2 ComputePoint(ref VoltRayCast cast)
     {
       return cast.origin + (cast.direction * this.distance);
     }
@@ -55,7 +50,7 @@ namespace Volatile
     internal void Set(
       VoltShape shape,
       float distance,
-      Vector2 normal)
+      VoltVec2 normal)
     {
       if (this.IsValid == false || distance < this.distance)
       {
@@ -74,7 +69,7 @@ namespace Volatile
     {
       this.shape = shape;
       this.distance = 0.0f;
-      this.normal = Vector2.zero;
+      this.normal = VoltVec2.ZERO;
     }
   }
 }

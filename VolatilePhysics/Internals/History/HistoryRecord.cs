@@ -18,11 +18,6 @@
  *  3. This notice may not be removed or altered from any source distribution.
 */
 
-using System;
-using System.Collections.Generic;
-
-using UnityEngine;
-
 namespace Volatile
 {
   /// <summary>
@@ -36,8 +31,8 @@ namespace Volatile
   internal struct HistoryRecord
   {
     internal VoltAABB aabb;
-    internal Vector2 position;
-    internal Vector2 facing;
+    internal VoltVec2 position;
+    internal VoltVec2 facing;
 
     internal void Store(ref HistoryRecord other)
     {
@@ -47,12 +42,12 @@ namespace Volatile
     }
 
     #region World-Space to Body-Space Transformations
-    internal Vector2 WorldToBodyPoint(Vector2 vector)
+    internal VoltVec2 WorldToBodyPoint(VoltVec2 vector)
     {
       return VoltMath.WorldToBodyPoint(this.position, this.facing, vector);
     }
 
-    internal Vector2 WorldToBodyDirection(Vector2 vector)
+    internal VoltVec2 WorldToBodyDirection(VoltVec2 vector)
     {
       return VoltMath.WorldToBodyDirection(this.facing, vector);
     }
@@ -67,20 +62,20 @@ namespace Volatile
     #endregion
 
     #region Body-Space to World-Space Transformations
-    internal Vector2 BodyToWorldPoint(Vector2 vector)
+    internal VoltVec2 BodyToWorldPoint(VoltVec2 vector)
     {
       return VoltMath.BodyToWorldPoint(this.position, this.facing, vector);
     }
 
-    internal Vector2 BodyToWorldDirection(Vector2 vector)
+    internal VoltVec2 BodyToWorldDirection(VoltVec2 vector)
     {
       return VoltMath.BodyToWorldDirection(this.facing, vector);
     }
 
     internal Axis BodyToWorldAxis(Axis axis)
     {
-      Vector2 normal = axis.Normal.Rotate(this.facing);
-      float width = Vector2.Dot(normal, this.position) + axis.Width;
+      VoltVec2 normal = axis.Normal.Rotate(this.facing);
+      float width = VoltVec2.Dot(normal, this.position) + axis.Width;
       return new Axis(normal, width);
     }
     #endregion

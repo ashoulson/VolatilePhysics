@@ -18,10 +18,6 @@
  *  3. This notice may not be removed or altered from any source distribution.
 */
 
-#if UNITY
-using UnityEngine;
-#endif
-
 namespace Volatile
 {
   internal class NaiveBroadphase : IBroadPhase
@@ -79,14 +75,14 @@ namespace Volatile
     }
 
     public void QueryPoint(
-      Vector2 point,
+      VoltVec2 point,
       VoltBuffer<VoltBody> outBuffer)
     {
       outBuffer.Add(this.bodies, this.count);
     }
 
     public void QueryCircle(
-      Vector2 point,
+      VoltVec2 point,
       float radius,
       VoltBuffer<VoltBody> outBuffer)
     {

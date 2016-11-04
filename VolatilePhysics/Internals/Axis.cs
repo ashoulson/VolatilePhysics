@@ -18,11 +18,6 @@
  *  3. This notice may not be removed or altered from any source distribution.
 */
 
-using System;
-using System.Collections.Generic;
-
-using UnityEngine;
-
 namespace Volatile
 {
   /// <summary>
@@ -50,13 +45,13 @@ namespace Volatile
   /// </summary>
   internal struct Axis
   {
-    internal Vector2 Normal { get { return this.normal; } }
+    internal VoltVec2 Normal { get { return this.normal; } }
     internal float Width { get { return this.width; } }
 
-    private readonly Vector2 normal;
+    private readonly VoltVec2 normal;
     private readonly float width;
 
-    internal Axis(Vector2 normal, float width)
+    internal Axis(VoltVec2 normal, float width)
     {
       this.normal = normal;
       this.width = width;

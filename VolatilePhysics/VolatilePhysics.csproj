@@ -14,58 +14,33 @@
     <TargetFrameworkProfile />
     <UnityPathWin>C:\Program Files\Unity</UnityPathWin>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug Unity|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug Unity\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;UNITY</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Debug\VolatilePhysics.XML</DocumentationFile>
-    <NoWarn>1591</NoWarn>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release Standalone|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>none</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release Standalone\</OutputPath>
+    <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release\VolatilePhysics.XML</DocumentationFile>
+    <DocumentationFile>
+    </DocumentationFile>
     <NoWarn>1591</NoWarn>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug Standalone|AnyCPU'">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\Debug Standalone\</OutputPath>
+    <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>TRACE;DEBUG</DefineConstants>
-    <DocumentationFile>bin\Debug\VolatilePhysics.XML</DocumentationFile>
+    <DocumentationFile>
+    </DocumentationFile>
     <NoWarn>1591</NoWarn>
     <DebugType>full</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release Unity|AnyCPU'">
-    <OutputPath>bin\Release Unity\</OutputPath>
-    <DefineConstants>TRACE;UNITY</DefineConstants>
-    <DocumentationFile>bin\Release\VolatilePhysics.XML</DocumentationFile>
-    <Optimize>true</Optimize>
-    <NoWarn>1591</NoWarn>
-    <DebugType>none</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="UnityEngine">
-      <HintPath>$(UnityPathWin)\Editor\Data\Managed\UnityEngine.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Math\MathfInternal.cs" />
     <Compile Include="Util\Debug\VoltDebug.cs" />
     <Compile Include="Util\Pooling\IVoltPoolable.cs" />
     <Compile Include="Util\Pooling\VoltPool.cs" />
@@ -81,8 +56,7 @@
     <Compile Include="Internals\History\HistoryBuffer.cs" />
     <Compile Include="Internals\History\HistoryRecord.cs" />
     <Compile Include="Internals\IIndexedValue.cs" />
-    <Compile Include="Math\Mathf.cs" />
-    <Compile Include="Math\Vector2.cs" />
+    <Compile Include="Math\VoltVec2.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RayCast\VoltRayCast.cs" />
     <Compile Include="RayCast\VoltRayResult.cs" />
@@ -92,7 +66,7 @@
     <Compile Include="VoltBody.cs" />
     <Compile Include="VoltBuffer.cs" />
     <Compile Include="VoltConfig.cs" />
-    <Compile Include="VoltMath.cs" />
+    <Compile Include="Math\VoltMath.cs" />
     <Compile Include="VoltShape.cs" />
     <Compile Include="Util\VoltUtil.cs" />
     <Compile Include="VoltWorld.cs" />

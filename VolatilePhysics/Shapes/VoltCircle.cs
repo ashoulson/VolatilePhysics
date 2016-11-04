@@ -18,18 +18,13 @@
  *  3. This notice may not be removed or altered from any source distribution.
 */
 
-using System;
-using System.Collections.Generic;
-
-using UnityEngine;
-
 namespace Volatile
 {
   public sealed class VoltCircle : VoltShape
   {
     #region Factory Functions
     internal void InitializeFromWorldSpace(
-      Vector2 worldSpaceOrigin, 
+      VoltVec2 worldSpaceOrigin, 
       float radius,
       float density,
       float friction,
@@ -47,18 +42,18 @@ namespace Volatile
     #region Properties
     public override VoltShape.ShapeType Type { get { return ShapeType.Circle; } }
 
-    public Vector2 Origin { get { return this.worldSpaceOrigin; } }
+    public VoltVec2 Origin { get { return this.worldSpaceOrigin; } }
     public float Radius { get { return this.radius; } }
     #endregion
 
     #region Fields
-    internal Vector2 worldSpaceOrigin;
+    internal VoltVec2 worldSpaceOrigin;
     internal float radius;
     internal float sqrRadius;
 
     // Precomputed body-space values (these should never change unless we
     // want to support moving shapes relative to their body root later on)
-    private Vector2 bodySpaceOrigin;
+    private VoltVec2 bodySpaceOrigin;
     #endregion
 
     public VoltCircle() 
@@ -70,10 +65,10 @@ namespace Volatile
     {
       base.Reset();
 
-      this.worldSpaceOrigin = Vector2.zero;
+      this.worldSpaceOrigin = VoltVec2.ZERO;
       this.radius = 0.0f;
       this.sqrRadius = 0.0f;
-      this.bodySpaceOrigin = Vector2.zero;
+      this.bodySpaceOrigin = VoltVec2.ZERO;
     }
 
     #region Functionality Overrides
@@ -83,7 +78,7 @@ namespace Volatile
         this.Body.WorldToBodyPointCurrent(this.worldSpaceOrigin);
       this.bodySpaceAABB = new VoltAABB(this.bodySpaceOrigin, this.radius);
 
-      this.Area = this.sqrRadius * Mathf.PI;
+      this.Area = this.sqrRadius * VoltMath.PI;
       this.Mass = this.Area * this.Density * VoltConfig.AreaMassRatio;
       this.Inertia =
         this.sqrRadius / 2.0f + this.bodySpaceOrigin.sqrMagnitude;
@@ -99,7 +94,7 @@ namespace Volatile
 
     #region Test Overrides
     protected override bool ShapeQueryPoint(
-      Vector2 bodySpacePoint)
+      VoltVec2 bodySpacePoint)
     {
       return 
         Collision.TestPointCircleSimple(
@@ -109,7 +104,7 @@ namespace Volatile
     }
 
     protected override bool ShapeQueryCircle(
-      Vector2 bodySpaceOrigin, 
+      VoltVec2 bodySpaceOrigin, 
       float radius)
     {
       return 
@@ -145,27 +140,6 @@ namespace Volatile
         ref bodySpaceRay,
         ref result);
     }
-    #endregion
-
-    #region Debug
-#if UNITY && DEBUG
-    public override void GizmoDraw(
-      Color edgeColor, 
-      Color normalColor, 
-      Color originColor, 
-      Color aabbColor, 
-      float normalLength)
-    {
-      Color current = Gizmos.color;
-
-      Gizmos.color = edgeColor;
-      Gizmos.DrawWireSphere(this.worldSpaceOrigin, this.radius);
-
-      this.AABB.GizmoDraw(aabbColor);
-
-      Gizmos.color = current;
-    }
-#endif
     #endregion
   }
 }

@@ -18,20 +18,21 @@
  *  3. This notice may not be removed or altered from any source distribution.
 */
 
-#if !UNITY
 using System;
 
 namespace Volatile
 {
-  public static class Mathf
+  public static class VoltMath
   {
+    #region Float Math
     public const float PI = 3.14159274f;
-    public const float Infinity = float.PositiveInfinity;
-    public const float NegativeInfinity = float.NegativeInfinity;
-    public const float Deg2Rad = 0.0174532924f;
-    public const float Rad2Deg = 57.29578f;
+    public const float TWO_PI = VoltMath.PI * 2.0f;
+    public const float INFINITY = float.PositiveInfinity;
+    public const float NEGATIVE_INFINITY = float.NegativeInfinity;
+    public const float DEG_TO_RAD = 0.0174532924f;
+    public const float RAD_TO_DEG = 57.29578f;
 
-    public static readonly float Epsilon = (!MathfInternal.IsFlushToZeroEnabled) ? MathfInternal.FloatMinDenormal : MathfInternal.FloatMinNormal;
+    public static readonly float EPSILON = VoltConfig.EPSILON;
 
     public static float Sin(float f)
     {
@@ -92,17 +93,13 @@ namespace Volatile
     {
       int num = values.Length;
       if (num == 0)
-      {
         return 0f;
-      }
+
       float num2 = values[0];
       for (int i = 1; i < num; i++)
-      {
         if (values[i] < num2)
-        {
           num2 = values[i];
-        }
-      }
+
       return num2;
     }
 
@@ -115,17 +112,13 @@ namespace Volatile
     {
       int num = values.Length;
       if (num == 0)
-      {
         return 0;
-      }
+
       int num2 = values[0];
       for (int i = 1; i < num; i++)
-      {
         if (values[i] < num2)
-        {
           num2 = values[i];
-        }
-      }
+
       return num2;
     }
 
@@ -138,17 +131,13 @@ namespace Volatile
     {
       int num = values.Length;
       if (num == 0)
-      {
         return 0f;
-      }
+
       float num2 = values[0];
       for (int i = 1; i < num; i++)
-      {
         if (values[i] > num2)
-        {
           num2 = values[i];
-        }
-      }
+
       return num2;
     }
 
@@ -161,17 +150,13 @@ namespace Volatile
     {
       int num = values.Length;
       if (num == 0)
-      {
         return 0;
-      }
+
       int num2 = values[0];
       for (int i = 1; i < num; i++)
-      {
         if (values[i] > num2)
-        {
           num2 = values[i];
-        }
-      }
+
       return num2;
     }
 
@@ -238,81 +223,65 @@ namespace Volatile
     public static float Clamp(float value, float min, float max)
     {
       if (value < min)
-      {
         value = min;
-      }
-      else
-      {
-        if (value > max)
-        {
-          value = max;
-        }
-      }
+      else if (value > max)
+        value = max;
       return value;
     }
 
     public static int Clamp(int value, int min, int max)
     {
       if (value < min)
-      {
         value = min;
-      }
-      else
-      {
-        if (value > max)
-        {
-          value = max;
-        }
-      }
+      else if (value > max)
+        value = max;
       return value;
     }
 
     public static float Clamp01(float value)
     {
       if (value < 0f)
-      {
         return 0f;
-      }
       if (value > 1f)
-      {
         return 1f;
-      }
       return value;
     }
 
     public static float Lerp(float from, float to, float t)
     {
-      return from + (to - from) * Mathf.Clamp01(t);
+      return from + (to - from) * VoltMath.Clamp01(t);
     }
 
     public static float LerpAngle(float a, float b, float t)
     {
-      float num = Mathf.Repeat(b - a, 360f);
+      float num = VoltMath.Repeat(b - a, 360f);
       if (num > 180f)
-      {
         num -= 360f;
-      }
-      return a + num * Mathf.Clamp01(t);
+      return a + num * VoltMath.Clamp01(t);
     }
 
-    public static float MoveTowards(float current, float target, float maxDelta)
+    public static float MoveTowards(
+      float current, 
+      float target, 
+      float maxDelta)
     {
-      if (Mathf.Abs(target - current) <= maxDelta)
-      {
+      if (VoltMath.Abs(target - current) <= maxDelta)
         return target;
-      }
-      return current + Mathf.Sign(target - current) * maxDelta;
+      return current + VoltMath.Sign(target - current) * maxDelta;
     }
 
-    public static float MoveTowardsAngle(float current, float target, float maxDelta)
+    public static float MoveTowardsAngle(
+      float current, 
+      float target, 
+      float maxDelta)
     {
-      target = current + Mathf.DeltaAngle(current, target);
-      return Mathf.MoveTowards(current, target, maxDelta);
+      target = current + VoltMath.DeltaAngle(current, target);
+      return VoltMath.MoveTowards(current, target, maxDelta);
     }
 
     public static float SmoothStep(float from, float to, float t)
     {
-      t = Mathf.Clamp01(t);
+      t = VoltMath.Clamp01(t);
       t = -2f * t * t * t + 3f * t * t;
       return to * t + from * (1f - t);
     }
@@ -321,32 +290,28 @@ namespace Volatile
     {
       bool flag = false;
       if (value < 0f)
-      {
         flag = true;
-      }
-      float num = Mathf.Abs(value);
+      float num = VoltMath.Abs(value);
       if (num > absmax)
-      {
         return (!flag) ? num : (-num);
-      }
-      float num2 = Mathf.Pow(num / absmax, gamma) * absmax;
+      float num2 = VoltMath.Pow(num / absmax, gamma) * absmax;
       return (!flag) ? num2 : (-num2);
     }
 
     public static bool Approximately(float a, float b)
     {
-      return Mathf.Abs(b - a) < Mathf.Max(1E-06f * Mathf.Max(Mathf.Abs(a), Mathf.Abs(b)), Mathf.Epsilon * 8f);
+      return VoltMath.Abs(a - b) < VoltMath.EPSILON;
     }
 
     public static float Repeat(float t, float length)
     {
-      return t - Mathf.Floor(t / length) * length;
+      return t - VoltMath.Floor(t / length) * length;
     }
 
     public static float PingPong(float t, float length)
     {
-      t = Mathf.Repeat(t, length * 2f);
-      return length - Mathf.Abs(t - length);
+      t = VoltMath.Repeat(t, length * 2f);
+      return length - VoltMath.Abs(t - length);
     }
 
     public static float InverseLerp(float from, float to, float value)
@@ -354,13 +319,9 @@ namespace Volatile
       if (from < to)
       {
         if (value < from)
-        {
           return 0f;
-        }
         if (value > to)
-        {
           return 1f;
-        }
         value -= from;
         value /= to - from;
         return value;
@@ -368,30 +329,96 @@ namespace Volatile
       else
       {
         if (from <= to)
-        {
           return 0f;
-        }
         if (value < to)
-        {
           return 1f;
-        }
         if (value > from)
-        {
           return 0f;
-        }
         return 1f - (value - to) / (from - to);
       }
     }
 
     public static float DeltaAngle(float current, float target)
     {
-      float num = Mathf.Repeat(target - current, 360f);
+      float num = VoltMath.Repeat(target - current, 360f);
       if (num > 180f)
-      {
         num -= 360f;
-      }
       return num;
+    }
+    #endregion
+
+    #region Transformations
+    public static VoltVec2 WorldToBodyPoint(
+      VoltVec2 bodyPosition,
+      VoltVec2 bodyFacing,
+      VoltVec2 vector)
+    {
+      return (vector - bodyPosition).InvRotate(bodyFacing);
+    }
+
+    public static VoltVec2 WorldToBodyDirection(
+      VoltVec2 bodyFacing,
+      VoltVec2 vector)
+    {
+      return vector.InvRotate(bodyFacing);
+    }
+    #endregion
+
+    #region Body-Space to World-Space Transformations
+    public static VoltVec2 BodyToWorldPoint(
+      VoltVec2 bodyPosition,
+      VoltVec2 bodyFacing,
+      VoltVec2 vector)
+    {
+      return vector.Rotate(bodyFacing) + bodyPosition;
+    }
+
+    public static VoltVec2 BodyToWorldDirection(
+      VoltVec2 bodyFacing,
+      VoltVec2 vector)
+    {
+      return vector.Rotate(bodyFacing);
+    }
+    #endregion
+
+    public static VoltVec2 Right(this VoltVec2 v)
+    {
+      return new VoltVec2(v.y, -v.x);
+    }
+
+    public static VoltVec2 Left(this VoltVec2 v)
+    {
+      return new VoltVec2(-v.y, v.x);
+    }
+
+    public static VoltVec2 Rotate(this VoltVec2 v, VoltVec2 b)
+    {
+      return new VoltVec2(v.x * b.x - v.y * b.y, v.y * b.x + v.x * b.y);
+    }
+
+    public static VoltVec2 InvRotate(this VoltVec2 v, VoltVec2 b)
+    {
+      return new VoltVec2(v.x * b.x + v.y * b.y, v.y * b.x - v.x * b.y);
+    }
+
+    public static float Angle(this VoltVec2 v)
+    {
+      return VoltMath.Atan2(v.y, v.x);
+    }
+
+    public static VoltVec2 Polar(float radians)
+    {
+      return new VoltVec2(VoltMath.Cos(radians), VoltMath.Sin(radians));
+    }
+
+    public static float Cross(VoltVec2 a, VoltVec2 b)
+    {
+      return a.x * b.y - a.y * b.x;
+    }
+
+    public static float Square(float a)
+    {
+      return a * a;
     }
   }
 }
-#endif

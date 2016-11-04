@@ -18,11 +18,6 @@
  *  3. This notice may not be removed or altered from any source distribution.
 */
 
-using System;
-using System.Collections.Generic;
-
-using UnityEngine;
-
 namespace Volatile
 {
   /// <summary>
@@ -30,16 +25,16 @@ namespace Volatile
   /// </summary>
   public struct VoltRayCast
   {
-    internal readonly Vector2 origin;
-    internal readonly Vector2 direction;
-    internal readonly Vector2 invDirection;
+    internal readonly VoltVec2 origin;
+    internal readonly VoltVec2 direction;
+    internal readonly VoltVec2 invDirection;
     internal readonly float distance;
     internal readonly bool signX;
     internal readonly bool signY;
 
-    public VoltRayCast(Vector2 origin, Vector2 destination)
+    public VoltRayCast(VoltVec2 origin, VoltVec2 destination)
     {
-      Vector2 delta = destination - origin;
+      VoltVec2 delta = destination - origin;
 
       this.origin = origin;
       this.direction = delta.normalized;
@@ -47,18 +42,18 @@ namespace Volatile
       this.signX = direction.x < 0.0f;
       this.signY = direction.y < 0.0f;
       this.invDirection = 
-        new Vector2(1.0f / direction.x, 1.0f / direction.y);
+        new VoltVec2(1.0f / direction.x, 1.0f / direction.y);
     }
 
-    public VoltRayCast(Vector2 origin, Vector2 direction, float distance)
+    public VoltRayCast(VoltVec2 origin, VoltVec2 direction, float distance)
     {
       this.origin = origin;
       this.direction = direction;
       this.distance = distance;
       this.signX = direction.x < 0.0f;
       this.signY = direction.y < 0.0f;
-      this.invDirection = 
-        new Vector2(1.0f / direction.x, 1.0f / direction.y);
+      this.invDirection =
+        new VoltVec2(1.0f / direction.x, 1.0f / direction.y);
     }
   }
 }

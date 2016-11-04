@@ -21,120 +21,31 @@
 using System;
 using System.Diagnostics;
 
-#if UNITY
-using UnityEngine;
-#endif
-
 namespace Volatile
 {
-  public interface IVoltDebugLogger
-  {
-    void LogMessage(object message);
-    void LogWarning(object message);
-    void LogError(object message);
-  }
-
-  internal class VoltConsoleLogger : IVoltDebugLogger
-  {
-    public void LogError(object message)
-    {
-      VoltConsoleLogger.Log("ERROR: " + message, ConsoleColor.Red);
-    }
-
-    public void LogWarning(object message)
-    {
-      VoltConsoleLogger.Log("WARNING: " + message, ConsoleColor.Yellow);
-    }
-
-    public void LogMessage(object message)
-    {
-      VoltConsoleLogger.Log("INFO: " + message, ConsoleColor.Gray);
-    }
-
-    private static void Log(object message, ConsoleColor color)
-    {
-      ConsoleColor current = Console.ForegroundColor;
-      Console.ForegroundColor = color;
-      Console.WriteLine(message);
-      Console.ForegroundColor = current;
-    }
-  }
-
   public static class VoltDebug
   {
-    public static IVoltDebugLogger Logger = new VoltConsoleLogger();
-
-    [Conditional("DEBUG")]
-    public static void LogMessage(object message)
+    internal static void LogNotify(object message)
     {
-      if (VoltDebug.Logger != null)
-        lock (VoltDebug.Logger)
-          VoltDebug.Logger.LogMessage(message);
+      Console.WriteLine(
+        "NOTIFY: {0} [Volatile]",
+        message);
     }
 
     [Conditional("DEBUG")]
-    public static void LogWarning(object message)
+    internal static void LogError(object message)
     {
-      if (VoltDebug.Logger != null)
-        lock (VoltDebug.Logger)
-          VoltDebug.Logger.LogWarning(message);
+      Console.Error.WriteLine(
+        "ERROR: {0} [Volatile]\n {1}",
+        message,
+        Environment.StackTrace);
     }
 
     [Conditional("DEBUG")]
-    public static void LogError(object message)
-    {
-      if (VoltDebug.Logger != null)
-        lock (VoltDebug.Logger)
-          VoltDebug.Logger.LogError(message);
-    }
-
-    [Conditional("DEBUG")]
-    public static void Assert(bool condition)
-    {
-      if (condition == false)
-        VoltDebug.LogError("Assert Failed!");
-    }
-
-    [Conditional("DEBUG")]
-    public static void Assert(bool condition, object message)
+    internal static void Assert(bool condition, string message = null)
     {
       if (condition == false)
         VoltDebug.LogError("Assert Failed: " + message);
     }
-
-#region GizmoDraw
-#if DEBUG && UNITY
-    public static void Draw(VoltBody body)
-    {
-      body.GizmoDraw(
-        new Color(1.0f, 1.0f, 0.0f, 1.0f),  // Edge Color
-        new Color(1.0f, 0.0f, 1.0f, 1.0f),  // Normal Color
-        new Color(1.0f, 0.0f, 0.0f, 1.0f),  // Body Origin Color
-        new Color(0.0f, 0.0f, 0.0f, 1.0f),  // Shape Origin Color
-        new Color(0.1f, 0.0f, 0.5f, 1.0f),  // Body AABB Color
-        new Color(0.7f, 0.0f, 0.3f, 0.5f),  // Shape AABB Color
-        0.25f);
-
-      body.GizmoDrawHistory(
-        new Color(0.0f, 0.0f, 1.0f, 0.3f)); // History AABB Color
-    }
-
-    public static void Draw(VoltShape shape)
-    {
-      shape.GizmoDraw(
-        new Color(1.0f, 1.0f, 0.0f, 1.0f),  // Edge Color
-        new Color(1.0f, 0.0f, 1.0f, 1.0f),  // Normal Color
-        new Color(0.0f, 0.0f, 0.0f, 1.0f),  // Origin Color
-        new Color(0.7f, 0.0f, 0.3f, 1.0f),  // AABB Color
-        0.25f);
-    }
-
-    public static void Draw(VoltAABB aabb)
-    {
-      aabb.GizmoDraw(
-        new Color(1.0f, 0.0f, 0.5f, 1.0f));  // AABB Color
-    }
-#endif
-#endregion
   }
 }

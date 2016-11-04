@@ -19,10 +19,7 @@
 */
 
 using System;
-
-#if UNITY
-using UnityEngine;
-#endif
+using System.Collections.Generic;
 
 namespace Volatile
 {
@@ -64,8 +61,8 @@ namespace Volatile
     /// </summary>
     public bool TryGetSpace(
       int ticksBehind,
-      out Vector2 position,
-      out Vector2 facing)
+      out VoltVec2 position,
+      out VoltVec2 facing)
     {
       if (ticksBehind < 0)
         throw new ArgumentOutOfRangeException("ticksBehind");
@@ -150,13 +147,13 @@ namespace Volatile
 
     // Some basic properties are stored in an internal mutable
     // record to avoid code redundancy when performing conversions
-    public Vector2 Position
+    public VoltVec2 Position
     {
       get { return this.currentState.position; }
       private set { this.currentState.position = value; }
     }
 
-    public Vector2 Facing
+    public VoltVec2 Facing
     {
       get { return this.currentState.facing; }
       private set { this.currentState.facing = value; }
@@ -186,10 +183,10 @@ namespace Volatile
     /// </summary>
     public float Angle { get; private set; }
 
-    public Vector2 LinearVelocity { get; set; }
+    public VoltVec2 LinearVelocity { get; set; }
     public float AngularVelocity { get; set; }
 
-    public Vector2 Force { get; private set; }
+    public VoltVec2 Force { get; private set; }
     public float Torque { get; private set; }
 
     public float Mass { get; private set; }
@@ -197,7 +194,7 @@ namespace Volatile
     public float InvMass { get; private set; }
     public float InvInertia { get; private set; }
 
-    internal Vector2 BiasVelocity { get; private set; }
+    internal VoltVec2 BiasVelocity { get; private set; }
     internal float BiasRotation { get; private set; }
 
     // Used for broadphase structures
@@ -215,18 +212,18 @@ namespace Volatile
       this.Torque += torque;
     }
 
-    public void AddForce(Vector2 force)
+    public void AddForce(VoltVec2 force)
     {
       this.Force += force;
     }
 
-    public void AddForce(Vector2 force, Vector2 point)
+    public void AddForce(VoltVec2 force, VoltVec2 point)
     {
       this.Force += force;
       this.Torque += VoltMath.Cross(this.Position - point, force);
     }
 
-    public void Set(Vector2 position, float radians)
+    public void Set(VoltVec2 position, float radians)
     {
       this.Position = position;
       this.Angle = radians;
@@ -254,7 +251,7 @@ namespace Volatile
     /// Begins with AABB checks unless bypassed.
     /// </summary>
     internal bool QueryPoint(
-      Vector2 point,
+      VoltVec2 point,
       int ticksBehind,
       bool bypassAABB = false)
     {
@@ -266,7 +263,7 @@ namespace Volatile
           return false;
 
       // Actual query on shapes done in body space
-      Vector2 bodySpacePoint = record.WorldToBodyPoint(point);
+      VoltVec2 bodySpacePoint = record.WorldToBodyPoint(point);
       for (int i = 0; i < this.shapeCount; i++)
         if (this.shapes[i].QueryPoint(bodySpacePoint))
           return true;
@@ -278,7 +275,7 @@ namespace Volatile
     /// Begins with AABB checks.
     /// </summary>
     internal bool QueryCircle(
-      Vector2 origin,
+      VoltVec2 origin,
       float radius,
       int ticksBehind,
       bool bypassAABB = false)
@@ -291,7 +288,7 @@ namespace Volatile
           return false;
 
       // Actual query on shapes done in body space
-      Vector2 bodySpaceOrigin = record.WorldToBodyPoint(origin);
+      VoltVec2 bodySpaceOrigin = record.WorldToBodyPoint(origin);
       for (int i = 0; i < this.shapeCount; i++)
         if (this.shapes[i].QueryCircle(bodySpaceOrigin, radius))
           return true;
@@ -368,8 +365,21 @@ namespace Volatile
       this.ProxyId = -1;
     }
 
+    public IEnumerable<VoltShape> GetShapes()
+    {
+      for (int i = 0; i < this.shapeCount; i++)
+        yield return this.shapes[i];
+    }
+
+    public IEnumerable<VoltAABB> GetHistoryAABBs()
+    {
+      if (this.history != null)
+        foreach (HistoryRecord record in this.history.GetValues())
+          yield return record.aabb;
+    }
+
     internal void InitializeDynamic(
-      Vector2 position,
+      VoltVec2 position,
       float radians,
       VoltShape[] shapesToAdd)
     {
@@ -379,7 +389,7 @@ namespace Volatile
     }
 
     internal void InitializeStatic(
-      Vector2 position,
+      VoltVec2 position,
       float radians,
       VoltShape[] shapesToAdd)
     {
@@ -389,7 +399,7 @@ namespace Volatile
     }
 
     private void Initialize(
-      Vector2 position,
+      VoltVec2 position,
       float radians,
       VoltShape[] shapesToAdd)
     {
@@ -456,13 +466,13 @@ namespace Volatile
       this.history = null;
       this.currentState = default(HistoryRecord);
 
-      this.LinearVelocity = Vector2.zero;
+      this.LinearVelocity = VoltVec2.ZERO;
       this.AngularVelocity = 0.0f;
 
-      this.Force = Vector2.zero;
+      this.Force = VoltVec2.ZERO;
       this.Torque = 0.0f;
 
-      this.BiasVelocity = Vector2.zero;
+      this.BiasVelocity = VoltVec2.ZERO;
       this.BiasRotation = 0.0f;
     }
 
@@ -483,10 +493,10 @@ namespace Volatile
       this.CollisionFilter = null;
 
       this.Angle = 0.0f;
-      this.LinearVelocity = Vector2.zero;
+      this.LinearVelocity = VoltVec2.ZERO;
       this.AngularVelocity = 0.0f;
 
-      this.Force = Vector2.zero;
+      this.Force = VoltVec2.ZERO;
       this.Torque = 0.0f;
 
       this.Mass = 0.0f;
@@ -494,7 +504,7 @@ namespace Volatile
       this.InvMass = 0.0f;
       this.InvInertia = 0.0f;
 
-      this.BiasVelocity = Vector2.zero;
+      this.BiasVelocity = VoltVec2.ZERO;
       this.BiasRotation = 0.0f;
 
       this.history = null;
@@ -513,13 +523,13 @@ namespace Volatile
       return true;
     }
 
-    internal void ApplyImpulse(Vector2 j, Vector2 r)
+    internal void ApplyImpulse(VoltVec2 j, VoltVec2 r)
     {
       this.LinearVelocity += this.InvMass * j;
       this.AngularVelocity -= this.InvInertia * VoltMath.Cross(j, r);
     }
 
-    internal void ApplyBias(Vector2 j, Vector2 r)
+    internal void ApplyBias(VoltVec2 j, VoltVec2 r)
     {
       this.BiasVelocity += this.InvMass * j;
       this.BiasRotation -= this.InvInertia * VoltMath.Cross(j, r);
@@ -527,12 +537,12 @@ namespace Volatile
     #endregion
 
     #region Transformation Shortcuts
-    internal Vector2 WorldToBodyPointCurrent(Vector2 vector)
+    internal VoltVec2 WorldToBodyPointCurrent(VoltVec2 vector)
     {
       return this.currentState.WorldToBodyPoint(vector);
     }
 
-    internal Vector2 BodyToWorldPointCurrent(Vector2 vector)
+    internal VoltVec2 BodyToWorldPointCurrent(VoltVec2 vector)
     {
       return this.currentState.BodyToWorldPoint(vector);
     }
@@ -567,10 +577,10 @@ namespace Volatile
       for (int i = 0; i < this.shapeCount; i++)
       {
         VoltAABB aabb = this.shapes[i].AABB;
-        top = Mathf.Max(top, aabb.Top);
-        right = Mathf.Max(right, aabb.Right);
-        bottom = Mathf.Min(bottom, aabb.Bottom);
-        left = Mathf.Min(left, aabb.Left);
+        top = VoltMath.Max(top, aabb.Top);
+        right = VoltMath.Max(right, aabb.Right);
+        bottom = VoltMath.Min(bottom, aabb.Bottom);
+        left = VoltMath.Min(left, aabb.Left);
       }
 
       this.AABB = new VoltAABB(top, bottom, left, right);
@@ -586,7 +596,7 @@ namespace Volatile
       this.AngularVelocity *= this.World.Damping;
 
       // Calculate total force and torque
-      Vector2 totalForce = this.Force * this.InvMass;
+      VoltVec2 totalForce = this.Force * this.InvMass;
       float totalTorque = this.Torque * this.InvInertia;
 
       // See http://www.niksula.hut.fi/~hkankaan/Homepages/gravity.html
@@ -598,7 +608,7 @@ namespace Volatile
     }
 
     private void IntegrateForces(
-      Vector2 force,
+      VoltVec2 force,
       float torque,
       float mult)
     {
@@ -617,9 +627,9 @@ namespace Volatile
 
     private void ClearForces()
     {
-      this.Force = Vector2.zero;
+      this.Force = VoltVec2.ZERO;
       this.Torque = 0.0f;
-      this.BiasVelocity = Vector2.zero;
+      this.BiasVelocity = VoltVec2.ZERO;
       this.BiasRotation = 0.0f;
     }
 
@@ -663,54 +673,5 @@ namespace Volatile
       this.BodyType = VoltBodyType.Static;
     }
 #endregion
-
-    #region Debug
-#if UNITY && DEBUG
-    public void GizmoDraw(
-      Color edgeColor,
-      Color normalColor,
-      Color bodyOriginColor,
-      Color shapeOriginColor,
-      Color bodyAabbColor,
-      Color shapeAabbColor,
-      float normalLength)
-    {
-      Color current = Gizmos.color;
-
-      // Draw origin
-      Gizmos.color = bodyOriginColor;
-      Gizmos.DrawWireSphere(this.Position, 0.1f);
-
-      // Draw facing
-      Gizmos.color = normalColor;
-      Gizmos.DrawLine(
-        this.Position,
-        this.Position + this.Facing * normalLength);
-
-      this.AABB.GizmoDraw(bodyAabbColor);
-
-      for (int i = 0; i < this.shapeCount; i++)
-        this.shapes[i].GizmoDraw(
-          edgeColor,
-          normalColor,
-          shapeOriginColor,
-          shapeAabbColor,
-          normalLength);
-
-      Gizmos.color = current;
-    }
-
-    public void GizmoDrawHistory(Color aabbColor)
-    {
-      Color current = Gizmos.color;
-
-      if (this.history != null)
-        foreach (HistoryRecord record in this.history.GetValues())
-          record.aabb.GizmoDraw(aabbColor);
-
-      Gizmos.color = current;
-    }
-#endif
-    #endregion
   }
 }

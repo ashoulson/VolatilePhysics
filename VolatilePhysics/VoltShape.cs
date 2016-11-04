@@ -18,10 +18,6 @@
  *  3. This notice may not be removed or altered from any source distribution.
 */
 
-#if UNITY
-using UnityEngine;
-#endif
-
 namespace Volatile
 {
   public abstract class VoltShape
@@ -108,7 +104,7 @@ namespace Volatile
     /// Checks if a point is contained in this shape. 
     /// Begins with an AABB check.
     /// </summary>
-    internal bool QueryPoint(Vector2 bodySpacePoint)
+    internal bool QueryPoint(VoltVec2 bodySpacePoint)
     {
       // Queries and casts on shapes are always done in body space
       if (this.bodySpaceAABB.QueryPoint(bodySpacePoint))
@@ -120,7 +116,7 @@ namespace Volatile
     /// Checks if a circle overlaps with this shape. 
     /// Begins with an AABB check.
     /// </summary>
-    internal bool QueryCircle(Vector2 bodySpaceOrigin, float radius)
+    internal bool QueryCircle(VoltVec2 bodySpaceOrigin, float radius)
     {
       // Queries and casts on shapes are always done in body space
       if (this.bodySpaceAABB.QueryCircleApprox(bodySpaceOrigin, radius))
@@ -200,10 +196,10 @@ namespace Volatile
 
     #region Test Overrides
     protected abstract bool ShapeQueryPoint(
-      Vector2 bodySpacePoint);
+      VoltVec2 bodySpacePoint);
 
     protected abstract bool ShapeQueryCircle(
-      Vector2 bodySpaceOrigin,
+      VoltVec2 bodySpaceOrigin,
       float radius);
 
     protected abstract bool ShapeRayCast(
@@ -214,17 +210,6 @@ namespace Volatile
       ref VoltRayCast bodySpaceRay,
       float radius,
       ref VoltRayResult result);
-    #endregion
-
-    #region Debug
-#if UNITY && DEBUG
-    public abstract void GizmoDraw(
-      Color edgeColor,
-      Color normalColor,
-      Color originColor,
-      Color aabbColor,
-      float normalLength);
-#endif
     #endregion
   }
 }

@@ -18,14 +18,13 @@
  *  3. This notice may not be removed or altered from any source distribution.
 */
 
-#if !UNITY
 namespace Volatile
 {
-  public struct Vector2
+  public struct VoltVec2
   {
-    public static Vector2 zero { get { return new Vector2(0.0f, 0.0f); } }
+    public static readonly VoltVec2 ZERO = new VoltVec2(0.0f, 0.0f);
 
-    public static float Dot(Vector2 a, Vector2 b)
+    public static float Dot(VoltVec2 a, VoltVec2 b)
     {
       return (a.x * b.x) + (a.y * b.y);
     }
@@ -45,49 +44,57 @@ namespace Volatile
     { 
       get 
       {
-        return Mathf.Sqrt(this.sqrMagnitude);
+        return VoltMath.Sqrt(this.sqrMagnitude);
       } 
     }
 
-    public Vector2 normalized
+    public VoltVec2 normalized
     {
       get
       {
         float magnitude = this.magnitude;
-        return new Vector2(this.x / magnitude, this.y / magnitude);
+        return new VoltVec2(this.x / magnitude, this.y / magnitude);
       }
     }
 
-    public Vector2 (float x, float y)
+    public VoltVec2 (float x, float y)
     {
       this.x = x;
       this.y = y;
     }
 
-    public static Vector2 operator *(Vector2 a, float b)
+    public static VoltVec2 operator *(VoltVec2 a, float b)
     {
-      return new Vector2(a.x * b, a.y * b);
+      return new VoltVec2(a.x * b, a.y * b);
     }
 
-    public static Vector2 operator *(float a, Vector2 b)
+    public static VoltVec2 operator *(float a, VoltVec2 b)
     {
-      return new Vector2(b.x * a, b.y * a);
+      return new VoltVec2(b.x * a, b.y * a);
     }
 
-    public static Vector2 operator +(Vector2 a, Vector2 b)
+    public static VoltVec2 operator +(VoltVec2 a, VoltVec2 b)
     {
-      return new Vector2(a.x + b.x, a.y + b.y);
+      return new VoltVec2(a.x + b.x, a.y + b.y);
     }
 
-    public static Vector2 operator -(Vector2 a, Vector2 b)
+    public static VoltVec2 operator -(VoltVec2 a, VoltVec2 b)
     {
-      return new Vector2(a.x - b.x, a.y - b.y);
+      return new VoltVec2(a.x - b.x, a.y - b.y);
     }
 
-    public static Vector2 operator -(Vector2 a)
+    public static VoltVec2 operator -(VoltVec2 a)
     {
-      return new Vector2(-a.x, -a.y);
+      return new VoltVec2(-a.x, -a.y);
+    }
+
+    public static VoltVec2 Lerp(VoltVec2 from, VoltVec2 to, float t)
+    {
+      if (t < 0f)
+        return from;
+      if (t > 1f)
+        return to;
+      return (to - from) * t + from;
     }
   }
 }
-#endif

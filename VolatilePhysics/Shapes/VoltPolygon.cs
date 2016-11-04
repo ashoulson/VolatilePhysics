@@ -19,9 +19,8 @@
 */
 
 using System;
-using System.Collections.Generic;
 
-using UnityEngine;
+using System.Collections.Generic;
 
 namespace Volatile
 {
@@ -29,7 +28,7 @@ namespace Volatile
   {
     #region Factory Functions
     internal void InitializeFromWorldVertices(
-      Vector2[] vertices,
+      VoltVec2[] vertices,
       float density,
       float friction,
       float restitution)
@@ -47,7 +46,7 @@ namespace Volatile
     }
 
     internal void InitializeFromBodyVertices(
-      Vector2[] vertices,
+      VoltVec2[] vertices,
       float density,
       float friction,
       float restitution)
@@ -70,8 +69,8 @@ namespace Volatile
     #region Static Helpers
     private static void WorldToBody(
       VoltBody body,
-      Vector2[] worldVertices, 
-      Vector2[] bodyVertices, 
+      VoltVec2[] worldVertices, 
+      VoltVec2[] bodyVertices, 
       int count)
     {
       for (int i = 0; i < count; i++)
@@ -79,7 +78,7 @@ namespace Volatile
     }
 
     private static void ComputeAxes(
-      Vector2[] vertices,
+      VoltVec2[] vertices,
       int count,
       ref Axis[] destination)
     {
@@ -88,15 +87,15 @@ namespace Volatile
 
       for (int i = 0; i < count; i++)
       {
-        Vector2 u = vertices[i];
-        Vector2 v = vertices[(i + 1) % count];
-        Vector2 normal = (v - u).Left().normalized;
-        destination[i] = new Axis(normal, Vector2.Dot(normal, u));
+        VoltVec2 u = vertices[i];
+        VoltVec2 v = vertices[(i + 1) % count];
+        VoltVec2 normal = (v - u).Left().normalized;
+        destination[i] = new Axis(normal, VoltVec2.Dot(normal, u));
       }
     }
 
     private static VoltAABB ComputeBounds(
-      Vector2[] vertices,
+      VoltVec2[] vertices,
       int count)
     {
       float top = vertices[0].y;
@@ -106,10 +105,10 @@ namespace Volatile
 
       for (int i = 1; i < count; i++)
       {
-        top = Mathf.Max(top, vertices[i].y);
-        bottom = Mathf.Min(bottom, vertices[i].y);
-        left = Mathf.Min(left, vertices[i].x);
-        right = Mathf.Max(right, vertices[i].x);
+        top = VoltMath.Max(top, vertices[i].y);
+        bottom = VoltMath.Min(bottom, vertices[i].y);
+        left = VoltMath.Min(left, vertices[i].x);
+        right = VoltMath.Max(right, vertices[i].x);
       }
 
       return new VoltAABB(top, bottom, left, right);
@@ -121,13 +120,13 @@ namespace Volatile
     #endregion
 
     #region Fields
-    internal Vector2[] worldVertices;
+    internal VoltVec2[] worldVertices;
     internal Axis[] worldAxes;
     internal int countWorld;
 
     // Precomputed body-space values (these should never change unless we
     // want to support moving shapes relative to their body root later on)
-    internal Vector2[] bodyVertices;
+    internal VoltVec2[] bodyVertices;
     internal Axis[] bodyAxes;
     internal int countBody;
     #endregion
@@ -135,6 +134,18 @@ namespace Volatile
     public VoltPolygon() 
     {
       this.Reset();
+    }
+
+    public IEnumerable<VoltVec2> GetVertices()
+    {
+      for (int i = 0; i < this.countWorld; i++)
+        yield return this.worldVertices[i];
+    }
+
+    public IEnumerable<VoltVec2> GetNormals()
+    {
+      for (int i = 0; i < this.countWorld; i++)
+        yield return this.worldAxes[i].Normal;
     }
 
     protected override void Reset()
@@ -185,19 +196,19 @@ namespace Volatile
 
     #region Test Overrides
     protected override bool ShapeQueryPoint(
-      Vector2 bodySpacePoint)
+      VoltVec2 bodySpacePoint)
     {
       for (int i = 0; i < this.countBody; i++)
       {
         Axis axis = this.bodyAxes[i];
-        if (Vector2.Dot(axis.Normal, bodySpacePoint) > axis.Width)
+        if (VoltVec2.Dot(axis.Normal, bodySpacePoint) > axis.Width)
           return false;
       }
       return true;
     }
 
     protected override bool ShapeQueryCircle(
-      Vector2 bodySpaceOrigin,
+      VoltVec2 bodySpaceOrigin,
       float radius)
     {
       // Get the axis on the polygon closest to the circle's origin
@@ -213,8 +224,8 @@ namespace Volatile
         return false;
 
       int numVertices = this.countBody;
-      Vector2 a = this.bodyVertices[foundIndex];
-      Vector2 b = this.bodyVertices[(foundIndex + 1) % numVertices];
+      VoltVec2 a = this.bodyVertices[foundIndex];
+      VoltVec2 b = this.bodyVertices[(foundIndex + 1) % numVertices];
       Axis axis = this.bodyAxes[foundIndex];
 
       // If the circle is past one of the two vertices, check it like
@@ -243,7 +254,7 @@ namespace Volatile
         // Distance between the ray origin and the axis/edge along the 
         // normal (i.e., shortest distance between ray origin and the edge)
         float proj = 
-          Vector2.Dot(curAxis.Normal, bodySpaceRay.origin) - curAxis.Width;
+          VoltVec2.Dot(curAxis.Normal, bodySpaceRay.origin) - curAxis.Width;
 
         // See if the point is outside of any of the axes
         if (proj > 0.0f)
@@ -251,7 +262,7 @@ namespace Volatile
 
         // Projection of the ray direction onto the axis normal (use 
         // negative normal because we want to get the penetration length)
-        float slope = Vector2.Dot(-curAxis.Normal, bodySpaceRay.direction);
+        float slope = VoltVec2.Dot(-curAxis.Normal, bodySpaceRay.direction);
 
         if (slope == 0.0f)
           continue;
@@ -327,7 +338,7 @@ namespace Volatile
     /// <summary>
     /// Gets the vertices defining an edge of the polygon.
     /// </summary>
-    internal void GetEdge(int indexFirst, out Vector2 a, out Vector2 b)
+    internal void GetEdge(int indexFirst, out VoltVec2 a, out VoltVec2 b)
     {
       a = this.worldVertices[indexFirst];
       b = this.worldVertices[(indexFirst + 1) % this.countWorld];
@@ -345,12 +356,12 @@ namespace Volatile
     /// A world-space point query, used as a shortcut in collision tests.
     /// </summary>
     internal bool ContainsPoint(
-      Vector2 worldSpacePoint)
+      VoltVec2 worldSpacePoint)
     {
       for (int i = 0; i < this.countWorld; i++)
       {
         Axis axis = this.worldAxes[i];
-        if (Vector2.Dot(axis.Normal, worldSpacePoint) > axis.Width)
+        if (VoltVec2.Dot(axis.Normal, worldSpacePoint) > axis.Width)
           return false;
       }
       return true;
@@ -360,12 +371,12 @@ namespace Volatile
     /// Special case that ignores axes pointing away from the normal.
     /// </summary>
     internal bool ContainsPointPartial(
-      Vector2 worldSpacePoint,
-      Vector2 worldSpaceNormal)
+      VoltVec2 worldSpacePoint,
+      VoltVec2 worldSpaceNormal)
     {
       foreach (Axis axis in this.worldAxes)
-        if (Vector2.Dot(axis.Normal, worldSpaceNormal) >= 0.0f &&
-            Vector2.Dot(axis.Normal, worldSpacePoint) > axis.Width)
+        if (VoltVec2.Dot(axis.Normal, worldSpaceNormal) >= 0.0f &&
+            VoltVec2.Dot(axis.Normal, worldSpacePoint) > axis.Width)
           return false;
       return true;
     }
@@ -377,14 +388,14 @@ namespace Volatile
       if ((this.worldVertices == null) ||
           (this.worldVertices.Length < length))
       {
-        this.worldVertices = new Vector2[length];
+        this.worldVertices = new VoltVec2[length];
         this.worldAxes = new Axis[length];
       }
 
       if ((this.bodyVertices == null) ||
           (this.bodyVertices.Length < length))
       {
-        this.bodyVertices = new Vector2[length];
+        this.bodyVertices = new VoltVec2[length];
         this.bodyAxes = new Axis[length];
       }
     }
@@ -395,9 +406,9 @@ namespace Volatile
 
       for (int i = 0; i < this.countBody; i++)
       {
-        Vector2 v = this.bodyVertices[i];
-        Vector2 u = this.bodyVertices[(i + 1) % this.countBody];
-        Vector2 w = this.bodyVertices[(i + 2) % this.countBody];
+        VoltVec2 v = this.bodyVertices[i];
+        VoltVec2 u = this.bodyVertices[(i + 1) % this.countBody];
+        VoltVec2 w = this.bodyVertices[(i + 2) % this.countBody];
 
         sum += u.x * (v.y - w.y);
       }
@@ -412,11 +423,11 @@ namespace Volatile
 
       for (int i = 0; i < this.countBody; i++)
       {
-        Vector2 v = this.bodyVertices[i];
-        Vector2 u = this.bodyVertices[(i + 1) % this.countBody];
+        VoltVec2 v = this.bodyVertices[i];
+        VoltVec2 u = this.bodyVertices[(i + 1) % this.countBody];
 
         float a = VoltMath.Cross(u, v);
-        float b = v.sqrMagnitude + u.sqrMagnitude + Vector2.Dot(v, u);
+        float b = v.sqrMagnitude + u.sqrMagnitude + VoltVec2.Dot(v, u);
         s1 += a * b;
         s2 += a;
       }
@@ -434,7 +445,7 @@ namespace Volatile
 
       // Pre-compute and initialize values
       float shortestDist = float.MaxValue;
-      Vector2 v3 = bodySpaceRay.direction.Left();
+      VoltVec2 v3 = bodySpaceRay.direction.Left();
 
       // Check the edges -- this will be different from the raycast because
       // we care about staying within the ends of the edge line segment
@@ -443,15 +454,15 @@ namespace Volatile
         Axis curAxis = this.bodyAxes[i];
 
         // Push the edges out by the radius
-        Vector2 extension = curAxis.Normal * radius;
-        Vector2 a = this.bodyVertices[i] + extension;
-        Vector2 b = this.bodyVertices[(i + 1) % this.countBody] + extension;
+        VoltVec2 extension = curAxis.Normal * radius;
+        VoltVec2 a = this.bodyVertices[i] + extension;
+        VoltVec2 b = this.bodyVertices[(i + 1) % this.countBody] + extension;
 
         // Update the check for containment
         if (couldBeContained == true)
         {
           float proj = 
-            Vector2.Dot(curAxis.Normal, bodySpaceRay.origin) - curAxis.Width;
+            VoltVec2.Dot(curAxis.Normal, bodySpaceRay.origin) - curAxis.Width;
 
           // The point lies outside of the outer layer
           if (proj > radius)
@@ -471,17 +482,17 @@ namespace Volatile
         }
 
         // For the cast, only consider rays pointing towards the edge
-        if (Vector2.Dot(curAxis.Normal, bodySpaceRay.direction) >= 0.0f)
+        if (VoltVec2.Dot(curAxis.Normal, bodySpaceRay.direction) >= 0.0f)
           continue;
 
         // See: 
         // https://rootllama.wordpress.com/2014/06/20/ray-line-segment-intersection-test-in-2d/
-        Vector2 v1 = bodySpaceRay.origin - a;
-        Vector2 v2 = b - a;
+        VoltVec2 v1 = bodySpaceRay.origin - a;
+        VoltVec2 v2 = b - a;
 
-        float denominator = Vector2.Dot(v2, v3);
+        float denominator = VoltVec2.Dot(v2, v3);
         float t1 = VoltMath.Cross(v2, v1) / denominator;
-        float t2 = Vector2.Dot(v1, v3) / denominator;
+        float t2 = VoltVec2.Dot(v1, v3) / denominator;
 
         if ((t2 >= 0.0f) && (t2 <= 1.0f) && (t1 > 0.0f) && (t1 < shortestDist))
         {
@@ -531,42 +542,6 @@ namespace Volatile
 
       return castHit;
     }
-    #endregion
-
-    #region Debug
-#if UNITY && DEBUG
-    public override void GizmoDraw(
-      Color edgeColor,
-      Color normalColor,
-      Color originColor,
-      Color aabbColor,
-      float normalLength)
-    {
-      Color current = Gizmos.color;
-
-      for (int i = 0; i < this.countWorld; i++)
-      {
-        Vector2 u = this.worldVertices[i];
-        Vector2 v = this.worldVertices[(i + 1) % this.countWorld];
-        Vector2 n = worldAxes[i].Normal;
-
-        Vector2 delta = v - u;
-        Vector2 midPoint = u + (delta * 0.5f);
-
-        // Draw edge
-        Gizmos.color = edgeColor;
-        Gizmos.DrawLine(u, v);
-
-        // Draw normal
-        Gizmos.color = normalColor;
-        Gizmos.DrawLine(midPoint, midPoint + (n * normalLength));
-      }
-
-      this.AABB.GizmoDraw(aabbColor);
-
-      Gizmos.color = current;
-    }
-#endif
     #endregion
   }
 }

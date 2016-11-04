@@ -18,13 +18,6 @@
  *  3. This notice may not be removed or altered from any source distribution.
 */
 
-using System;
-using System.Collections.Generic;
-
-#if UNITY
-using UnityEngine;
-#endif
-
 namespace Volatile
 {
   public struct VoltAABB
@@ -42,13 +35,13 @@ namespace Volatile
     public static VoltAABB CreateMerged(VoltAABB aabb1, VoltAABB aabb2)
     {
       return new VoltAABB(
-        Mathf.Max(aabb1.top, aabb2.top),
-        Mathf.Min(aabb1.bottom, aabb2.bottom),
-        Mathf.Min(aabb1.left, aabb2.left),
-        Mathf.Max(aabb1.right, aabb2.right));
+        VoltMath.Max(aabb1.top, aabb2.top),
+        VoltMath.Min(aabb1.bottom, aabb2.bottom),
+        VoltMath.Min(aabb1.left, aabb2.left),
+        VoltMath.Max(aabb1.right, aabb2.right));
     }
 
-    public static VoltAABB CreateSwept(VoltAABB source, Vector2 vector)
+    public static VoltAABB CreateSwept(VoltAABB source, VoltVec2 vector)
     {
       float top = source.top;
       float bottom = source.bottom;
@@ -103,24 +96,24 @@ namespace Volatile
     }
     #endregion
 
-    public Vector2 TopLeft 
+    public VoltVec2 TopLeft 
     { 
-      get { return new Vector2(this.left, this.top); } 
+      get { return new VoltVec2(this.left, this.top); } 
     }
 
-    public Vector2 TopRight 
+    public VoltVec2 TopRight 
     { 
-      get { return new Vector2(this.right, this.top); } 
+      get { return new VoltVec2(this.right, this.top); } 
     }
 
-    public Vector2 BottomLeft 
+    public VoltVec2 BottomLeft 
     { 
-      get { return new Vector2(this.left, this.bottom); } 
+      get { return new VoltVec2(this.left, this.bottom); } 
     }
 
-    public Vector2 BottomRight 
+    public VoltVec2 BottomRight 
     { 
-      get { return new Vector2(this.right, this.bottom); } 
+      get { return new VoltVec2(this.right, this.bottom); } 
     }
 
     public float Top { get { return this.top; } }
@@ -137,10 +130,10 @@ namespace Volatile
       get { return 2.0f * (this.Width + this.Height); } 
     }
 
-    public Vector2 Center { get { return this.ComputeCenter(); } }
-    public Vector2 Extent 
+    public VoltVec2 Center { get { return this.ComputeCenter(); } }
+    public VoltVec2 Extent 
     { 
-      get { return new Vector2(this.Width * 0.5f, this.Height * 0.5f); } 
+      get { return new VoltVec2(this.Width * 0.5f, this.Height * 0.5f); } 
     }
 
     private readonly float top;
@@ -152,7 +145,7 @@ namespace Volatile
     /// <summary>
     /// Performs a point test on the AABB.
     /// </summary>
-    public bool QueryPoint(Vector2 point)
+    public bool QueryPoint(VoltVec2 point)
     {
       return 
         this.left <= point.x && 
@@ -164,7 +157,7 @@ namespace Volatile
     /// <summary>
     /// Note: This doesn't take rounded edges into account.
     /// </summary>
-    public bool QueryCircleApprox(Vector2 origin, float radius)
+    public bool QueryCircleApprox(VoltVec2 origin, float radius)
     {
       return
         (this.left - radius) <= origin.x &&
@@ -224,10 +217,10 @@ namespace Volatile
       this.right = right;
     }
 
-    public VoltAABB(Vector2 center, Vector2 extents)
+    public VoltAABB(VoltVec2 center, VoltVec2 extents)
     {
-      Vector2 topRight = center + extents;
-      Vector2 bottomLeft = center - extents;
+      VoltVec2 topRight = center + extents;
+      VoltVec2 bottomLeft = center - extents;
 
       this.top = topRight.y;
       this.right = topRight.x;
@@ -235,58 +228,36 @@ namespace Volatile
       this.left = bottomLeft.x;
     }
 
-    public VoltAABB(Vector2 center, float radius)
-      : this (center, new Vector2(radius, radius))
+    public VoltAABB(VoltVec2 center, float radius)
+      : this (center, new VoltVec2(radius, radius))
     {
     }
 
-    public VoltAABB ComputeTopLeft(Vector2 center)
+    public VoltAABB ComputeTopLeft(VoltVec2 center)
     {
       return new VoltAABB(this.top, center.y, this.left, center.x);
     }
 
-    public VoltAABB ComputeTopRight(Vector2 center)
+    public VoltAABB ComputeTopRight(VoltVec2 center)
     {
       return new VoltAABB(this.top, center.y, center.x, this.right);
     }
 
-    public VoltAABB ComputeBottomLeft(Vector2 center)
+    public VoltAABB ComputeBottomLeft(VoltVec2 center)
     {
       return new VoltAABB(center.y, this.bottom, this.left, center.x);
     }
 
-    public VoltAABB ComputeBottomRight(Vector2 center)
+    public VoltAABB ComputeBottomRight(VoltVec2 center)
     {
       return new VoltAABB(center.y, this.bottom, center.x, this.right);
     }
 
-    private Vector2 ComputeCenter()
+    private VoltVec2 ComputeCenter()
     {
-      return new Vector2(
+      return new VoltVec2(
         (this.Width * 0.5f) + this.left, 
         (this.Height * 0.5f) + this.bottom);
     }
-
-    #region Debug
-#if UNITY && DEBUG
-    public void GizmoDraw(Color aabbColor)
-    {
-      Color current = Gizmos.color;
-
-      Vector2 A = new Vector2(this.Left, this.Top);
-      Vector2 B = new Vector2(this.Right, this.Top);
-      Vector2 C = new Vector2(this.Right, this.Bottom);
-      Vector2 D = new Vector2(this.Left, this.Bottom);
-
-      Gizmos.color = aabbColor;
-      Gizmos.DrawLine(A, B);
-      Gizmos.DrawLine(B, C);
-      Gizmos.DrawLine(C, D);
-      Gizmos.DrawLine(D, A);
-
-      Gizmos.color = current;
-    }
-#endif
-    #endregion
   }
 }

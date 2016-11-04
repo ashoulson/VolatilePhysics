@@ -18,11 +18,6 @@
  *  3. This notice may not be removed or altered from any source distribution.
 */
 
-using System;
-using System.Collections.Generic;
-
-using UnityEngine;
-
 namespace Volatile
 {
   internal interface IBroadPhase
@@ -36,8 +31,8 @@ namespace Volatile
     // actual body's bounding box, as that will happen in the beginning of the
     // narrowphase test.
     void QueryOverlap(VoltAABB aabb, VoltBuffer<VoltBody> outBuffer);
-    void QueryPoint(Vector2 point, VoltBuffer<VoltBody> outBuffer);
-    void QueryCircle(Vector2 point, float radius, VoltBuffer<VoltBody> outBuffer);
+    void QueryPoint(VoltVec2 point, VoltBuffer<VoltBody> outBuffer);
+    void QueryCircle(VoltVec2 point, float radius, VoltBuffer<VoltBody> outBuffer);
     void RayCast(ref VoltRayCast ray, VoltBuffer<VoltBody> outBuffer);
     void CircleCast(ref VoltRayCast ray, float radius, VoltBuffer<VoltBody> outBuffer);
   }

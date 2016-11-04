@@ -20,10 +20,6 @@
 
 using System;
 
-#if UNITY
-using UnityEngine;
-#endif
-
 namespace Volatile
 {
   public delegate void VoltExplosionCallback(
@@ -43,7 +39,7 @@ namespace Volatile
     private VoltBuffer<VoltBody> occludingBodies;
 
     public void PerformExplosion(
-      Vector2 origin,
+      VoltVec2 origin,
       float radius,
       VoltExplosionCallback callback,
       VoltBodyFilter targetFilter = null,
@@ -72,11 +68,11 @@ namespace Volatile
 
       VoltRayCast ray;
       float rayWeight = 1.0f / rayCount;
-      float angleIncrement = (Mathf.PI * 2.0f) * rayWeight;
+      float angleIncrement = (VoltMath.PI * 2.0f) * rayWeight;
 
       for (int i = 0; i < rayCount; i++)
       {
-        Vector2 normal = VoltMath.Polar(angleIncrement * i);
+        VoltVec2 normal = VoltMath.Polar(angleIncrement * i);
         ray = new VoltRayCast(origin, normal, radius);
 
         float minDistance = 
@@ -134,7 +130,7 @@ namespace Volatile
     /// and pass the target filter test. Does not test actual shapes.
     /// </summary>
     private void PopulateFiltered(
-      Vector2 origin,
+      VoltVec2 origin,
       float radius,
       VoltBodyFilter targetFilter,
       int ticksBehind,

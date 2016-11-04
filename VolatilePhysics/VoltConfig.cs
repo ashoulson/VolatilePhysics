@@ -21,8 +21,6 @@
 using System;
 using System.Collections.Generic;
 
-using UnityEngine;
-
 namespace Volatile
 {
   public static class VoltConfig
@@ -32,6 +30,7 @@ namespace Volatile
     public static float AreaMassRatio = 0.01f;
 
     // Defaults
+    public const float EPSILON = 1e-6f;
     public const float DEFAULT_DENSITY = 1.0f;
     public const float DEFAULT_RESTITUTION = 0.5f;
     public const float DEFAULT_FRICTION = 0.8f;
@@ -51,6 +50,6 @@ namespace Volatile
 
     // The minimum mass a dynamic object can have before it is
     // converted to a static object
-    internal const float MINIMUM_DYNAMIC_MASS = 0.00001f;
+    internal const float MINIMUM_DYNAMIC_MASS = VoltConfig.EPSILON;
   }
 }

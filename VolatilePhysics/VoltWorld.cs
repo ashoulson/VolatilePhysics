@@ -21,10 +21,6 @@
 using System;
 using System.Collections.Generic;
 
-#if UNITY
-using UnityEngine;
-#endif
-
 namespace Volatile
 {
   public partial class VoltWorld
@@ -136,7 +132,7 @@ namespace Volatile
     /// Creates a new polygon shape from world-space vertices.
     /// </summary>
     public VoltPolygon CreatePolygonWorldSpace(
-      Vector2[] worldVertices,
+      VoltVec2[] worldVertices,
       float density = VoltConfig.DEFAULT_DENSITY,
       float friction = VoltConfig.DEFAULT_FRICTION,
       float restitution = VoltConfig.DEFAULT_RESTITUTION)
@@ -154,7 +150,7 @@ namespace Volatile
     /// Creates a new polygon shape from body-space vertices.
     /// </summary>
     public VoltPolygon CreatePolygonBodySpace(
-      Vector2[] bodyVertices,
+      VoltVec2[] bodyVertices,
       float density = VoltConfig.DEFAULT_DENSITY,
       float friction = VoltConfig.DEFAULT_FRICTION,
       float restitution = VoltConfig.DEFAULT_RESTITUTION)
@@ -172,7 +168,7 @@ namespace Volatile
     /// Creates a new circle shape from a world-space origin.
     /// </summary>
     public VoltCircle CreateCircleWorldSpace(
-      Vector2 worldSpaceOrigin,
+      VoltVec2 worldSpaceOrigin,
       float radius,
       float density = VoltConfig.DEFAULT_DENSITY,
       float friction = VoltConfig.DEFAULT_FRICTION,
@@ -192,7 +188,7 @@ namespace Volatile
     /// Creates a new static body and adds it to the world.
     /// </summary>
     public VoltBody CreateStaticBody(
-      Vector2 position,
+      VoltVec2 position,
       float radians,
       params VoltShape[] shapesToAdd)
     {
@@ -206,7 +202,7 @@ namespace Volatile
     /// Creates a new dynamic body and adds it to the world.
     /// </summary>
     public VoltBody CreateDynamicBody(
-      Vector2 position,
+      VoltVec2 position,
       float radians,
       params VoltShape[] shapesToAdd)
     {
@@ -222,7 +218,7 @@ namespace Volatile
     /// </summary>
     public void AddBody(
       VoltBody body,
-      Vector2 position,
+      VoltVec2 position,
       float radians)
     {
 #if DEBUG
@@ -296,7 +292,7 @@ namespace Volatile
     {
       if (body.IsStatic)
       {
-        VoltDebug.LogWarning("Updating static body, doing nothing");
+        VoltDebug.LogError("Updating static body, doing nothing");
         return;
       }
 
@@ -315,7 +311,7 @@ namespace Volatile
     /// invalidate the resulting enumeration from this function.
     /// </summary>
     public VoltBuffer<VoltBody> QueryPoint(
-      Vector2 point,
+      VoltVec2 point,
       VoltBodyFilter filter = null,
       int ticksBehind = 0)
     {
@@ -344,7 +340,7 @@ namespace Volatile
     /// invalidate the resulting enumeration from this function.
     /// </summary>
     public VoltBuffer<VoltBody> QueryCircle(
-      Vector2 origin,
+      VoltVec2 origin,
       float radius,
       VoltBodyFilter filter = null,
       int ticksBehind = 0)
