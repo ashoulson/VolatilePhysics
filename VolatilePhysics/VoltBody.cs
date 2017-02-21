@@ -110,14 +110,19 @@ namespace Volatile
     /// Retrieves a snapshot of the body's state/space at a tick.
     /// Logs an error and defaults to the current state if it can't be found.
     /// </summary>
-    private HistoryRecord GetState(int ticksBehind)
+    private bool TryGetState(int ticksBehind, out HistoryRecord record)
     {
       if ((ticksBehind == 0) || (this.history == null))
-        return this.currentState;
+      {
+        record = this.currentState;
+        return true;
+      }
 
-      HistoryRecord output;
-      this.history.TryGet(ticksBehind - 1, out output);
-      return output;
+      // TODO: If the history is NOT null and we didn't find a record, it may
+      // be that the check failed because we're going back in time before this
+      // body even existed. Should we handle this case or just use the current
+      // state regardless?
+      return this.history.TryGet(ticksBehind - 1, out record);
     }
     #endregion
 
@@ -240,7 +245,9 @@ namespace Volatile
       VoltAABB worldBounds,
       int ticksBehind)
     {
-      HistoryRecord record = this.GetState(ticksBehind);
+      HistoryRecord record;
+      if (this.TryGetState(ticksBehind, out record) == false)
+        record = this.currentState;
 
       // AABB check done in world space (because it keeps changing)
       return record.aabb.Intersect(worldBounds);
@@ -255,7 +262,9 @@ namespace Volatile
       int ticksBehind,
       bool bypassAABB = false)
     {
-      HistoryRecord record = this.GetState(ticksBehind);
+      HistoryRecord record;
+      if (this.TryGetState(ticksBehind, out record) == false)
+        record = this.currentState;
 
       // AABB check done in world space (because it keeps changing)
       if (bypassAABB == false)
@@ -280,7 +289,9 @@ namespace Volatile
       int ticksBehind,
       bool bypassAABB = false)
     {
-      HistoryRecord record = this.GetState(ticksBehind);
+      HistoryRecord record;
+      if (this.TryGetState(ticksBehind, out record) == false)
+        record = this.currentState;
 
       // AABB check done in world space (because it keeps changing)
       if (bypassAABB == false)
@@ -305,7 +316,9 @@ namespace Volatile
       int ticksBehind,
       bool bypassAABB = false)
     {
-      HistoryRecord record = this.GetState(ticksBehind);
+      HistoryRecord record;
+      if (this.TryGetState(ticksBehind, out record) == false)
+        record = this.currentState;
 
       // AABB check done in world space (because it keeps changing)
       if (bypassAABB == false)
@@ -337,7 +350,9 @@ namespace Volatile
       int ticksBehind,
       bool bypassAABB = false)
     {
-      HistoryRecord record = this.GetState(ticksBehind);
+      HistoryRecord record;
+      if (this.TryGetState(ticksBehind, out record) == false)
+        record = this.currentState;
 
       // AABB check done in world space (because it keeps changing)
       if (bypassAABB == false)
@@ -487,6 +502,11 @@ namespace Volatile
       this.IsInitialized = false;
 #endif
 
+      if ((this.World != null) && (this.history != null))
+        this.World.FreeHistory(this.history);
+      this.history = null;
+      this.currentState = default(HistoryRecord);
+
       this.UserData = null;
       this.World = null;
       this.BodyType = VoltBodyType.Invalid;
@@ -506,9 +526,6 @@ namespace Volatile
 
       this.BiasVelocity = VoltVec2.ZERO;
       this.BiasRotation = 0.0f;
-
-      this.history = null;
-      this.currentState = default(HistoryRecord);
     }
 
     #region Collision

@@ -36,6 +36,7 @@ namespace Volatile
     int count;
     int start;
 
+    public int Count { get { return this.count; } }
     public int Capacity { get { return this.capacity; } }
 
     public HistoryBuffer()
