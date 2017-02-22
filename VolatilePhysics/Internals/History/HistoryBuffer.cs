@@ -84,16 +84,18 @@ namespace Volatile
     /// value stored. If the value can't be found, this function will find
     /// the closest and return false, indicating a clamp.
     /// </summary>
-    public bool TryGet(int numBehind, out HistoryRecord value)
+    public bool TryGetClosest(int numBehind, out HistoryRecord value)
     {
       if (numBehind < 0)
         throw new ArgumentOutOfRangeException("numBehind");
+      if (this.count <= 0)
+        throw new InvalidOperationException("HistoryBuffer is empty");
 
       if (this.count < this.capacity)
       {
         if (numBehind >= this.count)
         {
-          value = this.data[0];
+          value = this.data[this.count - 1];
           return false;
         }
 

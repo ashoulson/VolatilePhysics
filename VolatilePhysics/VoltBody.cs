@@ -57,32 +57,15 @@ namespace Volatile
     /// <summary>
     /// Tries to get a reference frame for a given number of ticks behind 
     /// the current tick. Returns true if a value was found, false if a
-    /// value was not found (in which case we clamp to the nearest).
+    /// value was not found. If no value was found we clamp to the nearest.
     /// </summary>
     public bool TryGetSpace(
       int ticksBehind,
       out VoltVec2 position,
       out VoltVec2 facing)
     {
-      if (ticksBehind < 0)
-        throw new ArgumentOutOfRangeException("ticksBehind");
-
-      if (ticksBehind == 0)
-      {
-        position = this.Position;
-        facing = this.Facing;
-        return true;
-      }
-
-      if (this.history == null)
-      {
-        position = this.Position;
-        facing = this.Facing;
-        return false;
-      }
-
       HistoryRecord record;
-      bool found = this.history.TryGet(ticksBehind - 1, out record);
+      bool found = this.TryGetRecord(ticksBehind, out record);
       position = record.position;
       facing = record.facing;
       return found;
@@ -108,21 +91,43 @@ namespace Volatile
 
     /// <summary>
     /// Retrieves a snapshot of the body's state/space at a tick.
-    /// Logs an error and defaults to the current state if it can't be found.
+    /// Returns true if an actual recorded value was found, false if a
+    /// value was not found. If no value was found we clamp to the nearest.
     /// </summary>
-    private bool TryGetState(int ticksBehind, out HistoryRecord record)
+    private bool TryGetRecord(int ticksBehind, out HistoryRecord record)
     {
-      if ((ticksBehind == 0) || (this.history == null))
+      if (ticksBehind < 0)
+        throw new ArgumentOutOfRangeException("ticksBehind");
+
+      // Not checking history, just use current state
+      if (ticksBehind == 0)
       {
         record = this.currentState;
         return true;
       }
 
-      // TODO: If the history is NOT null and we didn't find a record, it may
-      // be that the check failed because we're going back in time before this
-      // body even existed. Should we handle this case or just use the current
-      // state regardless?
-      return this.history.TryGet(ticksBehind - 1, out record);
+      // Checking history but no history exists, clamp to nearest and 
+      // return false, indicating that we are approximating
+      if ((this.history == null) || (this.history.Count == 0))
+      {
+        record = this.currentState;
+        return false;
+      }
+
+      // Check the history. May clamp if it doesn't find a true record.
+      bool found =
+        this.history.TryGetClosest(ticksBehind - 1, out record);
+      return found;
+    }
+
+    /// <summary>
+    /// Gets the given history record or the closest one to it.
+    /// </summary>
+    private HistoryRecord GetRecordOrClosest(int ticksBehind)
+    {
+      HistoryRecord result;
+      this.TryGetRecord(ticksBehind, out result);
+      return result;
     }
     #endregion
 
@@ -245,9 +250,7 @@ namespace Volatile
       VoltAABB worldBounds,
       int ticksBehind)
     {
-      HistoryRecord record;
-      if (this.TryGetState(ticksBehind, out record) == false)
-        record = this.currentState;
+      HistoryRecord record = this.GetRecordOrClosest(ticksBehind);
 
       // AABB check done in world space (because it keeps changing)
       return record.aabb.Intersect(worldBounds);
@@ -262,9 +265,7 @@ namespace Volatile
       int ticksBehind,
       bool bypassAABB = false)
     {
-      HistoryRecord record;
-      if (this.TryGetState(ticksBehind, out record) == false)
-        record = this.currentState;
+      HistoryRecord record = this.GetRecordOrClosest(ticksBehind);
 
       // AABB check done in world space (because it keeps changing)
       if (bypassAABB == false)
@@ -289,9 +290,7 @@ namespace Volatile
       int ticksBehind,
       bool bypassAABB = false)
     {
-      HistoryRecord record;
-      if (this.TryGetState(ticksBehind, out record) == false)
-        record = this.currentState;
+      HistoryRecord record = this.GetRecordOrClosest(ticksBehind);
 
       // AABB check done in world space (because it keeps changing)
       if (bypassAABB == false)
@@ -316,9 +315,7 @@ namespace Volatile
       int ticksBehind,
       bool bypassAABB = false)
     {
-      HistoryRecord record;
-      if (this.TryGetState(ticksBehind, out record) == false)
-        record = this.currentState;
+      HistoryRecord record = this.GetRecordOrClosest(ticksBehind);
 
       // AABB check done in world space (because it keeps changing)
       if (bypassAABB == false)
@@ -350,9 +347,7 @@ namespace Volatile
       int ticksBehind,
       bool bypassAABB = false)
     {
-      HistoryRecord record;
-      if (this.TryGetState(ticksBehind, out record) == false)
-        record = this.currentState;
+      HistoryRecord record = this.GetRecordOrClosest(ticksBehind);
 
       // AABB check done in world space (because it keeps changing)
       if (bypassAABB == false)
