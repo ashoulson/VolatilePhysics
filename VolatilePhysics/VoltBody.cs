@@ -133,7 +133,7 @@ namespace Volatile
 
     public static bool Filter(VoltBody body, VoltBodyFilter filter)
     {
-      return ((filter == null) || (filter.Invoke(body) == true));
+      return filter?.Invoke(body) ?? true;
     }
 
     /// <summary>

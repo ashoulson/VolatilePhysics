@@ -55,5 +55,30 @@ namespace Volatile
     {
       return true;
     }
+
+    /// <summary>
+    /// Creates a filter that will permit every body except the given one.
+    /// </summary>
+    public static VoltBodyFilter CreateFilter_Except(VoltBody exclude)
+    {
+      return delegate(VoltBody body)
+      {
+        return (body != exclude);
+      };
+    }
+
+    /// <summary>
+    /// Creates a filter composed of an AND operation on all given filters.
+    /// </summary>
+    public static VoltBodyFilter MergeFilters(params VoltBodyFilter[] filters)
+    {
+      return delegate(VoltBody body)
+      {
+        for (int i = 0; i < filters.Length; i++)
+          if (filters[i].Invoke(body) == false)
+            return false;
+        return true;
+      };
+    }
   }
 }
