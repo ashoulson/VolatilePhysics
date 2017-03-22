@@ -34,11 +34,17 @@ namespace Volatile
     internal VoltVec2 position;
     internal VoltVec2 facing;
 
+    // These are stored for convenience sake
+    internal VoltVec2 linVelocity;
+    internal float angVelocity;
+
     internal void Store(ref HistoryRecord other)
     {
       this.aabb = other.aabb;
       this.position = other.position;
       this.facing = other.facing;
+      this.linVelocity = other.linVelocity;
+      this.angVelocity = other.angVelocity;
     }
 
     #region World-Space to Body-Space Transformations

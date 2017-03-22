@@ -72,6 +72,28 @@ namespace Volatile
     }
 
     /// <summary>
+    /// Tries to get a reference frame for a given number of ticks behind 
+    /// the current tick. Returns true if a value was found, false if a
+    /// value was not found. If no value was found we clamp to the nearest.
+    /// This function also returns historical dynamics information.
+    /// </summary>
+    public bool TryGetSpace(
+      int ticksBehind,
+      out VoltVec2 position,
+      out VoltVec2 facing,
+      out VoltVec2 linVelocity,
+      out float angVelocity)
+    {
+      HistoryRecord record;
+      bool found = this.TryGetRecord(ticksBehind, out record);
+      position = record.position;
+      facing = record.facing;
+      linVelocity = record.linVelocity;
+      angVelocity = record.angVelocity;
+      return found;
+    }
+
+    /// <summary>
     /// Initializes the buffer for storing past body states/spaces.
     /// </summary>
     internal void AssignHistory(HistoryBuffer history)
@@ -157,6 +179,12 @@ namespace Volatile
 
     // Some basic properties are stored in an internal mutable
     // record to avoid code redundancy when performing conversions
+    public VoltAABB AABB
+    {
+      get { return this.currentState.aabb; }
+      private set { this.currentState.aabb = value; }
+    }
+
     public VoltVec2 Position
     {
       get { return this.currentState.position; }
@@ -169,10 +197,16 @@ namespace Volatile
       private set { this.currentState.facing = value; }
     }
 
-    public VoltAABB AABB
+    public VoltVec2 LinearVelocity
     {
-      get { return this.currentState.aabb; }
-      private set { this.currentState.aabb = value; }
+      get { return this.currentState.linVelocity; }
+      set { this.currentState.linVelocity = value; }
+    }
+
+    public float AngularVelocity
+    {
+      get { return this.currentState.angVelocity; }
+      set { this.currentState.angVelocity = value; }
     }
 
 #if DEBUG
@@ -192,9 +226,6 @@ namespace Volatile
     /// Current angle in radians.
     /// </summary>
     public float Angle { get; private set; }
-
-    public VoltVec2 LinearVelocity { get; set; }
-    public float AngularVelocity { get; set; }
 
     public VoltVec2 Force { get; private set; }
     public float Torque { get; private set; }
@@ -475,9 +506,6 @@ namespace Volatile
     {
       this.history = null;
       this.currentState = default(HistoryRecord);
-
-      this.LinearVelocity = VoltVec2.ZERO;
-      this.AngularVelocity = 0.0f;
 
       this.Force = VoltVec2.ZERO;
       this.Torque = 0.0f;
