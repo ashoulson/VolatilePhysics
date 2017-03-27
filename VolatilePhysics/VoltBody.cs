@@ -30,6 +30,10 @@ namespace Volatile
     Invalid,
   }
 
+  /// <summary>
+  /// For collision, filter should return TRUE if collision can occur.
+  /// For rays, filter should return TRUE if the ray can hit the body.
+  /// </summary>
   public delegate bool VoltBodyFilter(VoltBody body);
 
   public class VoltBody
