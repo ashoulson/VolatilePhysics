@@ -420,5 +420,10 @@ namespace Volatile
     {
       return a * a;
     }
+
+    public static float Look(VoltVec2 from, VoltVec2 to)
+    {
+      return (to - from).normalized.Angle();
+    }
   }
 }
