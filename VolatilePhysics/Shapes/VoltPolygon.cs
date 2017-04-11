@@ -116,7 +116,7 @@ namespace Volatile
     #endregion
 
     #region Properties
-    public override VoltShape.ShapeType Type { get { return ShapeType.Polygon; } }
+    public override VoltShapeType Type { get { return VoltShapeType.Polygon; } }
     #endregion
 
     #region Fields

@@ -20,6 +20,12 @@
 
 namespace Volatile
 {
+  public enum VoltShapeType
+  {
+    Circle,
+    Polygon,
+  }
+
   public abstract class VoltShape
     : IVoltPoolable<VoltShape>
   {
@@ -40,17 +46,11 @@ namespace Volatile
     }
     #endregion
 
-    public enum ShapeType
-    {
-      Circle,
-      Polygon,
-    }
-
 #if DEBUG
     internal bool IsInitialized { get; set; }
 #endif
 
-    public abstract ShapeType Type { get; }
+    public abstract VoltShapeType Type { get; }
 
     /// <summary>
     /// For attaching arbitrary data to this shape.

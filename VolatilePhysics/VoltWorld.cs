@@ -185,6 +185,26 @@ namespace Volatile
     }
 
     /// <summary>
+    /// Creates a new circle shape from a world-space origin.
+    /// </summary>
+    public VoltCircle CreateCircleBodySpace(
+      VoltVec2 bodySpaceOrigin,
+      float radius,
+      float density = VoltConfig.DEFAULT_DENSITY,
+      float friction = VoltConfig.DEFAULT_FRICTION,
+      float restitution = VoltConfig.DEFAULT_RESTITUTION)
+    {
+      VoltCircle circle = (VoltCircle)this.circlePool.Allocate();
+      circle.InitializeFromBodySpace(
+        bodySpaceOrigin,
+        radius,
+        density,
+        friction,
+        restitution);
+      return circle;
+    }
+
+    /// <summary>
     /// Creates a new static body and adds it to the world.
     /// </summary>
     public VoltBody CreateStaticBody(
@@ -587,11 +607,11 @@ namespace Volatile
     {
       switch (shape.Type)
       {
-        case VoltShape.ShapeType.Circle:
+        case VoltShapeType.Circle:
           this.circlePool.Deallocate(shape);
           break;
 
-        case VoltShape.ShapeType.Polygon:
+        case VoltShapeType.Polygon:
           this.polygonPool.Deallocate(shape);
           break;
 

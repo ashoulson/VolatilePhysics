@@ -33,14 +33,32 @@ namespace Volatile
       base.Initialize(density, friction, restitution);
 
       this.worldSpaceOrigin = worldSpaceOrigin;
+      this.worldSpaceAABB = new VoltAABB(worldSpaceOrigin, radius);
+
       this.radius = radius;
       this.sqrRadius = radius * radius;
-      this.worldSpaceAABB = new VoltAABB(worldSpaceOrigin, radius);
+    }
+
+    internal void InitializeFromBodySpace(
+      VoltVec2 bodySpaceOrigin,
+      float radius,
+      float density,
+      float friction,
+      float restitution)
+    {
+      base.Initialize(density, friction, restitution);
+
+      this.radius = radius;
+      this.sqrRadius = radius * radius;
+
+      this.bodySpaceOrigin = bodySpaceOrigin;
+      this.bodySpaceAABB = new VoltAABB(bodySpaceOrigin, radius);
+      this.hasBodySpace = true;
     }
     #endregion
 
     #region Properties
-    public override VoltShape.ShapeType Type { get { return ShapeType.Circle; } }
+    public override VoltShapeType Type { get { return VoltShapeType.Circle; } }
 
     public VoltVec2 Origin { get { return this.worldSpaceOrigin; } }
     public float Radius { get { return this.radius; } }
@@ -54,6 +72,7 @@ namespace Volatile
     // Precomputed body-space values (these should never change unless we
     // want to support moving shapes relative to their body root later on)
     private VoltVec2 bodySpaceOrigin;
+    private bool hasBodySpace;
     #endregion
 
     public VoltCircle() 
@@ -68,15 +87,21 @@ namespace Volatile
       this.worldSpaceOrigin = VoltVec2.ZERO;
       this.radius = 0.0f;
       this.sqrRadius = 0.0f;
+
       this.bodySpaceOrigin = VoltVec2.ZERO;
+      this.hasBodySpace = false;
     }
 
     #region Functionality Overrides
     protected override void ComputeMetrics()
     {
-      this.bodySpaceOrigin =
-        this.Body.WorldToBodyPointCurrent(this.worldSpaceOrigin);
-      this.bodySpaceAABB = new VoltAABB(this.bodySpaceOrigin, this.radius);
+      if (this.hasBodySpace == false)
+      {
+        this.bodySpaceOrigin =
+          this.Body.WorldToBodyPointCurrent(this.worldSpaceOrigin);
+        this.bodySpaceAABB = new VoltAABB(this.bodySpaceOrigin, this.radius);
+        this.hasBodySpace = true;
+      }
 
       this.Area = this.sqrRadius * VoltMath.PI;
       this.Mass = this.Area * this.Density * VoltConfig.AreaMassRatio;
