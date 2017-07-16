@@ -36,9 +36,9 @@ public class VolatileBody : MonoBehaviour
     float radians = Mathf.Deg2Rad * transform.eulerAngles.z;
 
     if (this.isStatic == true)
-      this.body = world.CreateStaticBody(position, radians, shapes.ToArray());
+      this.body = world.CreateStaticBody(position.ToVolt(), radians, shapes.ToArray());
     else
-      this.body = world.CreateDynamicBody(position, radians, shapes.ToArray());
+      this.body = world.CreateDynamicBody(position.ToVolt(), radians, shapes.ToArray());
 
     this.lastPosition = this.nextPosition = transform.position;
     this.lastAngle = this.nextAngle = transform.eulerAngles.z;
@@ -57,14 +57,14 @@ public class VolatileBody : MonoBehaviour
       }
       else
       {
-        transform.position = this.body.Position;
+        transform.position = this.body.Position.ToUnity();
         transform.rotation = Quaternion.Euler(0.0f, 0.0f, Mathf.Rad2Deg * this.body.Angle);
       }
     }
     else
     {
       this.body.Set(
-        this.transform.position, 
+        this.transform.position.ToVolt(), 
         Mathf.Deg2Rad * this.transform.rotation.eulerAngles.z);
     }
   }
@@ -73,7 +73,7 @@ public class VolatileBody : MonoBehaviour
   {
     this.lastPosition = this.nextPosition;
     this.lastAngle = this.nextAngle;
-    this.nextPosition = this.body.Position;
+    this.nextPosition = this.body.Position.ToUnity();
     this.nextAngle = this.body.Angle;
   }
 
@@ -86,7 +86,16 @@ public class VolatileBody : MonoBehaviour
     {
       if (Application.isPlaying)
       {
-        VoltDebug.Draw(this.body);
+        // TODO: Fix these colors!
+        VoltExtensions.GizmoDraw(
+          this.body, 
+          Color.yellow, 
+          Color.green, 
+          Color.blue, 
+          Color.magenta, 
+          Color.red, 
+          Color.white, 
+          0.5f);
       }
       else
       {
@@ -121,7 +130,7 @@ public class VolatileBody : MonoBehaviour
 
   public void AddForce(Vector2 force)
   {
-    this.body.AddForce(force);
+    this.body.AddForce(force.ToVolt());
   }
 
   public void AddTorque(float radians)
@@ -131,6 +140,6 @@ public class VolatileBody : MonoBehaviour
 
   public void Set(Vector2 position, float radians)
   {
-    this.body.Set(position, radians);
+    this.body.Set(position.ToVolt(), radians);
   }
 }

@@ -13,6 +13,6 @@ public class SimpleForce : MonoBehaviour
 
   void FixedUpdate() 
   {
-    this.body.Body.AddForce(force);
+    this.body.Body.AddForce(force.ToVolt());
   }
 }

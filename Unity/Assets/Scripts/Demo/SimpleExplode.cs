@@ -36,7 +36,7 @@ public class SimpleExplode : MonoBehaviour
       this.showDelay = Time.time + 0.2f;
 
       VolatileWorld.Instance.World.PerformExplosion(
-        this.lastOrigin,
+        this.lastOrigin.ToVolt(),
         this.radius,
         this.ExplosionCallback,
         (body) => (body.IsStatic == false) && (body != this.body.Body),
@@ -49,7 +49,7 @@ public class SimpleExplode : MonoBehaviour
     VoltRayResult rayResult,
     float rayWeight)
   {
-    Vector2 point = rayResult.ComputePoint(ref rayCast);
+    Vector2 point = rayResult.ComputePoint(ref rayCast).ToUnity();
     this.hits.Add(point);
   }
 

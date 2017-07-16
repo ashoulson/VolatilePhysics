@@ -34,8 +34,8 @@ public class SimpleCast : MonoBehaviour
       VoltRayResult result = new VoltRayResult();
       VoltRayCast cast =
         new VoltRayCast(
-          transform.position,
-          transform.position + (transform.up * 100.0f));
+          transform.position.ToVolt(),
+          transform.position.ToVolt() + (transform.up.ToVolt() * 100.0f));
 
       if (this.radius > 0.0f)
         world.World.CircleCast(ref cast, this.radius, ref result, this.Filter, -this.frameOffset);

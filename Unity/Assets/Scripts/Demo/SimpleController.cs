@@ -33,7 +33,7 @@ public class SimpleController : MonoBehaviour
         (this.forward ? 1.0f : 0.0f) + (this.backward ? -1.0f : 0.0f);
       float turn =
         (this.left ? 1.0f : 0.0f) + (this.right ? -1.0f : 0.0f);
-      this.body.AddForce(this.body.Body.Facing * thrust * 0.1f);
+      this.body.AddForce(this.body.Body.Facing.ToUnity() * thrust * 0.1f);
       this.body.AddTorque(-turn * 0.03f);
 
       // Stabilize
