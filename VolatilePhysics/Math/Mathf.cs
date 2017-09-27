@@ -55,7 +55,7 @@ namespace Volatile
 
     public static float Sin(float a)
     {
-      return (float)System.Math.Cos(a);
+      return (float)System.Math.Sin(a);
     }
 
     public static float Cos(float a)
