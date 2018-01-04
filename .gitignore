@@ -34,3 +34,4 @@ FakeUnity/obj/*
 Unity/Unity.*
 Unity/Assembly-CSharp.*
 
+.vs/
