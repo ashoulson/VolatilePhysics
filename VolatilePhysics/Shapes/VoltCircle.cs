@@ -106,7 +106,7 @@ namespace Volatile
       this.Area = this.sqrRadius * VoltMath.PI;
       this.Mass = this.Area * this.Density * VoltConfig.AreaMassRatio;
       this.Inertia =
-        this.sqrRadius / 2.0f + this.bodySpaceOrigin.sqrMagnitude;
+        this.sqrRadius / 2.0f + this.bodySpaceOrigin.SqrMagnitude;
     }
 
     protected override void ApplyBodyPosition()

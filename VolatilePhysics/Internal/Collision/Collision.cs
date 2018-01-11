@@ -164,7 +164,7 @@ namespace Volatile
       float radius)
     {
       VoltVec2 delta = origin - point;
-      return delta.sqrMagnitude <= (radius * radius);
+      return delta.SqrMagnitude <= (radius * radius);
     }
 
     /// <summary>
@@ -177,7 +177,7 @@ namespace Volatile
       float radiusB)
     {
       float radiusTotal = radiusA + radiusB;
-      return (originA - originB).sqrMagnitude <= (radiusTotal * radiusTotal);
+      return (originA - originB).SqrMagnitude <= (radiusTotal * radiusTotal);
     }
 
     /// <summary>
@@ -192,7 +192,7 @@ namespace Volatile
     {
       VoltVec2 toOrigin = shapeOrigin - ray.origin;
 
-      if (toOrigin.sqrMagnitude < sqrRadius)
+      if (toOrigin.SqrMagnitude < sqrRadius)
       {
         result.SetContained(shape);
         return true;
@@ -213,7 +213,7 @@ namespace Volatile
 
       // N.B.: For historical raycasts this normal will be wrong!
       // Must be either transformed back to world or invalidated later.
-      VoltVec2 normal = (dist * ray.direction - toOrigin).normalized;
+      VoltVec2 normal = (dist * ray.direction - toOrigin).Normalized;
       result.Set(shape, dist, normal);
       return true;
     }
@@ -308,7 +308,7 @@ namespace Volatile
     {
       VoltVec2 r = overrideBCenter - shapeA.worldSpaceOrigin;
       float min = shapeA.radius + overrideBRadius;
-      float distSq = r.sqrMagnitude;
+      float distSq = r.SqrMagnitude;
 
       if (distSq >= min * min)
         return null;

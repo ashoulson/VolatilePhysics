@@ -21,9 +21,12 @@
 using System;
 using System.Collections.Generic;
 
+using Volatile.Internal;
+
 namespace Volatile
 {
   public partial class VoltWorld
+    : VoltObject
   {
     #region Helper Filters
     public static bool FilterNone(VoltBody body)
@@ -403,6 +406,9 @@ namespace Volatile
       for (int i = 0; i < this.reusableBuffer.Count; i++)
       {
         VoltBody body = this.reusableBuffer[i];
+        if ((ray.ignoreBody != null) && (ray.ignoreBody == body))
+          continue;
+
         if (VoltBody.Filter(body, filter))
         {
           body.RayCast(ref ray, ref result, ticksBehind);

@@ -32,28 +32,40 @@ namespace Volatile
     internal readonly bool signX;
     internal readonly bool signY;
 
-    public VoltRayCast(VoltVec2 origin, VoltVec2 destination)
+    // Optional shortcut for ignoring a body
+    internal readonly VoltBody ignoreBody;
+
+    public VoltRayCast(
+      VoltVec2 origin, 
+      VoltVec2 destination, 
+      VoltBody ignoreBody = null)
     {
       VoltVec2 delta = destination - origin;
 
       this.origin = origin;
-      this.direction = delta.normalized;
-      this.distance = delta.magnitude;
-      this.signX = direction.x < 0.0f;
-      this.signY = direction.y < 0.0f;
+      this.direction = delta.Normalized;
+      this.distance = delta.Magnitude;
+      this.signX = direction.X < 0.0f;
+      this.signY = direction.Y < 0.0f;
       this.invDirection = 
-        new VoltVec2(1.0f / direction.x, 1.0f / direction.y);
+        new VoltVec2(1.0f / direction.X, 1.0f / direction.Y);
+      this.ignoreBody = ignoreBody;
     }
 
-    public VoltRayCast(VoltVec2 origin, VoltVec2 direction, float distance)
+    public VoltRayCast(
+      VoltVec2 origin, 
+      VoltVec2 direction, 
+      float distance,
+      VoltBody ignoreBody = null)
     {
       this.origin = origin;
       this.direction = direction;
       this.distance = distance;
-      this.signX = direction.x < 0.0f;
-      this.signY = direction.y < 0.0f;
+      this.signX = direction.X < 0.0f;
+      this.signY = direction.Y < 0.0f;
       this.invDirection =
-        new VoltVec2(1.0f / direction.x, 1.0f / direction.y);
+        new VoltVec2(1.0f / direction.X, 1.0f / direction.Y);
+      this.ignoreBody = ignoreBody;
     }
   }
 }

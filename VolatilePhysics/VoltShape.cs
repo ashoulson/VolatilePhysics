@@ -18,6 +18,8 @@
  *  3. This notice may not be removed or altered from any source distribution.
  */
 
+using Volatile.Internal;
+
 namespace Volatile
 {
   public enum VoltShapeType
@@ -27,7 +29,8 @@ namespace Volatile
   }
 
   public abstract class VoltShape
-    : IVoltPoolable<VoltShape>
+    : VoltObject
+    , IVoltPoolable<VoltShape>
   {
     #region Interface
     IVoltPool<VoltShape> IVoltPoolable<VoltShape>.Pool { get; set; }
@@ -51,11 +54,6 @@ namespace Volatile
 #endif
 
     public abstract VoltShapeType Type { get; }
-
-    /// <summary>
-    /// For attaching arbitrary data to this shape.
-    /// </summary>
-    public object UserData { get; set; }
     public VoltBody Body { get; private set; }
 
     internal float Density { get; private set; }

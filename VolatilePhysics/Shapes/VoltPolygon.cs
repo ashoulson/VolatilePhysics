@@ -89,7 +89,7 @@ namespace Volatile
       {
         VoltVec2 u = vertices[i];
         VoltVec2 v = vertices[(i + 1) % count];
-        VoltVec2 normal = (v - u).Left().normalized;
+        VoltVec2 normal = (v - u).Left().Normalized;
         destination[i] = new Axis(normal, VoltVec2.Dot(normal, u));
       }
     }
@@ -98,17 +98,17 @@ namespace Volatile
       VoltVec2[] vertices,
       int count)
     {
-      float top = vertices[0].y;
-      float bottom = vertices[0].y;
-      float left = vertices[0].x;
-      float right = vertices[0].x;
+      float top = vertices[0].Y;
+      float bottom = vertices[0].Y;
+      float left = vertices[0].X;
+      float right = vertices[0].X;
 
       for (int i = 1; i < count; i++)
       {
-        top = VoltMath.Max(top, vertices[i].y);
-        bottom = VoltMath.Min(bottom, vertices[i].y);
-        left = VoltMath.Min(left, vertices[i].x);
-        right = VoltMath.Max(right, vertices[i].x);
+        top = VoltMath.Max(top, vertices[i].Y);
+        bottom = VoltMath.Min(bottom, vertices[i].Y);
+        left = VoltMath.Min(left, vertices[i].X);
+        right = VoltMath.Max(right, vertices[i].X);
       }
 
       return new VoltAABB(top, bottom, left, right);
@@ -410,7 +410,7 @@ namespace Volatile
         VoltVec2 u = this.bodyVertices[(i + 1) % this.countBody];
         VoltVec2 w = this.bodyVertices[(i + 2) % this.countBody];
 
-        sum += u.x * (v.y - w.y);
+        sum += u.X * (v.Y - w.Y);
       }
 
       return sum / 2.0f;
@@ -427,7 +427,7 @@ namespace Volatile
         VoltVec2 u = this.bodyVertices[(i + 1) % this.countBody];
 
         float a = VoltMath.Cross(u, v);
-        float b = v.sqrMagnitude + u.sqrMagnitude + VoltVec2.Dot(v, u);
+        float b = v.SqrMagnitude + u.SqrMagnitude + VoltVec2.Dot(v, u);
         s1 += a * b;
         s2 += a;
       }

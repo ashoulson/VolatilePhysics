@@ -21,6 +21,8 @@
 using System;
 using System.Collections.Generic;
 
+using Volatile.Internal;
+
 namespace Volatile
 {
   public enum VoltBodyType
@@ -37,7 +39,8 @@ namespace Volatile
   public delegate bool VoltBodyFilter(VoltBody body);
 
   public class VoltBody
-    : IVoltPoolable<VoltBody>
+    : VoltObject
+    , IVoltPoolable<VoltBody>
     , IIndexedValue
   {
     #region Interface
@@ -216,11 +219,6 @@ namespace Volatile
 #if DEBUG
     internal bool IsInitialized { get; set; }
 #endif
-
-    /// <summary>
-    /// For attaching arbitrary data to this body.
-    /// </summary>
-    public object UserData { get; set; }
 
     public VoltWorld World { get; private set; }
     public VoltBodyType BodyType { get; private set; }

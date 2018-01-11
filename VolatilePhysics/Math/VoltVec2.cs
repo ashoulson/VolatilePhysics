@@ -26,66 +26,66 @@ namespace Volatile
 
     public static float Dot(VoltVec2 a, VoltVec2 b)
     {
-      return (a.x * b.x) + (a.y * b.y);
+      return (a.X * b.X) + (a.Y * b.Y);
     }
 
-    public readonly float x;
-    public readonly float y;
+    public float X { get; }
+    public float Y { get; }
 
-    public float sqrMagnitude
+    public float SqrMagnitude
     {
       get
       {
-        return (this.x * this.x) + (this.y * this.y);
+        return (this.X * this.X) + (this.Y * this.Y);
       }
     }
 
-    public float magnitude 
+    public float Magnitude 
     { 
       get 
       {
-        return VoltMath.Sqrt(this.sqrMagnitude);
+        return VoltMath.Sqrt(this.SqrMagnitude);
       } 
     }
 
-    public VoltVec2 normalized
+    public VoltVec2 Normalized
     {
       get
       {
-        float magnitude = this.magnitude;
-        return new VoltVec2(this.x / magnitude, this.y / magnitude);
+        float magnitude = this.Magnitude;
+        return new VoltVec2(this.X / magnitude, this.Y / magnitude);
       }
     }
 
     public VoltVec2 (float x, float y)
     {
-      this.x = x;
-      this.y = y;
+      this.X = x;
+      this.Y = y;
     }
 
     public static VoltVec2 operator *(VoltVec2 a, float b)
     {
-      return new VoltVec2(a.x * b, a.y * b);
+      return new VoltVec2(a.X * b, a.Y * b);
     }
 
     public static VoltVec2 operator *(float a, VoltVec2 b)
     {
-      return new VoltVec2(b.x * a, b.y * a);
+      return new VoltVec2(b.X * a, b.Y * a);
     }
 
     public static VoltVec2 operator +(VoltVec2 a, VoltVec2 b)
     {
-      return new VoltVec2(a.x + b.x, a.y + b.y);
+      return new VoltVec2(a.X + b.X, a.Y + b.Y);
     }
 
     public static VoltVec2 operator -(VoltVec2 a, VoltVec2 b)
     {
-      return new VoltVec2(a.x - b.x, a.y - b.y);
+      return new VoltVec2(a.X - b.X, a.Y - b.Y);
     }
 
     public static VoltVec2 operator -(VoltVec2 a)
     {
-      return new VoltVec2(-a.x, -a.y);
+      return new VoltVec2(-a.X, -a.Y);
     }
 
     public static VoltVec2 Lerp(VoltVec2 from, VoltVec2 to, float t)
@@ -95,6 +95,11 @@ namespace Volatile
       if (t > 1f)
         return to;
       return (to - from) * t + from;
+    }
+
+    public override string ToString()
+    {
+      return "VoltVec2(" + this.X + ", " + this.Y + ")";
     }
   }
 }

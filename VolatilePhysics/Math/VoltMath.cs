@@ -303,6 +303,13 @@ namespace Volatile
       return VoltMath.Abs(a - b) < VoltMath.EPSILON;
     }
 
+    public static bool Approximately(VoltVec2 a, VoltVec2 b)
+    {
+      return
+        VoltMath.Approximately(a.X, b.X) &&
+        VoltMath.Approximately(a.Y, b.Y);
+    }
+
     public static float Repeat(float t, float length)
     {
       return t - VoltMath.Floor(t / length) * length;
@@ -383,27 +390,27 @@ namespace Volatile
 
     public static VoltVec2 Right(this VoltVec2 v)
     {
-      return new VoltVec2(v.y, -v.x);
+      return new VoltVec2(v.Y, -v.X);
     }
 
     public static VoltVec2 Left(this VoltVec2 v)
     {
-      return new VoltVec2(-v.y, v.x);
+      return new VoltVec2(-v.Y, v.X);
     }
 
     public static VoltVec2 Rotate(this VoltVec2 v, VoltVec2 b)
     {
-      return new VoltVec2(v.x * b.x - v.y * b.y, v.y * b.x + v.x * b.y);
+      return new VoltVec2(v.X * b.X - v.Y * b.Y, v.Y * b.X + v.X * b.Y);
     }
 
     public static VoltVec2 InvRotate(this VoltVec2 v, VoltVec2 b)
     {
-      return new VoltVec2(v.x * b.x + v.y * b.y, v.y * b.x - v.x * b.y);
+      return new VoltVec2(v.X * b.X + v.Y * b.Y, v.Y * b.X - v.X * b.Y);
     }
 
     public static float Angle(this VoltVec2 v)
     {
-      return VoltMath.Atan2(v.y, v.x);
+      return VoltMath.Atan2(v.Y, v.X);
     }
 
     public static VoltVec2 Polar(float radians)
@@ -413,7 +420,7 @@ namespace Volatile
 
     public static float Cross(VoltVec2 a, VoltVec2 b)
     {
-      return a.x * b.y - a.y * b.x;
+      return a.X * b.Y - a.Y * b.X;
     }
 
     public static float Square(float a)
@@ -423,7 +430,7 @@ namespace Volatile
 
     public static float Look(VoltVec2 from, VoltVec2 to)
     {
-      return (to - from).normalized.Angle();
+      return (to - from).Normalized.Angle();
     }
   }
 }

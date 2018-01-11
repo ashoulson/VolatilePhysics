@@ -45,16 +45,13 @@ namespace Volatile
   /// </summary>
   internal struct Axis
   {
-    internal VoltVec2 Normal { get { return this.normal; } }
-    internal float Width { get { return this.width; } }
-
-    private readonly VoltVec2 normal;
-    private readonly float width;
+    internal VoltVec2 Normal { get; }
+    internal float Width { get; }
 
     internal Axis(VoltVec2 normal, float width)
     {
-      this.normal = normal;
-      this.width = width;
+      this.Normal = normal;
+      this.Width = width;
     }
   }
 }

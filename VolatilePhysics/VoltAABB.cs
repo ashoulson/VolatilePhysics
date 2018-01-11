@@ -26,37 +26,37 @@ namespace Volatile
     public static VoltAABB CreateExpanded(VoltAABB aabb, float expansionAmount)
     {
       return new VoltAABB(
-        aabb.top + expansionAmount,
-        aabb.bottom - expansionAmount,
-        aabb.left - expansionAmount,
-        aabb.right + expansionAmount);
+        aabb.Top + expansionAmount,
+        aabb.Bottom - expansionAmount,
+        aabb.Left - expansionAmount,
+        aabb.Right + expansionAmount);
     }
 
     public static VoltAABB CreateMerged(VoltAABB aabb1, VoltAABB aabb2)
     {
       return new VoltAABB(
-        VoltMath.Max(aabb1.top, aabb2.top),
-        VoltMath.Min(aabb1.bottom, aabb2.bottom),
-        VoltMath.Min(aabb1.left, aabb2.left),
-        VoltMath.Max(aabb1.right, aabb2.right));
+        VoltMath.Max(aabb1.Top, aabb2.Top),
+        VoltMath.Min(aabb1.Bottom, aabb2.Bottom),
+        VoltMath.Min(aabb1.Left, aabb2.Left),
+        VoltMath.Max(aabb1.Right, aabb2.Right));
     }
 
     public static VoltAABB CreateSwept(VoltAABB source, VoltVec2 vector)
     {
-      float top = source.top;
-      float bottom = source.bottom;
-      float left = source.left;
-      float right = source.right;
+      float top = source.Top;
+      float bottom = source.Bottom;
+      float left = source.Left;
+      float right = source.Right;
 
-      if (vector.x < 0.0f)
-        left += vector.x;
+      if (vector.X < 0.0f)
+        left += vector.X;
       else
-        right += vector.x;
+        right += vector.X;
 
-      if (vector.y < 0.0f)
-        bottom += vector.y;
+      if (vector.Y < 0.0f)
+        bottom += vector.Y;
       else
-        top += vector.y;
+        top += vector.Y;
 
       return new VoltAABB(top, bottom, left, right);
     }
@@ -73,18 +73,18 @@ namespace Volatile
       float right)
     {
       float txmin =
-        ((ray.signX ? right : left) - ray.origin.x) *
-        ray.invDirection.x;
+        ((ray.signX ? right : left) - ray.origin.X) *
+        ray.invDirection.X;
       float txmax =
-        ((ray.signX ? left : right) - ray.origin.x) *
-        ray.invDirection.x;
+        ((ray.signX ? left : right) - ray.origin.X) *
+        ray.invDirection.X;
 
       float tymin =
-        ((ray.signY ? top : bottom) - ray.origin.y) *
-        ray.invDirection.y;
+        ((ray.signY ? top : bottom) - ray.origin.Y) *
+        ray.invDirection.Y;
       float tymax =
-        ((ray.signY ? bottom : top) - ray.origin.y) *
-        ray.invDirection.y;
+        ((ray.signY ? bottom : top) - ray.origin.Y) *
+        ray.invDirection.Y;
 
       if ((txmin > tymax) || (tymin > txmax))
         return false;
@@ -98,28 +98,28 @@ namespace Volatile
 
     public VoltVec2 TopLeft 
     { 
-      get { return new VoltVec2(this.left, this.top); } 
+      get { return new VoltVec2(this.Left, this.Top); } 
     }
 
     public VoltVec2 TopRight 
     { 
-      get { return new VoltVec2(this.right, this.top); } 
+      get { return new VoltVec2(this.Right, this.Top); } 
     }
 
     public VoltVec2 BottomLeft 
     { 
-      get { return new VoltVec2(this.left, this.bottom); } 
+      get { return new VoltVec2(this.Left, this.Bottom); } 
     }
 
     public VoltVec2 BottomRight 
     { 
-      get { return new VoltVec2(this.right, this.bottom); } 
+      get { return new VoltVec2(this.Right, this.Bottom); } 
     }
 
-    public float Top { get { return this.top; } }
-    public float Bottom { get { return this.bottom; } }
-    public float Left { get { return this.left; } }
-    public float Right { get { return this.right; } }
+    public float Top { get; }
+    public float Bottom { get; }
+    public float Left { get; }
+    public float Right { get; }
 
     public float Width { get { return this.Right - this.Left; } }
     public float Height { get { return this.Top - this.Bottom; } }
@@ -136,11 +136,6 @@ namespace Volatile
       get { return new VoltVec2(this.Width * 0.5f, this.Height * 0.5f); } 
     }
 
-    private readonly float top;
-    private readonly float bottom;
-    private readonly float left;
-    private readonly float right;
-
     #region Tests
     /// <summary>
     /// Performs a point test on the AABB.
@@ -148,10 +143,10 @@ namespace Volatile
     public bool QueryPoint(VoltVec2 point)
     {
       return 
-        this.left <= point.x && 
-        this.right >= point.x &&
-        this.bottom <= point.y &&
-        this.top >= point.y;
+        this.Left <= point.X && 
+        this.Right >= point.X &&
+        this.Bottom <= point.Y &&
+        this.Top >= point.Y;
     }
 
     /// <summary>
@@ -160,20 +155,20 @@ namespace Volatile
     public bool QueryCircleApprox(VoltVec2 origin, float radius)
     {
       return
-        (this.left - radius) <= origin.x &&
-        (this.right + radius) >= origin.x &&
-        (this.bottom - radius) <= origin.y &&
-        (this.top + radius) >= origin.y;
+        (this.Left - radius) <= origin.X &&
+        (this.Right + radius) >= origin.X &&
+        (this.Bottom - radius) <= origin.Y &&
+        (this.Top + radius) >= origin.Y;
     }
 
     public bool RayCast(ref VoltRayCast ray)
     {
       return VoltAABB.RayCast(
         ref ray, 
-        this.top, 
-        this.bottom, 
-        this.left, 
-        this.right);
+        this.Top, 
+        this.Bottom, 
+        this.Left, 
+        this.Right);
     }
 
     /// <summary>
@@ -183,38 +178,38 @@ namespace Volatile
     {
       return VoltAABB.RayCast(
         ref ray,
-        this.top + radius,
-        this.bottom - radius,
-        this.left - radius,
-        this.right + radius);
+        this.Top + radius,
+        this.Bottom - radius,
+        this.Left - radius,
+        this.Right + radius);
     }
 
     public bool Intersect(VoltAABB other)
     {
       bool outside =
-        this.right <= other.left ||
-        this.left >= other.right ||
-        this.bottom >= other.top ||
-        this.top <= other.bottom;
+        this.Right <= other.Left ||
+        this.Left >= other.Right ||
+        this.Bottom >= other.Top ||
+        this.Top <= other.Bottom;
       return (outside == false);
     }
 
     public bool Contains(VoltAABB other)
     {
       return
-        this.top >= other.Top &&
-        this.bottom <= other.Bottom &&
-        this.right >= other.right &&
-        this.left <= other.left;
+        this.Top >= other.Top &&
+        this.Bottom <= other.Bottom &&
+        this.Right >= other.Right &&
+        this.Left <= other.Left;
     }
     #endregion
 
     public VoltAABB(float top, float bottom, float left, float right)
     {
-      this.top = top;
-      this.bottom = bottom;
-      this.left = left;
-      this.right = right;
+      this.Top = top;
+      this.Bottom = bottom;
+      this.Left = left;
+      this.Right = right;
     }
 
     public VoltAABB(VoltVec2 center, VoltVec2 extents)
@@ -222,10 +217,10 @@ namespace Volatile
       VoltVec2 topRight = center + extents;
       VoltVec2 bottomLeft = center - extents;
 
-      this.top = topRight.y;
-      this.right = topRight.x;
-      this.bottom = bottomLeft.y;
-      this.left = bottomLeft.x;
+      this.Top = topRight.Y;
+      this.Right = topRight.X;
+      this.Bottom = bottomLeft.Y;
+      this.Left = bottomLeft.X;
     }
 
     public VoltAABB(VoltVec2 center, float radius)
@@ -235,29 +230,29 @@ namespace Volatile
 
     public VoltAABB ComputeTopLeft(VoltVec2 center)
     {
-      return new VoltAABB(this.top, center.y, this.left, center.x);
+      return new VoltAABB(this.Top, center.Y, this.Left, center.X);
     }
 
     public VoltAABB ComputeTopRight(VoltVec2 center)
     {
-      return new VoltAABB(this.top, center.y, center.x, this.right);
+      return new VoltAABB(this.Top, center.Y, center.X, this.Right);
     }
 
     public VoltAABB ComputeBottomLeft(VoltVec2 center)
     {
-      return new VoltAABB(center.y, this.bottom, this.left, center.x);
+      return new VoltAABB(center.Y, this.Bottom, this.Left, center.X);
     }
 
     public VoltAABB ComputeBottomRight(VoltVec2 center)
     {
-      return new VoltAABB(center.y, this.bottom, center.x, this.right);
+      return new VoltAABB(center.Y, this.Bottom, center.X, this.Right);
     }
 
     private VoltVec2 ComputeCenter()
     {
       return new VoltVec2(
-        (this.Width * 0.5f) + this.left, 
-        (this.Height * 0.5f) + this.bottom);
+        (this.Width * 0.5f) + this.Left, 
+        (this.Height * 0.5f) + this.Bottom);
     }
   }
 }
