@@ -25,6 +25,14 @@ using Volatile.Internal;
 
 namespace Volatile
 {
+  public enum VoltQueryMode
+  {
+    None     = 0,
+    Dynamic  = 1,
+    Static   = 2,
+    Both     = 3,
+  }
+
   public partial class VoltWorld
     : VoltObject
   {
@@ -336,14 +344,17 @@ namespace Volatile
     public VoltBuffer<VoltBody> QueryPoint(
       VoltVec2 point,
       VoltBodyFilter filter = null,
-      int ticksBehind = 0)
+      int ticksBehind = 0,
+      VoltQueryMode mode = VoltQueryMode.Both)
     {
       if (ticksBehind < 0)
         throw new ArgumentOutOfRangeException("ticksBehind");
 
       this.reusableBuffer.Clear();
-      this.staticBroadphase.QueryPoint(point, this.reusableBuffer);
-      this.dynamicBroadphase.QueryPoint(point, this.reusableBuffer);
+      if ((mode & VoltQueryMode.Static) != 0)
+        this.staticBroadphase.QueryPoint(point, this.reusableBuffer);
+      if ((mode & VoltQueryMode.Dynamic) != 0)
+        this.dynamicBroadphase.QueryPoint(point, this.reusableBuffer);
 
       this.reusableOutput.Clear();
       for (int i = 0; i < this.reusableBuffer.Count; i++)
@@ -366,14 +377,17 @@ namespace Volatile
       VoltVec2 origin,
       float radius,
       VoltBodyFilter filter = null,
-      int ticksBehind = 0)
+      int ticksBehind = 0,
+      VoltQueryMode mode = VoltQueryMode.Both)
     {
       if (ticksBehind < 0)
         throw new ArgumentOutOfRangeException("ticksBehind");
 
       this.reusableBuffer.Clear();
-      this.staticBroadphase.QueryCircle(origin, radius, this.reusableBuffer);
-      this.dynamicBroadphase.QueryCircle(origin, radius, this.reusableBuffer);
+      if ((mode & VoltQueryMode.Static) != 0)
+        this.staticBroadphase.QueryCircle(origin, radius, this.reusableBuffer);
+      if ((mode & VoltQueryMode.Dynamic) != 0)
+        this.dynamicBroadphase.QueryCircle(origin, radius, this.reusableBuffer);
 
       this.reusableOutput.Clear();
       for (int i = 0; i < this.reusableBuffer.Count; i++)

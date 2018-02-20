@@ -97,19 +97,17 @@ namespace Volatile
       VoltPolygon poly)
     {
       // Get the axis on the polygon closest to the circle's origin
-      float penetration;
       int index =
         Collision.FindAxisMaxPenetration(
           circ.worldSpaceOrigin,
           circ.radius,
-          poly,
-          out penetration);
+          poly.worldAxes,
+          out float penetration);
 
       if (index < 0)
         return null;
 
-      VoltVec2 a, b;
-      poly.GetEdge(index, out a, out b);
+      poly.GetEdge(index, out VoltVec2 a, out VoltVec2 b);
       Axis axis = poly.GetWorldAxis(index);
 
       // If the circle is past one of the two vertices, check it like
@@ -133,10 +131,9 @@ namespace Volatile
       VoltPolygon polyA,
       VoltPolygon polyB)
     {
-      Axis a1, a2;
-      if (Collision.FindMinSepAxis(polyA, polyB, out a1) == false)
+      if (Collision.FindMinSepAxis(polyA, polyB, out Axis a1) == false)
         return null;
-      if (Collision.FindMinSepAxis(polyB, polyA, out a2) == false)
+      if (Collision.FindMinSepAxis(polyB, polyA, out Axis a2) == false)
         return null;
 
       // We will use poly1's axis, so we may need to swap
@@ -264,16 +261,16 @@ namespace Volatile
     internal static int FindAxisMaxPenetration(
       VoltVec2 origin,
       float radius,
-      VoltPolygon poly,
+      Axis[] axes,
       out float penetration)
     {
       int index = 0;
       int found = 0;
       penetration = float.NegativeInfinity;
 
-      for (int i = 0; i < poly.countWorld; i++)
+      for (int i = 0; i < axes.Length; i++)
       {
-        Axis axis = poly.worldAxes[i];
+        Axis axis = axes[i];
         float dot = VoltVec2.Dot(axis.Normal, origin);
         float dist = dot - axis.Width - radius;
 

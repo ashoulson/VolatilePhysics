@@ -212,13 +212,12 @@ namespace Volatile
       float radius)
     {
       // Get the axis on the polygon closest to the circle's origin
-      float penetration;
       int foundIndex =
         Collision.FindAxisMaxPenetration(
           bodySpaceOrigin,
           radius,
-          this,
-          out penetration);
+          this.bodyAxes,
+          out float penetration);
 
       if (foundIndex < 0)
         return false;
