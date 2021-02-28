@@ -1,28 +1,51 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30320.27
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VolatilePhysics", "VolatilePhysics\VolatilePhysics.csproj", "{22681465-4B54-40DF-81CF-E6787FFCB320}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VolatilePhysicsNetStandard", "VolatilePhysics\VolatilePhysicsNetStandard.csproj", "{3ACB5969-1DBB-4AC7-AA35-43D5E88DD001}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug Standalone|Any CPU = Debug Standalone|Any CPU
 		Debug Unity|Any CPU = Debug Unity|Any CPU
+		Debug|Any CPU = Debug|Any CPU
 		Release Standalone|Any CPU = Release Standalone|Any CPU
 		Release Unity|Any CPU = Release Unity|Any CPU
+		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{22681465-4B54-40DF-81CF-E6787FFCB320}.Debug Standalone|Any CPU.ActiveCfg = Debug Standalone|Any CPU
 		{22681465-4B54-40DF-81CF-E6787FFCB320}.Debug Standalone|Any CPU.Build.0 = Debug Standalone|Any CPU
 		{22681465-4B54-40DF-81CF-E6787FFCB320}.Debug Unity|Any CPU.ActiveCfg = Debug Unity|Any CPU
 		{22681465-4B54-40DF-81CF-E6787FFCB320}.Debug Unity|Any CPU.Build.0 = Debug Unity|Any CPU
+		{22681465-4B54-40DF-81CF-E6787FFCB320}.Debug|Any CPU.ActiveCfg = Debug Unity|Any CPU
+		{22681465-4B54-40DF-81CF-E6787FFCB320}.Debug|Any CPU.Build.0 = Debug Unity|Any CPU
 		{22681465-4B54-40DF-81CF-E6787FFCB320}.Release Standalone|Any CPU.ActiveCfg = Release Standalone|Any CPU
 		{22681465-4B54-40DF-81CF-E6787FFCB320}.Release Standalone|Any CPU.Build.0 = Release Standalone|Any CPU
 		{22681465-4B54-40DF-81CF-E6787FFCB320}.Release Unity|Any CPU.ActiveCfg = Release Unity|Any CPU
 		{22681465-4B54-40DF-81CF-E6787FFCB320}.Release Unity|Any CPU.Build.0 = Release Unity|Any CPU
+		{22681465-4B54-40DF-81CF-E6787FFCB320}.Release|Any CPU.ActiveCfg = Release Unity|Any CPU
+		{22681465-4B54-40DF-81CF-E6787FFCB320}.Release|Any CPU.Build.0 = Release Unity|Any CPU
+		{3ACB5969-1DBB-4AC7-AA35-43D5E88DD001}.Debug Standalone|Any CPU.ActiveCfg = Debug|Any CPU
+		{3ACB5969-1DBB-4AC7-AA35-43D5E88DD001}.Debug Standalone|Any CPU.Build.0 = Debug|Any CPU
+		{3ACB5969-1DBB-4AC7-AA35-43D5E88DD001}.Debug Unity|Any CPU.ActiveCfg = Debug|Any CPU
+		{3ACB5969-1DBB-4AC7-AA35-43D5E88DD001}.Debug Unity|Any CPU.Build.0 = Debug|Any CPU
+		{3ACB5969-1DBB-4AC7-AA35-43D5E88DD001}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3ACB5969-1DBB-4AC7-AA35-43D5E88DD001}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3ACB5969-1DBB-4AC7-AA35-43D5E88DD001}.Release Standalone|Any CPU.ActiveCfg = Release|Any CPU
+		{3ACB5969-1DBB-4AC7-AA35-43D5E88DD001}.Release Standalone|Any CPU.Build.0 = Release|Any CPU
+		{3ACB5969-1DBB-4AC7-AA35-43D5E88DD001}.Release Unity|Any CPU.ActiveCfg = Release|Any CPU
+		{3ACB5969-1DBB-4AC7-AA35-43D5E88DD001}.Release Unity|Any CPU.Build.0 = Release|Any CPU
+		{3ACB5969-1DBB-4AC7-AA35-43D5E88DD001}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3ACB5969-1DBB-4AC7-AA35-43D5E88DD001}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A7C758AD-061A-4CBC-98A9-C5C7FE816049}
 	EndGlobalSection
 EndGlobal
